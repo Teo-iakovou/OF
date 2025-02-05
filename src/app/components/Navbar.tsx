@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { FiMenu, FiX, FiUser } from "react-icons/fi";
 import { FaTwitter, FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
-
+import Link from "next/link";
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -11,13 +11,14 @@ const Navbar = () => {
     <nav className="bg-black text-white py-4 px-6 fixed top-0 left-0 w-full z-50 shadow-lg">
       <div className="flex items-center justify-between">
         {/* Logo Icon with Home Link */}
-        <a href="/" className="flex items-center space-x-2">
+        <Link href="/" className="flex items-center space-x-2">
           <img
             src="/5805591578897663447.jpg"
             alt="Logo"
             className="h-10 w-auto object-contain rounded-full"
           />
-        </a>
+          <span className="text-lg font-bold">AI Analyzer</span>
+        </Link>
 
         {/* Hamburger Icon */}
         <button

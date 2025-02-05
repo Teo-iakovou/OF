@@ -1,70 +1,78 @@
 const Insights = ({ insights }: { insights: any }) => {
-  if (!insights || !insights.objects) return null; // ✅ Prevents crashes if insights are missing
+  if (!insights || !insights.objects) return null; // Prevents crashes if insights are missing
 
   return (
-    <div className="mt-8 p-4 bg-white shadow rounded">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">
-        AI Recommendations
+    <div className="mt-8 p-6 bg-gray-800 text-white shadow-lg rounded-lg">
+      <h2 className="text-3xl font-extrabold text-purple-500 mb-6">
+        Your AI Insights
       </h2>
 
-      {/* ✅ Safe check for Dominant Color */}
+      {/* Dominant Color */}
       {insights.dominantColor ? (
-        <div className="mb-4">
-          <strong>Dominant Color:</strong>{" "}
+        <div className="mb-4 flex items-center">
+          <strong className="text-lg">Dominant Color:</strong>
           <span
             style={{
               display: "inline-block",
               width: "24px",
               height: "24px",
               backgroundColor: insights.dominantColor,
+              marginLeft: "10px",
+              borderRadius: "50%",
+              border: "2px solid #fff",
             }}
           ></span>
         </div>
       ) : (
-        <div className="mb-4 text-gray-500">No dominant color detected.</div>
+        <div className="mb-4 text-gray-400">No dominant color detected.</div>
       )}
 
-      {/* ✅ Safe check for Platform */}
+      {/* Best Platform */}
       {insights.platform ? (
         <div className="mb-4">
-          <strong>Best Platform:</strong> {insights.platform}
+          <strong className="text-lg">Best Platform:</strong>{" "}
+          <span className="text-gray-200">{insights.platform}</span>
         </div>
       ) : (
-        <div className="mb-4 text-gray-500">
+        <div className="mb-4 text-gray-400">
           No platform recommendation available.
         </div>
       )}
 
-      {/* ✅ Safe check for Hashtags */}
+      {/* Hashtags */}
       {insights.hashtags && insights.hashtags.length > 0 ? (
         <div className="mb-4">
-          <strong>Hashtags:</strong> {insights.hashtags.join(", ")}
+          <strong className="text-lg">Hashtags:</strong>{" "}
+          <span className="text-gray-200">{insights.hashtags.join(", ")}</span>
         </div>
       ) : (
-        <div className="mb-4 text-gray-500">No hashtags available.</div>
+        <div className="mb-4 text-gray-400">No hashtags available.</div>
       )}
 
-      {/* ✅ Safe check for Best Post Time */}
+      {/* Best Post Time */}
       {insights.bestPostTime ? (
         <div className="mb-4">
-          <strong>Best Post Time:</strong> {insights.bestPostTime}
+          <strong className="text-lg">Best Post Time:</strong>{" "}
+          <span className="text-gray-200">{insights.bestPostTime}</span>
         </div>
       ) : (
-        <div className="mb-4 text-gray-500">No best post time detected.</div>
+        <div className="mb-4 text-gray-400">No best post time detected.</div>
       )}
 
-      {/* ✅ Objects Detected */}
+      {/* Objects Detected */}
       {insights.objects.length > 0 ? (
         <div>
-          <strong>Objects Detected:</strong>
-          <ul className="list-disc pl-5">
+          <strong className="text-lg">Objects Detected:</strong>
+          <ul className="list-disc pl-5 text-gray-200 mt-2 space-y-1">
             {insights.objects.map((object: string, index: number) => (
-              <li key={index}>{object}</li>
+              <li key={index} className="hover:text-purple-400">
+                {object}
+              </li>
             ))}
           </ul>
         </div>
       ) : (
-        <div className="mb-4 text-gray-500">No objects detected.</div>
+        <div className="mb-4 text-gray-400">No objects detected.</div>
       )}
     </div>
   );

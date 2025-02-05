@@ -16,9 +16,7 @@ export default function RootLayout({
         <Navbar />
 
         {/* Main Content */}
-        <main className="flex-grow container mx-auto px-6 py-12">
-          {children}
-        </main>
+        <main className="flex-grow">{children}</main>
 
         {/* Footer */}
         <Footer />

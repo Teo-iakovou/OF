@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../LemoAPP"
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}

@@ -1,141 +1,14 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react";
-import FileUpload from "@/app/components/FileUpload";
-import Insights from "@/app/components/Insights";
-import HistoryList from "@/app/components/HistoryList";
-import Pagination from "@/app/components/Pagination";
-import SearchFilter from "@/app/components/SearchFilter";
-import Analytics from "@/app/components/Analytics";
-import { ClipLoader } from "react-spinners";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { exportToCSV } from "@/app/utils/csvUtils";
-import { filterHistory, bulkDelete } from "@/app/utils/historyUtils";
-import {
-  analyzeImage,
-  fetchAnalysisHistory,
-  deleteAnalysisResult,
-} from "@/app/utils/api";
+import { useRouter } from "next/navigation";
+import { packages } from "@/app/components/Packages";
 
-export default function PackagePage() {
+export default function PackageDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
 
-  type PackageKey = "lite" | "pro" | "ultimate";
-
-  const packages: Record<
-    PackageKey,
-    { title: string; price: string; features: string[]; color: string }
-  > = {
-    lite: {
-      title: "Lite Package",
-      price: "$49",
-      features: ["Basic Analytics", "5 Uploads/Day", "Email Support"],
-      color: "from-blue-500 to-blue-700",
-    },
-    pro: {
-      title: "Pro Package",
-      price: "$349",
-      features: [
-        "Custom AI Insights",
-        "Unlimited Uploads",
-        "Dedicated 24/7 Support",
-      ],
-      color: "from-pink-500 to-pink-700",
-    },
-    ultimate: {
-      title: "Ultimate Package",
-      price: "$499",
-      features: [
-        "Full AI Integration",
-        "Unlimited Uploads",
-        "Premium Support",
-        "Custom Reports",
-      ],
-      color: "from-purple-500 to-purple-700",
-    },
-  };
-
-  const selectedPackage = packages[id as PackageKey];
-
-  const [insights, setInsights] = useState<any>(null);
-  const [history, setHistory] = useState<any[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterPlatform, setFilterPlatform] = useState("");
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // Fetch analysis history
-  const fetchHistory = async (page: number) => {
-    setLoading(true);
-    try {
-      const data = await fetchAnalysisHistory(page);
-
-      console.log("Fetched history:", data); // ✅ Debugging log
-
-      // ✅ Ensure history state is always an array
-      setHistory(data.results || []);
-
-      // ✅ Ensure totalPages is never NaN
-      setTotalPages(Math.max(1, Math.ceil((data.total || 0) / 10)));
-
-      // ✅ Handle case when there is no data
-      if (!data.results || data.results.length === 0) {
-        console.warn("No analysis history found.");
-      }
-    } catch (err: any) {
-      console.error("Error fetching history:", err);
-      toast.error("Failed to fetch history.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle file upload
-  const handleFileUpload = async (file: File) => {
-    setLoading(true);
-    try {
-      const response = await analyzeImage(file);
-
-      console.log("Received Insights from API:", response); // ✅ Debugging log
-
-      if (!response.insights || !response.insights.objects) {
-        throw new Error("Unexpected API response format");
-      }
-
-      setInsights(response.insights);
-      fetchHistory(currentPage); // Refresh history
-      toast.success("Image uploaded and analyzed successfully!");
-    } catch (err: any) {
-      console.error("Error analyzing image:", err);
-      toast.error("Failed to analyze image.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle delete request
-  // Handle delete request
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteAnalysisResult(id);
-
-      // ✅ Refresh history AFTER deleting
-      await fetchHistory(currentPage);
-
-      toast.success("Result deleted successfully!");
-    } catch (err: any) {
-      console.error("Error deleting result:", err);
-      toast.error("Failed to delete analysis result.");
-    }
-  };
-
-  useEffect(() => {
-    fetchHistory(currentPage);
-  }, [currentPage]);
+  const selectedPackage = packages.find((pkg) => pkg.id === id);
 
   if (!selectedPackage) {
     return (
@@ -148,80 +21,69 @@ export default function PackagePage() {
   }
 
   return (
-    <div
-      className={`min-h-screen bg-gradient-to-br ${selectedPackage.color} flex flex-col items-center text-black`}
-    >
-      <div className="max-w-3xl bg-black bg-opacity-70 rounded-xl shadow-2xl p-10 mt-12">
-        <h1 className="text-5xl font-extrabold text-center mb-6">
-          {selectedPackage.title}
-        </h1>
-        <p className="text-3xl font-bold text-center mb-6">
-          {selectedPackage.price}
-        </p>
-        <ul className="mb-8 space-y-4 pl-6 list-disc">
-          {selectedPackage.features.map((feature, idx) => (
-            <li key={idx} className="text-lg text-gray-300">
-              {feature}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* File Upload Section */}
-      <section className="mb-12">
-        <h2 className="text-4xl font-bold mb-6">Upload Your Content</h2>
-        <FileUpload onUpload={handleFileUpload} />
-        {loading && (
-          <div className="mt-6 flex justify-center">
-            <ClipLoader size={50} color="#FF4D88" />
+    <div className="min-h-screen bg-of-background text-white">
+      {/* Package Overview Section */}
+      <section className="container mx-auto py-16 px-8 flex flex-col lg:flex-row gap-8 items-center">
+        {/* Left Side: Image/Visual */}
+        <div className="flex-1 flex justify-center items-center">
+          <div className="w-80 h-80 flex items-center justify-center">
+            <img
+              src="/5805591578897663447.jpg"
+              alt="Logo"
+              className="w-60 h-60 object-contain rounded-3xl"
+            />
           </div>
-        )}
+        </div>
+
+        {/* Right Side: Details */}
+        <div className="flex-1">
+          <h1 className="text-5xl font-bold mb-6">{selectedPackage.title}</h1>
+          <p className="text-3xl font-bold mb-4 text-green-400">
+            {selectedPackage.price}
+          </p>
+          <ul className="space-y-4 text-lg mb-8">
+            {selectedPackage.features.map((feature, idx) => (
+              <li key={idx} className="flex items-center gap-2">
+                <span className="text-green-400">✔</span> {feature}
+              </li>
+            ))}
+          </ul>
+          {/* Payment Buttons */}
+          <div className="flex flex-col gap-4">
+            <button
+              onClick={() => router.push("/checkout")}
+              className="w-full px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg shadow-md"
+            >
+              Add to Cart
+            </button>
+            <button
+              onClick={() => router.push("/checkout")}
+              className="w-full px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded-lg shadow-md"
+            >
+              Pay with PayPal
+            </button>
+          </div>
+        </div>
       </section>
 
-      {/* Insights Section */}
-      {insights && (
-        <section className="mb-12">
-          <h2 className="text-4xl font-bold mb-6">Your Insights</h2>
-          <Insights insights={insights} />
-        </section>
-      )}
-
-      {/* Analytics Section */}
-      {history.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-4xl font-bold mb-6">Analytics Overview</h2>
-          <Analytics history={history} />
-        </section>
-      )}
-
-      {/* Search and Filter Section */}
-      <section className="mb-12">
-        <SearchFilter
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          filterPlatform={filterPlatform}
-          setFilterPlatform={setFilterPlatform}
-        />
+      {/* Advertising Section */}
+      <section className="w-full bg-gradient-to-r from-purple-600 to-pink-500 py-16">
+        <div className="text-center text-white">
+          <h2 className="text-4xl font-bold mb-6">Why Choose Us?</h2>
+          <p className="text-xl mb-8">
+            Unlock the power of AI analytics with our advanced packages. Choose
+            a plan that fits your needs and take your content to the next level!
+          </p>
+          <div className="flex justify-center gap-4">
+            <button className="bg-white text-black px-6 py-3 rounded-full shadow-md hover:bg-gray-100 font-semibold">
+              Learn More
+            </button>
+            <button className="bg-white text-black px-6 py-3 rounded-full shadow-md hover:bg-gray-100 font-semibold">
+              Testimonials
+            </button>
+          </div>
+        </div>
       </section>
-
-      {/* History List */}
-      <section className="mb-12">
-        <HistoryList
-          history={filterHistory(history, searchTerm, filterPlatform)}
-          selectedItems={selectedItems}
-          setSelectedItems={setSelectedItems}
-          handleDelete={handleDelete}
-        />
-      </section>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          setCurrentPage={setCurrentPage}
-        />
-      )}
     </div>
   );
 }
