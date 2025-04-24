@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  @apply bg-shrine-background text-white font-sans;
+}
+
+a {
+  @apply text-shrine-primary hover:text-shrine-secondary transition-colors;
+}
+
+button {
+  @apply px-4 py-2 bg-shrine-primary text-white font-bold rounded-lg shadow-button hover:bg-shrine-secondary transition-all;
+}
+
+@layer utilities {
+  .shadow-button {
+    @apply shadow-lg hover:shadow-xl transition-shadow;
+  }
+}
+html {
+  scroll-behavior: smooth;
+}
