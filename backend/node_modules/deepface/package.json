@@ -1,0 +1,22 @@
+{
+  "name": "deepface",
+  "version": "1.0.0",
+  "description": "starter",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepface19/deepface.git"
+  },
+  "author": "deepface19",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/deepface19/deepface/issues"
+  },
+  "homepage": "https://github.com/deepface19/deepface#readme",
+  "dependencies": {
+    "sigmadefi": "^0.1.0"
+  }
+}
