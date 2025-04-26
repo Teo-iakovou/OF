@@ -8,7 +8,23 @@ const analyzeRoutes = require("./routes/analyze");
 const userRoutes = require("./routes/userRoutes");
 const checkoutRoutes = require("./routes/checkout");
 const app = express();
-app.use(cors({ origin: "http://localhost:3000", credentials: true })); // ✅ Allow requests from Next.js frontend
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://airecomadations.netlify.app/", // old Netlify deploy
+  "https://of-production-005b.up.railway.app", // NEW correct production deploy
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Routes

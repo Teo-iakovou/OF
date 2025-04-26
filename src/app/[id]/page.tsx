@@ -12,6 +12,8 @@ export default function PackageDetailPage() {
 
   const [showCart, setShowCart] = useState(false);
 
+  const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
   const handleCheckout = async () => {
     if (!selectedPackage) return;
 
@@ -21,7 +23,7 @@ export default function PackageDetailPage() {
       if (!email) return;
 
       const response = await fetch(
-        "http://localhost:5000/api/checkout/create-checkout-session",
+        `${BASE_URL}/api/checkout/create-checkout-session`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -31,7 +33,7 @@ export default function PackageDetailPage() {
 
       const data = await response.json();
       if (data.url) {
-        window.location.href = data.url; // Redirect to Stripe Checkout
+        window.location.href = data.url; // ✅ Redirect to Stripe Checkout
       }
     } catch (err) {
       console.error("Failed to start Stripe checkout:", err);

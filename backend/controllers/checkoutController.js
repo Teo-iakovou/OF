@@ -31,8 +31,8 @@ const createCheckoutSession = async (req, res) => {
         },
       ],
       metadata: { email, packageId },
-      success_url: "http://localhost:3000/upload?status=success",
-      cancel_url: "http://localhost:3000/upload?status=cancel",
+      success_url: `${process.env.CLIENT_URL}/dashboard/upload?status=success`,
+      cancel_url: `${process.env.CLIENT_URL}/?status=cancel`,
     });
 
     res.json({ url: session.url });
