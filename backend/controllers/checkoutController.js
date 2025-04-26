@@ -17,6 +17,8 @@ const createCheckoutSession = async (req, res) => {
   }
 
   try {
+    const YOUR_DOMAIN = process.env.FRONTEND_URL || "http://localhost:3000";
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -31,8 +33,8 @@ const createCheckoutSession = async (req, res) => {
         },
       ],
       metadata: { email, packageId },
-      success_url: `${process.env.CLIENT_URL}/dashboard/upload?status=success`,
-      cancel_url: `${process.env.CLIENT_URL}/?status=cancel`,
+      success_url: `${YOUR_DOMAIN}/dashboard/upload?status=success`,
+      cancel_url: `${YOUR_DOMAIN}/?status=cancel`,
     });
 
     res.json({ url: session.url });
