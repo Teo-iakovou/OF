@@ -9,9 +9,8 @@ const userRoutes = require("./routes/userRoutes");
 const checkoutRoutes = require("./routes/checkout");
 const app = express();
 const allowedOrigins = [
-  "http://localhost:3000",
-  "https://airecomadations.netlify.app/", // old Netlify deploy
-  "https://of-production-005b.up.railway.app", // NEW correct production deploy
+  "http://localhost:3000", // for local development
+  "https://airecomadations.netlify.app", // your production frontend
 ];
 
 app.use(
