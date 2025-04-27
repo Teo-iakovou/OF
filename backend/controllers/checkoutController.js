@@ -17,7 +17,7 @@ const createCheckoutSession = async (req, res) => {
   }
 
   try {
-    const YOUR_DOMAIN = process.env.FRONTEND_URL || "http://localhost:3000";
+    const YOUR_DOMAIN = process.env.PUBLIC_URL || "http://localhost:3000";
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
