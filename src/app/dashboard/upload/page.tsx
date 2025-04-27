@@ -6,6 +6,7 @@ import FileUpload from "@/app/components/uploads/FileUpload";
 import Insights from "@/app/components/analytics/Insights";
 import { checkUserPackage } from "@/app/utils/api";
 import DashboardSidebar from "@/app/components/dashboard/DashboardSidebar";
+import EmailModal from "@/app/components/email/EmailModal"; // correct path
 
 const UploadPage = () => {
   const [insights, setInsights] = useState<any>(null);
@@ -28,18 +29,30 @@ const UploadPage = () => {
 
       const status = searchParams.get("status");
 
+      // 🆕 If no userEmail and success, open modal
       if (!userEmail && status === "success") {
-        setShowModal(true); // 🆕 open modal instead of prompt
+        setShowModal(true);
         return;
       }
 
+      // 🆕 If no userEmail and no success status
       if (!userEmail) {
-        console.warn("No email found in localStorage");
-        setIsLoading(false);
+        console.warn("No email found, opening modal...");
+        setShowModal(true); // 🆕 Always show modal to enter correct email
         return;
       }
 
+      // 🛡 Enforce that only testuser@gmail.com is allowed
+      if (userEmail !== "testuser@gmail.com") {
+        console.warn("Unauthorized email detected, resetting...");
+        localStorage.removeItem("userEmail");
+        setShowModal(true); // Ask again
+        return;
+      }
+
+      // ✅ Now fetch user package info
       try {
+        setIsLoading(true);
         const res = await checkUserPackage(userEmail);
         if (res?.hasAccess) {
           setUserPackage(res.package ?? null);
