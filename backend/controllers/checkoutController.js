@@ -67,11 +67,32 @@ const handleStripeWebhook = async (req, res) => {
 
     try {
       let user = await User.findOne({ email });
-      if (!user) user = new User({ email, purchasedPackage: packageId });
-      else user.purchasedPackage = packageId;
+
+      if (!user) {
+        user = new User({ email });
+      }
+
+      user.purchasedPackage = packageId;
+
+      // 🆕 Set correct upload limit based on purchased package
+      switch (packageId) {
+        case "lite":
+          user.uploadLimit = 5;
+          break;
+        case "pro":
+          user.uploadLimit = 20;
+          break;
+        case "ultimate":
+          user.uploadLimit = 100;
+          break;
+        default:
+          user.uploadLimit = 5; // default fallback
+      }
+
+      user.uploadsUsed = 0; // 🆕 Reset uploads used
 
       await user.save();
-      console.log("✅ Package updated for:", email);
+      console.log("✅ Package and uploads updated for:", email);
     } catch (err) {
       console.error("❌ Failed to update user after checkout:", err);
     }
