@@ -74,6 +74,12 @@ const UploadPage = () => {
   const handleEmailSubmit = async (emailFromModal: string) => {
     if (!emailFromModal) return;
 
+    // 🛡 Validate inside the submit
+    if (emailFromModal !== "testuser@gmail.com") {
+      alert("Access restricted: Only testuser@gmail.com is allowed.");
+      return;
+    }
+
     localStorage.setItem("userEmail", emailFromModal);
     setShowModal(false);
 

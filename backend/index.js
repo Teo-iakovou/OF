@@ -7,12 +7,16 @@ connectDB();
 const analyzeRoutes = require("./routes/analyze");
 const userRoutes = require("./routes/userRoutes");
 const checkoutRoutes = require("./routes/checkout");
+const webhookController = require("./controllers/checkoutController"); // Import webhook controller separately
+
 const app = express();
+
 const allowedOrigins = [
-  "http://localhost:3000", // for local development
-  "https://airecomadations.netlify.app", // your production frontend
+  "http://localhost:3000",
+  "https://airecomadations.netlify.app",
 ];
 
+// CORS
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -24,17 +28,21 @@ app.use(
     credentials: true,
   })
 );
+
+// ⚡ Stripe webhook needs RAW body BEFORE express.json()
+app.post(
+  "/api/checkout/webhook",
+  express.raw({ type: "application/json" }),
+  webhookController.handleStripeWebhook
+);
+
+// ✅ Now apply express.json() normally
 app.use(express.json());
 
 // Routes
-app.use("/api/analyze", analyzeRoutes); // ✅ Now API requests to http://localhost:5000/api/analyze will work
+app.use("/api/analyze", analyzeRoutes);
 app.use("/api/user", userRoutes);
-app.use(
-  "/api/checkout/webhook",
-  express.raw({ type: "application/json" }),
-  checkoutRoutes
-);
-app.use("/api/checkout", require("./routes/checkout"));
+app.use("/api/checkout", checkoutRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
