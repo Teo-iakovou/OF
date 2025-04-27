@@ -24,17 +24,21 @@ const EmailModal = ({ isOpen, onSubmit, onClose }: EmailModalProps) => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Enter your email address"
-          className="w-full border-2 border-gray-300 p-3 rounded-md mb-6 focus:outline-none focus:border-pink-500"
+          className="w-full text-gray-800 border-2 border-gray-300 p-3 rounded-md mb-6 focus:outline-none focus:border-pink-500"
         />
         <div className="flex justify-between">
           <button
-            onClick={() => {
-              if (email) onSubmit(email);
-            }}
-            className="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg"
+            onClick={() => onSubmit(email)}
+            disabled={!email}
+            className={`font-bold py-2 px-4 rounded-lg ${
+              email
+                ? "bg-pink-600 hover:bg-pink-700 text-white"
+                : "bg-gray-400 text-gray-700 cursor-not-allowed"
+            }`}
           >
             Submit
           </button>
+
           <button
             onClick={onClose}
             className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg"

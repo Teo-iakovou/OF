@@ -15,7 +15,7 @@ const UploadPage = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false); // 🆕 modal control
-  const [emailInput, setEmailInput] = useState(""); // 🆕 email input
+  // const [emailInput, setEmailInput] = useState(""); // 🆕 email input
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -71,10 +71,10 @@ const UploadPage = () => {
     fetchUserInfo();
   }, [searchParams, router]);
 
-  const handleEmailSubmit = async () => {
-    if (!emailInput) return;
+  const handleEmailSubmit = async (emailFromModal: string) => {
+    if (!emailFromModal) return;
 
-    localStorage.setItem("userEmail", emailInput);
+    localStorage.setItem("userEmail", emailFromModal);
     setShowModal(false);
 
     // Remove ?status=success from URL
@@ -84,10 +84,13 @@ const UploadPage = () => {
     // Refresh package info
     try {
       setIsLoading(true);
-      const res = await checkUserPackage(emailInput);
+      const res = await checkUserPackage(emailFromModal);
       if (res?.hasAccess) {
         setUserPackage(res.package ?? null);
         setUploadsLeft(res.uploadsRemaining ?? null);
+      } else {
+        setUserPackage(null);
+        setUploadsLeft(null);
       }
     } catch (err) {
       console.error("Failed to fetch package info after email submit:", err);
@@ -157,26 +160,11 @@ const UploadPage = () => {
 
       {/* 🆕 Email Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
-          <div className="bg-gray-900 rounded-2xl shadow-lg p-8 w-full max-w-md">
-            <h2 className="text-2xl font-bold mb-6 text-center text-white">
-              Enter your email
-            </h2>
-            <input
-              type="email"
-              placeholder="Enter your email address"
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              className="w-full p-3 rounded-lg mb-4 text-black"
-            />
-            <button
-              onClick={handleEmailSubmit}
-              className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg transition"
-            >
-              Confirm Email
-            </button>
-          </div>
-        </div>
+        <EmailModal
+          isOpen={showModal}
+          onSubmit={handleEmailSubmit}
+          onClose={() => setShowModal(false)}
+        />
       )}
     </div>
   );
