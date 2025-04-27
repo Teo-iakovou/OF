@@ -22,6 +22,10 @@ export default function PackageDetailPage() {
         localStorage.getItem("userEmail") || prompt("Enter your email:");
       if (!email) return;
 
+      if (email !== "testuser@gmail.com") {
+        alert("Access restricted: Only testuser@gmail.com is allowed.");
+        return; // ❌ Stop everything
+      }
       const response = await fetch(
         `${BASE_URL}/api/checkout/create-checkout-session`,
         {
