@@ -18,14 +18,19 @@ export default function PackageDetailPage() {
     if (!selectedPackage) return;
 
     try {
-      const email =
-        localStorage.getItem("userEmail") || prompt("Enter your email:");
-      if (!email) return;
+      let email = localStorage.getItem("userEmail");
+
+      if (!email) {
+        email = prompt("Enter your email:");
+        if (!email) return; // User cancelled
+        localStorage.setItem("userEmail", email); // ✅ Save it for next time
+      }
 
       if (email !== "testuser@gmail.com") {
         alert("Access restricted: Only testuser@gmail.com is allowed.");
         return; // ❌ Stop everything
       }
+
       const response = await fetch(
         `${BASE_URL}/api/checkout/create-checkout-session`,
         {
