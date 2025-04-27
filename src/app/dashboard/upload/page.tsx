@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import FileUpload from "@/app/components/uploads/FileUpload";
 import Insights from "@/app/components/analytics/Insights";
 import { checkUserPackage } from "@/app/utils/api";
@@ -12,12 +13,25 @@ const UploadPage = () => {
   const [uploadsLeft, setUploadsLeft] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [showModal, setShowModal] = useState(false); // 🆕 modal control
+  const [emailInput, setEmailInput] = useState(""); // 🆕 email input
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   useEffect(() => {
     const fetchUserInfo = async () => {
-      const userEmail =
+      let userEmail =
         typeof window !== "undefined"
           ? localStorage.getItem("userEmail")
           : null;
+
+      const status = searchParams.get("status");
+
+      if (!userEmail && status === "success") {
+        setShowModal(true); // 🆕 open modal instead of prompt
+        return;
+      }
 
       if (!userEmail) {
         console.warn("No email found in localStorage");
@@ -42,7 +56,32 @@ const UploadPage = () => {
     };
 
     fetchUserInfo();
-  }, []);
+  }, [searchParams, router]);
+
+  const handleEmailSubmit = async () => {
+    if (!emailInput) return;
+
+    localStorage.setItem("userEmail", emailInput);
+    setShowModal(false);
+
+    // Remove ?status=success from URL
+    const cleanUrl = window.location.origin + window.location.pathname;
+    router.replace(cleanUrl);
+
+    // Refresh package info
+    try {
+      setIsLoading(true);
+      const res = await checkUserPackage(emailInput);
+      if (res?.hasAccess) {
+        setUserPackage(res.package ?? null);
+        setUploadsLeft(res.uploadsRemaining ?? null);
+      }
+    } catch (err) {
+      console.error("Failed to fetch package info after email submit:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleUploadSuccess = (insightsData: any) => {
     setInsights(insightsData);
@@ -50,7 +89,7 @@ const UploadPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen text-white">
+    <div className="flex min-h-screen text-white relative">
       {/* Sidebar */}
       <DashboardSidebar />
 
@@ -66,7 +105,6 @@ const UploadPage = () => {
           </p>
         </header>
 
-        {/* Loader or Message */}
         {isLoading ? (
           <p className="text-center mt-12 text-gray-400">
             Loading package details...
@@ -103,6 +141,30 @@ const UploadPage = () => {
           </section>
         )}
       </main>
+
+      {/* 🆕 Email Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
+          <div className="bg-gray-900 rounded-2xl shadow-lg p-8 w-full max-w-md">
+            <h2 className="text-2xl font-bold mb-6 text-center text-white">
+              Enter your email
+            </h2>
+            <input
+              type="email"
+              placeholder="Enter your email address"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              className="w-full p-3 rounded-lg mb-4 text-black"
+            />
+            <button
+              onClick={handleEmailSubmit}
+              className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg transition"
+            >
+              Confirm Email
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
