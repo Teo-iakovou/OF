@@ -1,76 +1,15 @@
 const path = require("path");
 const fs = require("fs");
-const axios = require("axios");
 const Result = require("../models/result");
-const Recommendation = require("../models/recommendation");
 const User = require("../models/user");
 
-const GOOGLE_CLOUD_API_KEY = process.env.GOOGLE_CLOUD_API_KEY;
-
-const analyzeImageWithGoogleVision = async (filePath) => {
-  try {
-    const imageBuffer = fs.readFileSync(filePath);
-    const base64Image = imageBuffer.toString("base64");
-
-    const response = await axios.post(
-      `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_CLOUD_API_KEY}`,
-      {
-        requests: [
-          {
-            image: { content: base64Image },
-            features: [{ type: "FACE_DETECTION" }, { type: "LABEL_DETECTION" }],
-          },
-        ],
-      }
-    );
-
-    const faceData = response.data.responses[0]?.faceAnnotations?.[0];
-    const labels =
-      response.data.responses[0]?.labelAnnotations?.map(
-        (obj) => obj.description
-      ) || [];
-
-    return {
-      emotion:
-        Object.keys(faceData || {})
-          .filter(
-            (key) =>
-              key.includes("Likelihood") && faceData[key] !== "VERY_UNLIKELY"
-          )
-          .map((e) => e.replace("Likelihood", ""))[0] || "Neutral",
-      headwear: faceData?.headwearLikelihood !== "VERY_UNLIKELY",
-      ageRange:
-        faceData?.detectionConfidence > 0.7
-          ? faceData?.landmarkingConfidence > 0.5
-            ? "Adult (25-40)"
-            : "Young Adult (18-24)"
-          : "Mature (40+)",
-      objects: labels,
-      bodyType: labels.includes("Athlete")
-        ? "athletic"
-        : labels.includes("Model")
-        ? "slim"
-        : labels.includes("Plus-size")
-        ? "curvy"
-        : labels.includes("Muscle")
-        ? "muscular"
-        : "slim",
-      gender: labels.includes("Man")
-        ? "man"
-        : labels.includes("Woman")
-        ? "woman"
-        : "non-binary",
-      skinTone: labels.includes("Dark")
-        ? "dark"
-        : labels.includes("Fair")
-        ? "light"
-        : "medium",
-    };
-  } catch (error) {
-    console.error("Google Vision API Error:", error.message);
-    return null;
-  }
-};
+const {
+  analyzeImageWithGoogleVision,
+} = require("../utils/analyzeImageWithGoogleVision");
+const { dynamicContextEngine } = require("../utils/dynamicContextEngine");
+const {
+  generateCaptionWithOpenAI,
+} = require("../utils/generateCaptionWithOpenAI");
 
 const analyzeImage = async (req, res) => {
   const { file } = req;
@@ -91,67 +30,33 @@ const analyzeImage = async (req, res) => {
       return res.status(403).json({ error: "Upload limit reached." });
     }
 
-    console.log("Processing file:", file.originalname);
-
     const filePath = path.resolve(__dirname, "../", file.path);
+
+    // 🧠 Step 1: Analyze image with Vision API
     const visionData = await analyzeImageWithGoogleVision(filePath);
 
-    if (!visionData)
+    if (!visionData) {
+      fs.unlinkSync(filePath);
       return res.status(500).json({ error: "Failed to analyze image" });
-
-    console.log("Analyzed Image Data:", visionData);
-
-    const query = {
-      emotion: visionData.emotion || "neutral",
-      bodyType: { $in: [visionData.bodyType, "any"] },
-      skinTone: { $in: [visionData.skinTone, "any"] },
-      gender: { $in: [visionData.gender, "any"] },
-    };
-
-    console.log("🔍 Fetching recommendation with smart fallback query:", query);
-    let recommendation = await Recommendation.findOne(query);
-
-    if (!recommendation) {
-      console.log("⚠️ No match found in DB. Using default.");
-      recommendation = {
-        bestPose: "Be yourself and shine!",
-        lightingTips: "Natural light is always flattering.",
-        captionIdeas: ["Your uniqueness is your superpower."],
-        hashtagSuggestions: ["#selflove", "#beyou", "#authentic"],
-        platforms: [{ name: "Instagram", bestPostTime: "6:00 PM" }],
-      };
     }
 
-    const finalRecommendations = [
-      `Best Pose: ${recommendation.bestPose}`,
-      `Lighting Tip: ${recommendation.lightingTips}`,
-      ...(recommendation.captionIdeas || []),
-    ];
+    // ⚙️ Step 2: Generate dynamic platform/tip/hashtags
+    const dynamicData = dynamicContextEngine(visionData);
 
-    const platformRecommendations = recommendation.platforms || [
-      { name: "Unknown", bestPostTime: "Unknown" },
-    ];
+    // ✍️ Step 3: Generate AI caption
+    const aiCaption = await generateCaptionWithOpenAI(visionData, dynamicData);
 
-    const rawHashtags = [
-      `#${visionData.emotion || "neutral"}mood`,
-      `#${visionData.objects?.[0] || "undefined"}`,
-      ...(recommendation?.hashtagSuggestions || []),
-    ];
-
-    const hashtags = [...new Set(rawHashtags)];
-
-    console.log("Generated Hashtags:", hashtags);
-
+    // 🗃️ Step 4: Save the result
     const newResult = new Result({
-      platform: platformRecommendations.map((p) => p.name).join(", "),
-      bestPostTime: platformRecommendations
-        .map((p) => p.bestPostTime)
-        .join(", "),
-      hashtags,
+      platform: dynamicData.platform,
+      bestPostTime: dynamicData.bestPostTime,
+      hashtags: dynamicData.hashtags,
+      tip: dynamicData.tip,
+      aiCaption,
       objects: visionData.objects,
-      recommendations: finalRecommendations,
-      emotion: visionData.emotion || "Neutral",
-      ageRange: visionData.ageRange || "Unknown",
+      emotion: visionData.emotion,
+      ageRange: visionData.ageRange,
+      dominantColors: visionData.dominantColors,
     });
 
     await newResult.save();
@@ -162,11 +67,11 @@ const analyzeImage = async (req, res) => {
       await user.save();
     }
 
+    // ✅ Step 5: Return full result
     return res.json({
       message: "Image analyzed successfully!",
       insights: {
         ...newResult._doc,
-        platforms: platformRecommendations,
       },
     });
   } catch (error) {
@@ -175,8 +80,7 @@ const analyzeImage = async (req, res) => {
   }
 };
 
-module.exports = { analyzeImage };
-// Fetch analysis history
+// Other endpoints remain unchanged
 const fetchAnalysisHistory = async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
 
@@ -195,7 +99,6 @@ const fetchAnalysisHistory = async (req, res) => {
   }
 };
 
-// Delete analysis result
 const deleteAnalysisResult = async (req, res) => {
   const { id } = req.params;
 

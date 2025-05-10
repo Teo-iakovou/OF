@@ -51,7 +51,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
     fileInputRef.current?.click();
   };
 
-  const TEST_EMAIL = "thedoros09@gmail.com";
+  const TEST_EMAIL =
+    localStorage.getItem("userEmail") || "thedoros09@gmail.com";
 
   // inside handleSubmit
   const handleSubmit = async () => {

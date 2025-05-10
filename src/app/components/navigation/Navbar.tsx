@@ -11,9 +11,14 @@ const Navbar = () => {
 
   return (
     <nav className="bg-gray-900 text-white py-4 px-6 fixed top-0 left-0 w-full z-50 shadow-lg">
-      <div className="flex items-center justify-between">
-        {/* Logo Icon with Home Link */}
-        <Link href="/" className="flex items-center space-x-2">
+      <div
+        className={`relative flex items-center justify-between md:justify-between w-full`}
+      >
+        {/* Logo - centered when menu is open (mobile) */}
+        <Link
+          href="/"
+          className={`absolute left-1/2 transform -translate-x-1/2 md:static md:transform-none flex items-center space-x-2`}
+        >
           <img
             src="/5805591578897663447.jpg"
             alt="Logo"
@@ -21,10 +26,15 @@ const Navbar = () => {
           />
         </Link>
 
-        {/* Hamburger Icon */}
+        {/* Spacer to push hamburger icon to right */}
+        <div className="flex-1 md:hidden" />
+
+        {/* Hamburger Icon - always top right */}
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="text-white text-2xl focus:outline-none"
+          className={`text-white text-2xl focus:outline-none transition ${
+            isMenuOpen ? "z-10" : "z-50"
+          }`}
         >
           {isMenuOpen ? <FiX /> : <FiMenu />}
         </button>

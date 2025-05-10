@@ -1,3 +1,4 @@
+// DashboardSidebar.tsx
 "use client";
 
 import Link from "next/link";
@@ -6,7 +7,7 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/upload", label: "Upload Content" },
-  { href: "/dashboard/insights", label: "My Insights" },
+  { href: "/dashboard/history", label: "Upload History" },
   { href: "/dashboard/billing", label: "Plan & Billing" },
   { href: "/dashboard/account", label: "Account Info" },
 ];
@@ -15,7 +16,7 @@ export default function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 h-full bg-gray-900 border-r border-gray-800 p-6">
+    <aside className="hidden md:block w-64 bg-gray-900 border-r border-gray-800 p-6 h-screen sticky top-0">
       <h2 className="text-2xl font-bold text-white mb-8">Your Dashboard</h2>
       <nav className="space-y-4">
         {navItems.map((item) => (
