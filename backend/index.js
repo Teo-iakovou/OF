@@ -2,12 +2,14 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./utils/db");
 require("dotenv").config();
+
 connectDB();
 
 const analyzeRoutes = require("./routes/analyze");
 const userRoutes = require("./routes/userRoutes");
 const checkoutRoutes = require("./routes/checkout");
-const webhookController = require("./controllers/checkoutController"); // Import webhook controller separately
+const feedbackRoutes = require("./routes/feedbackRoutes"); // ✅ correct import
+const webhookController = require("./controllers/checkoutController");
 
 const app = express();
 
@@ -29,20 +31,21 @@ app.use(
   })
 );
 
-// ⚡ Stripe webhook needs RAW body BEFORE express.json()
+// Stripe webhook – raw body
 app.post(
   "/api/checkout/webhook",
   express.raw({ type: "application/json" }),
   webhookController.handleStripeWebhook
 );
 
-// ✅ Now apply express.json() normally
+// JSON parser
 app.use(express.json());
 
-// Routes
+// API Routes
 app.use("/api/analyze", analyzeRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/checkout", checkoutRoutes);
+app.use("/api/feedback", feedbackRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

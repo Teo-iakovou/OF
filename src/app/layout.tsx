@@ -1,6 +1,7 @@
 "use client";
 
 import "./styles/globals.css";
+import ToastNotification from "./components/notifications/ToastNotification";
 import Navbar from "../app/components/navigation/Navbar";
 import Footer from "../app/components/navigation/Footer";
 
@@ -18,6 +19,8 @@ export default function RootLayout({
         {/* Main Content */}
         <main className="flex-grow">{children}</main>
 
+        {/* Toast Notifications */}
+        <ToastNotification />
         {/* Footer */}
         <Footer />
       </body>

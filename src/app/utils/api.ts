@@ -129,3 +129,23 @@ export const startCheckout = async (email: string, packageId: string) => {
   const data = await response.json();
   window.location.href = data.url;
 };
+
+export const sendFeedback = async (message: string, email?: string) => {
+  try {
+    const res = await fetch(`${BASE_URL}/api/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, email }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to send feedback");
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.error("❌ sendFeedback error:", err);
+    throw err;
+  }
+};

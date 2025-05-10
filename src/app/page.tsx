@@ -1,6 +1,9 @@
 "use client";
 import Packages from "@/app/components/packages/Packages"; // Assuming you have a Packages component
 import FeatureComparison from "./components/sections/FeatureComparison";
+import ScrollToTop from "./components/features/ScrollToTop";
+import FeedbackWidget from "./components/features/FeedbackWidget";
+
 export default function Page() {
   return (
     <>
@@ -29,6 +32,12 @@ export default function Page() {
 
         {/* Feature Comparison Section */}
         <FeatureComparison />
+
+        {/* Scroll to Top Button */}
+        <ScrollToTop />
+
+        {/* Feedback Widget */}
+        <FeedbackWidget />
       </div>
     </>
   );
