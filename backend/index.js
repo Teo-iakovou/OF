@@ -48,6 +48,10 @@ app.use("/api/checkout", checkoutRoutes);
 app.use("/api/feedback", feedbackRoutes);
 
 const PORT = process.env.PORT || 5000;
+
+if (!PORT) {
+  throw new Error("🚨 PORT environment variable is required on Render.");
+}
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
