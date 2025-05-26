@@ -6,6 +6,7 @@ import FileUpload from "@/app/components/uploads/FileUpload";
 import Insights from "@/app/components/analytics/Insights";
 import { checkUserPackage } from "@/app/utils/api";
 import EmailModal from "@/app/components/email/EmailModal";
+import ProjectNavDropdown from "@/app/components/dashboard/ProjectNavDropdown";
 
 const UploadPage = () => {
   const [insights, setInsights] = useState<any>(null);
@@ -79,9 +80,9 @@ const UploadPage = () => {
   };
 
   return (
-    <main className="flex-1 bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 md:p-8 pt-24 md:pt-8 text-white min-h-screen">
-      <header className="text-center mb-6">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
+    <main>
+      <header className="pt-14 px-4 sm:px-6 md:px-10">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
           AI Content Analyzer
         </h1>
         <p className="text-base sm:text-lg text-gray-400">
@@ -89,6 +90,7 @@ const UploadPage = () => {
           powered by AI.
         </p>
       </header>
+      <ProjectNavDropdown />
 
       {isLoading ? (
         <p className="text-center mt-12 text-gray-400">

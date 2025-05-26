@@ -1,26 +1,25 @@
-// app/dashboard/layout.tsx
 "use client";
-
+import Navbar from "@/app/components/navigation/Navbar";
 import DashboardSidebar from "@/app/components/dashboard/DashboardSidebar";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+interface DashboardLayoutProps {
+  children: ReactNode;
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="pt-16 min-h-screen bg-black text-white flex flex-col">
-      {/* Mobile Sidebar at the top */}
-      <div className="block md:hidden w-full">
-        <DashboardSidebar />
-      </div>
-
-      {/* Sidebar + Content */}
+    <div className="min-h-screen bg-black text-white flex flex-col">
+      <Navbar />
       <div className="flex flex-col md:flex-row flex-1">
-        {/* Sidebar (desktop) */}
+        {/* Sidebar (desktop only) */}
         <div className="hidden md:block w-64">
           <DashboardSidebar />
         </div>
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        {/* Main content */}
+        <main className="flex-1 bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 md:p-20 text-white min-h-screen overflow-y-auto">
+          {children}
+        </main>
       </div>
     </div>
   );

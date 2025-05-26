@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { checkUserPackage } from "@/app/utils/api";
+import ProjectNavDropdown from "@/app/components/dashboard/ProjectNavDropdown";
 
 export default function BillingPage() {
   const [userPackage, setUserPackage] = useState<null | {
@@ -37,10 +38,11 @@ export default function BillingPage() {
   }, []);
 
   return (
-    <div className="pt-24 px-4 sm:px-6 md:px-10">
+    <div className="pt-14 px-4 sm:px-6 md:px-10">
       <h1 className="text-3xl sm:text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
         Plan & Billing
       </h1>
+      <ProjectNavDropdown />
 
       {userPackage ? (
         <div className="bg-gray-800 rounded-xl p-6 shadow-button text-white space-y-4">
