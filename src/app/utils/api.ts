@@ -149,3 +149,54 @@ export const sendFeedback = async (message: string, email?: string) => {
     throw err;
   }
 };
+
+export async function coachChat({
+  email,
+  question,
+  latestContentInfo,
+  conversationId,
+  title,
+}: {
+  email: string;
+  question: string;
+  latestContentInfo?: string;
+  conversationId?: string;
+  title?: string;
+}) {
+  const res = await fetch(`${BASE_URL}/api/coach-chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      question,
+      latestContentInfo,
+      conversationId,
+      title,
+    }),
+  });
+  if (!res.ok) throw new Error("AI chat failed");
+  return res.json();
+}
+
+// Get all conversations for a user (for sidebar/history)
+export async function fetchConversations(userId: string) {
+  const res = await fetch(`${BASE_URL}/api/conversations?userId=${userId}`);
+  if (!res.ok) throw new Error("Failed to fetch conversations");
+  return res.json();
+}
+
+// Get a single conversation (full messages)
+export async function fetchConversation(conversationId: string) {
+  const res = await fetch(`${BASE_URL}/api/conversations/${conversationId}`);
+  if (!res.ok) throw new Error("Failed to fetch conversation");
+  return res.json();
+}
+
+// Delete a conversation
+export async function deleteConversation(conversationId: string) {
+  const res = await fetch(`${BASE_URL}/api/conversations/${conversationId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete conversation");
+  return res.json();
+}

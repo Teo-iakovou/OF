@@ -4,7 +4,8 @@ const connectDB = require("./utils/db");
 require("dotenv").config();
 
 connectDB();
-
+const coachChatRoutes = require("./routes/coach-chat");
+const conversationRoutes = require("./routes/conversations");
 const analyzeRoutes = require("./routes/analyze");
 const userRoutes = require("./routes/userRoutes");
 const checkoutRoutes = require("./routes/checkout");
@@ -45,7 +46,9 @@ app.use(express.json());
 app.use("/api/analyze", analyzeRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/checkout", checkoutRoutes);
+app.use("/api/coach-chat", coachChatRoutes);
 app.use("/api/feedback", feedbackRoutes);
+app.use("/api/conversations", conversationRoutes);
 
 const PORT = process.env.PORT || 5000;
 
