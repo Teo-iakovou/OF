@@ -1,9 +1,10 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import HistoryList from "@/app/components/uploads/HistoryList";
 import { deleteAnalysisResult, fetchAnalysisHistory } from "@/app/utils/api";
-import ProjectNavDropdown from "@/app/components/dashboard/ProjectNavDropdown";
+import ProjectNavDropdownButton from "@/app/components/dashboard/ProjectNavDropdownButton";
+import ProjectNavDropdownMenu from "@/app/components/dashboard/ProjectNavDropdown";
+
 interface HistoryItem {
   _id: string;
   platform: string;
@@ -14,6 +15,8 @@ interface HistoryItem {
 export default function HistoryPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,9 +27,18 @@ export default function HistoryPage() {
         console.error("Failed to load history", err);
       }
     };
-
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
+        setOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -38,12 +50,23 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="pt-14 px-4 sm:px-6 md:px-10 ">
-      <h1 className="text-3xl sm:text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
-        Upload History
-      </h1>
-      <ProjectNavDropdown />
-
+    <main>
+      <header className="pt-20 px-6 md:px-12 lg:px-20 max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-4xl font-semibold tracking-tight text-white">
+            Upload History
+          </h1>
+          <div ref={menuRef} className="relative inline-block md:hidden">
+            <ProjectNavDropdownButton open={open} setOpen={setOpen} />
+            {open && (
+              <ProjectNavDropdownMenu
+                overlayMode
+                onClose={() => setOpen(false)}
+              />
+            )}
+          </div>
+        </div>
+      </header>
       <div className="bg-gray-800 rounded-xl p-6 shadow-button">
         <HistoryList
           history={history}
@@ -52,6 +75,6 @@ export default function HistoryPage() {
           handleDelete={handleDelete}
         />
       </div>
-    </div>
+    </main>
   );
 }

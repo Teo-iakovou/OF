@@ -27,12 +27,19 @@ export default function CoachChat({
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom on message
+  const prevMsgCount = useRef<number>(0);
+
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Only scroll if messages increased
+    if (
+      conversation?.messages &&
+      conversation.messages.length > prevMsgCount.current
+    ) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevMsgCount.current = conversation?.messages?.length || 0;
   }, [conversation]);
 
-  // Load previous conversation if provided
   useEffect(() => {
     if (initialConversationId) {
       fetchConversation(initialConversationId).then(setConversation);
@@ -53,16 +60,16 @@ export default function CoachChat({
       });
       setConversation(res.conversation);
       setInput("");
-    } catch (err) {
+    } catch {
       alert("AI coach failed to respond.");
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
-    <div className="bg-[#181F28] border border-[#232B36] rounded-2xl shadow-lg max-w-2xl mx-auto mt-10 flex flex-col h-[540px]">
-      <div className="px-6 py-4 border-b border-[#232B36]"></div>
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+    <div className="flex flex-col flex-1">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-2 md:px-4 py-6 space-y-4">
         {conversation?.messages?.length ? (
           conversation.messages.map((msg, idx) => (
             <div
@@ -72,11 +79,11 @@ export default function CoachChat({
               }`}
             >
               <div
-                className={`rounded-2xl px-4 py-2 max-w-[85%] shadow 
+                className={`px-4 py-2 text-sm md:text-base max-w-[85%] rounded-2xl leading-relaxed shadow-sm 
                   ${
                     msg.role === "user"
-                      ? "bg-pink-600 text-white"
-                      : "bg-gray-800 text-pink-200 border border-[#232B36]"
+                      ? "bg-gray-200 text-black"
+                      : "bg-gray-100 text-gray-800 border border-gray-300"
                   }`}
               >
                 {msg.content}
@@ -84,30 +91,45 @@ export default function CoachChat({
             </div>
           ))
         ) : (
-          <div className="text-gray-400 text-center">
+          <div className="text-gray-500 text-center italic">
             Start your conversation with the AI coach...
           </div>
         )}
         <div ref={chatEndRef} />
       </div>
+
+      {/* Input bar */}
       <form
         onSubmit={sendMessage}
-        className="flex gap-2 px-6 py-4 border-t border-[#232B36]"
+        className="w-full flex gap-2 px-2 md:px-4 py-4 bg-gray-900 rounded-2xl border border-gray-700 shadow-lg 
+             max-w-2xl mx-auto mb-4 sticky bottom-0 z-10"
       >
-        <input
-          className="flex-1 rounded-xl px-4 py-2 bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
-          placeholder="Type your message and press Enter..."
+        <textarea
+          className="flex-1 px-4 py-3 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 shadow-sm resize-none text-base"
+          placeholder="Type your message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={isLoading}
+          rows={1}
+          style={{ minHeight: 44, maxHeight: 120 }}
         />
-        <button
-          className="rounded-xl bg-pink-600 hover:bg-pink-700 px-5 py-2 font-bold shadow-button transition"
-          disabled={isLoading || !input.trim()}
-          type="submit"
-        >
-          {isLoading ? "..." : "Send"}
-        </button>
+        {isLoading ? (
+          <div className="flex items-center px-3">
+            <span className="dot-wave">
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </span>
+          </div>
+        ) : (
+          <button
+            className="px-5 py-3 rounded-xl font-semibold bg-gray-700 text-white hover:bg-gray-600 transition"
+            disabled={!input.trim()}
+            type="submit"
+          >
+            Send
+          </button>
+        )}
       </form>
     </div>
   );

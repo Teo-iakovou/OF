@@ -13,6 +13,7 @@ interface InsightsProps {
     dominantColors?: string[];
   };
 }
+export type { InsightsProps };
 
 const Insights: FC<InsightsProps> = ({ insights }) => {
   if (!insights) return null;

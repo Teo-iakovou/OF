@@ -1,64 +1,117 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Upload,
+  History,
+  CreditCard,
+  User,
+  MessageCircle,
+  PanelRightOpen,
+  BookOpen,
+  UserCircle,
+} from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/upload", label: "Upload Content" },
-  { href: "/dashboard/history", label: "Upload History" },
-  { href: "/dashboard/billing", label: "Plan & Billing" },
-  { href: "/dashboard/account", label: "Account Info" },
-  { href: "/dashboard/ai-chat", label: "AI Chat" },
-  { href: "/dashboard/ai-chat/history", label: "Chat History" },
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/upload", label: "Upload Content", icon: Upload },
+  { href: "/dashboard/history", label: "Upload History", icon: History },
+  { href: "/dashboard/billing", label: "Plan & Billing", icon: CreditCard },
+  { href: "/dashboard/account", label: "Account Info", icon: User },
+  { href: "/dashboard/ai-chat", label: "AI Chat", icon: MessageCircle },
+  { href: "/dashboard/ai-chat/history", label: "Chat History", icon: BookOpen },
 ];
 
 export default function DashboardSidebar({
-  isDropdown = false,
-  onClose,
+  expanded,
+  setExpanded,
 }: {
-  isDropdown?: boolean;
-  onClose?: () => void;
+  expanded: boolean;
+  setExpanded: (value: boolean) => void;
 }) {
   const pathname = usePathname();
 
   return (
     <nav
-      className={
-        isDropdown
-          ? "bg-[#181F28] border border-[#232B36] rounded-2xl shadow-2xl py-2 w-72 min-w-[220px] z-50"
-          : "w-64 bg-gray-900 border-r border-gray-800 p-6 h-screen sticky top-0"
-      }
-      style={isDropdown ? { minWidth: 220 } : {}}
+      className={`
+    bg-[#171d29] rounded-2xl shadow-2xl flex flex-col justify-between items-center
+    transition-all duration-200 fixed top-6 left-4
+    ${expanded ? "w-64" : "w-16"}
+    py-4 px-2 z-30
+  `}
+      style={{
+        minWidth: expanded ? 256 : 64,
+        maxWidth: expanded ? 256 : 64,
+        height: "calc(100vh - 3rem)",
+      }}
     >
-      {!isDropdown && (
-        <h2 className="text-2xl font-bold text-white mb-8">Your Dashboard</h2>
-      )}
-      <ul className="py-1">
-        {navItems.map((item) => (
-          <li key={item.href}>
-            <Link href={item.href}>
-              <span
-                onClick={onClose}
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer font-medium transition text-base
-                  ${
-                    pathname === item.href
-                      ? "bg-pink-600 text-white"
-                      : "text-gray-200 hover:bg-[#232B36] hover:text-white"
-                  }
-                `}
-              >
-                {/* Colored dot for the selected menu item */}
-                <span
-                  className={`inline-block w-2 h-2 rounded-full
-                    ${pathname === item.href ? "bg-teal-400" : "bg-transparent"}
-                  `}
-                ></span>
-                {item.label}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {/* Top Section: Toggle + Nav */}
+      <div className="flex flex-col items-center gap-2 pt-2">
+        {/* Toggle: PanelRightOpen icon, same style as all icons */}
+        <div
+          role="button"
+          tabIndex={0}
+          className="flex items-center justify-center w-10 h-10 rounded-xl text-blue-300 hover:text-white transition cursor-pointer select-none"
+          onClick={() => setExpanded(!expanded)}
+          aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
+          title={expanded ? "Collapse sidebar" : "Expand sidebar"}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") setExpanded(!expanded);
+          }}
+        >
+          <PanelRightOpen
+            size={22}
+            className={
+              expanded ? "" : "rotate-180 transition-transform duration-300"
+            }
+          />
+        </div>
+        {/* Nav Items */}
+        <ul className="flex flex-col items-center gap-2 mt-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            return (
+              <li key={item.href} className="relative group">
+                <Link href={item.href}>
+                  <span
+                    className={`flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer font-medium text-base
+                      transition-colors duration-150 w-full
+                      ${
+                        isActive
+                          ? "bg-blue-600 text-white"
+                          : "text-blue-300 hover:bg-[#232B36]"
+                      }
+                    `}
+                  >
+                    <Icon size={22} />
+                    {expanded && (
+                      <span className="whitespace-nowrap">{item.label}</span>
+                    )}
+                  </span>
+                </Link>
+                {/* Tooltip on hover (only when collapsed) */}
+                {!expanded && (
+                  <div
+                    className="absolute left-full top-1/2 -translate-y-1/2 ml-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto
+                    bg-black text-white px-3 py-1 rounded shadow-lg text-xs font-semibold z-50 transition whitespace-nowrap"
+                  >
+                    {item.label}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      {/* Bottom: Profile */}
+      <div className="flex flex-col items-center gap-2 pb-2">
+        <UserCircle size={32} className="text-purple-400 mb-2" />
+        {expanded && (
+          <span className="text-sm font-medium text-white">Your Name</span>
+        )}
+      </div>
     </nav>
   );
 }

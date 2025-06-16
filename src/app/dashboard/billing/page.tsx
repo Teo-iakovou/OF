@@ -1,9 +1,9 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import ProjectNavDropdownButton from "@/app/components/dashboard/ProjectNavDropdownButton";
+import ProjectNavDropdownMenu from "@/app/components/dashboard/ProjectNavDropdown";
 import { checkUserPackage } from "@/app/utils/api";
-import ProjectNavDropdown from "@/app/components/dashboard/ProjectNavDropdown";
 
 export default function BillingPage() {
   const [userPackage, setUserPackage] = useState<null | {
@@ -12,12 +12,12 @@ export default function BillingPage() {
     expiresAt?: string;
   }>(null);
 
+  const [open, setOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const email = localStorage.getItem("userEmail");
     if (!email) return;
-
     const fetchPackage = async () => {
       try {
         const res = await checkUserPackage(email);
@@ -25,6 +25,7 @@ export default function BillingPage() {
           setUserPackage({
             name: res.package ?? "Unknown",
             uploadsRemaining: res.uploadsRemaining ?? 0,
+            expiresAt: res.expiresAt,
           });
         } else {
           setUserPackage(null);
@@ -33,19 +34,37 @@ export default function BillingPage() {
         console.error("Error loading user package:", err);
       }
     };
-
     fetchPackage();
   }, []);
 
-  return (
-    <div className="pt-14 px-4 sm:px-6 md:px-10">
-      <h1 className="text-3xl sm:text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
-        Plan & Billing
-      </h1>
-      <ProjectNavDropdown />
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement)?.closest(".project-nav-dropdown"))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
 
+  return (
+    <div className="pt-20 px-6 md:px-12 lg:px-20 max-w-6xl mx-auto">
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-4xl font-semibold tracking-tight text-white">
+          Plan & Billing
+        </h1>
+        <div className="relative inline-block md:hidden project-nav-dropdown">
+          <ProjectNavDropdownButton open={open} setOpen={setOpen} />
+          {open && (
+            <ProjectNavDropdownMenu
+              overlayMode
+              onClose={() => setOpen(false)}
+            />
+          )}
+        </div>
+      </div>
       {userPackage ? (
-        <div className="bg-gray-800 rounded-xl p-6 shadow-button text-white space-y-4">
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8 shadow-md space-y-4">
           <p>
             <strong>Current Plan:</strong> {userPackage.name}
           </p>
@@ -58,7 +77,6 @@ export default function BillingPage() {
               {new Date(userPackage.expiresAt).toLocaleDateString()}
             </p>
           )}
-
           <button onClick={() => router.push("/#packages")} className="mt-4">
             Upgrade Plan
           </button>

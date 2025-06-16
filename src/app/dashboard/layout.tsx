@@ -1,25 +1,39 @@
 "use client";
-import Navbar from "@/app/components/navigation/Navbar";
+import { useState } from "react";
 import DashboardSidebar from "@/app/components/dashboard/DashboardSidebar";
-import type { ReactNode } from "react";
 
-interface DashboardLayoutProps {
-  children: ReactNode;
-}
+const SIDEBAR_COLLAPSED = 64;
+const SIDEBAR_EXPANDED = 256;
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const sidebarWidth = expanded ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED;
+
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      <Navbar />
-      <div className="flex flex-col md:flex-row flex-1">
-        {/* Sidebar (desktop only) */}
-        <div className="hidden md:block w-64">
-          <DashboardSidebar />
-        </div>
-        {/* Main content */}
-        <main className="flex-1 bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 md:p-20 text-white min-h-screen overflow-y-auto">
-          {children}
-        </main>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex">
+      {/* Sidebar (only desktop) */}
+      <div
+        className="hidden md:flex fixed top-6 left-6 z-30 transition-all duration-200"
+        style={{
+          width: sidebarWidth,
+          height: "calc(100vh - 3rem)",
+          padding: "0.5rem 0",
+        }}
+      >
+        <DashboardSidebar expanded={expanded} setExpanded={setExpanded} />
+      </div>
+      {/* Main content */}
+      <div
+        className={`flex-1 flex flex-col transition-all duration-200 ${
+          expanded ? "md:ml-64" : "md:ml-16"
+        }`}
+      >
+        <main className="flex-1 pt-4 px-6">{children}</main>
       </div>
     </div>
   );

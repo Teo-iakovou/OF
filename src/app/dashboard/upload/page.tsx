@@ -1,19 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import FileUpload from "@/app/components/uploads/FileUpload";
 import Insights from "@/app/components/analytics/Insights";
 import { checkUserPackage } from "@/app/utils/api";
 import EmailModal from "@/app/components/email/EmailModal";
-import ProjectNavDropdown from "@/app/components/dashboard/ProjectNavDropdown";
+import ProjectNavDropdownMenu from "@/app/components/dashboard/ProjectNavDropdown";
+import ProjectNavDropdownButton from "@/app/components/dashboard/ProjectNavDropdownButton";
+// Import the InsightsProps type
+import type { InsightsProps } from "@/app/components/analytics/Insights";
 
 const UploadPage = () => {
-  const [insights, setInsights] = useState<any>(null);
+  const [insights, setInsights] = useState<InsightsProps["insights"] | null>(
+    null
+  );
   const [userPackage, setUserPackage] = useState<string | null>(null);
   const [uploadsLeft, setUploadsLeft] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+
+  // Add dropdown state
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -25,18 +34,15 @@ const UploadPage = () => {
           ? localStorage.getItem("userEmail")
           : null;
       const status = searchParams.get("status");
-
       if (!userEmail && status === "success") {
         setShowModal(true);
         return;
       }
-
       if (!userEmail || userEmail !== "testuser@gmail.com") {
         localStorage.removeItem("userEmail");
         setShowModal(true);
         return;
       }
-
       try {
         setIsLoading(true);
         const res = await checkUserPackage(userEmail);
@@ -48,20 +54,28 @@ const UploadPage = () => {
         setIsLoading(false);
       }
     };
-
     fetchUserInfo();
   }, [searchParams, router]);
+
+  // Optional: Close dropdown on outside click
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
+        setOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
 
   const handleEmailSubmit = async (emailFromModal: string) => {
     if (!emailFromModal || emailFromModal !== "testuser@gmail.com") {
       alert("Access restricted: Only testuser@gmail.com is allowed.");
       return;
     }
-
     localStorage.setItem("userEmail", emailFromModal);
     setShowModal(false);
     router.replace(window.location.origin + window.location.pathname);
-
     try {
       setIsLoading(true);
       const res = await checkUserPackage(emailFromModal);
@@ -74,23 +88,29 @@ const UploadPage = () => {
     }
   };
 
-  const handleUploadSuccess = (insightsData: any) => {
+  const handleUploadSuccess = (insightsData: InsightsProps["insights"]) => {
     setInsights(insightsData);
     setUploadsLeft((prev) => (prev !== null ? prev - 1 : 0));
   };
 
   return (
     <main>
-      <header className="pt-14 px-4 sm:px-6 md:px-10">
-        <h1 className="text-3xl sm:text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
-          AI Content Analyzer
-        </h1>
-        <p className="text-base sm:text-lg text-gray-400">
-          Upload your content and get personalized content recommendations
-          powered by AI.
-        </p>
+      <header className="pt-20 px-6 md:px-12 lg:px-20 max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-4xl font-semibold tracking-tight text-white">
+            AI Content Analyzer
+          </h1>
+          <div ref={menuRef} className="relative inline-block md:hidden">
+            <ProjectNavDropdownButton open={open} setOpen={setOpen} />
+            {open && (
+              <ProjectNavDropdownMenu
+                overlayMode
+                onClose={() => setOpen(false)}
+              />
+            )}
+          </div>
+        </div>
       </header>
-      <ProjectNavDropdown />
 
       {isLoading ? (
         <p className="text-center mt-12 text-gray-400">
@@ -98,12 +118,12 @@ const UploadPage = () => {
         </p>
       ) : !userPackage ? (
         <div className="mt-12 text-center text-red-400 text-xl">
-          You don't have a package yet. Please purchase a plan to start
+          You don&apos;t have a package yet. Please purchase a plan to start
           uploading.
         </div>
       ) : (uploadsLeft ?? 0) <= 0 ? (
         <div className="mt-12 text-center text-yellow-400 text-xl">
-          You've used all your uploads. Upgrade your plan to continue.
+          You&apos;ve used all your uploads. Upgrade your plan to continue.
         </div>
       ) : (
         <section className="mt-12 mx-auto w-full max-w-3xl bg-gray-800 rounded-lg p-6 sm:p-8 shadow-lg">
