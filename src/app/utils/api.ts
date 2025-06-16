@@ -79,6 +79,7 @@ export interface UserPackageResponse {
   hasAccess: boolean;
   package?: string;
   uploadsRemaining?: number;
+  expiresAt?: string;
 }
 
 export const purchasePackage = async (
