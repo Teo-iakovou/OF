@@ -6,8 +6,8 @@ import FileUpload from "@/app/components/uploads/FileUpload";
 import Insights from "@/app/components/analytics/Insights";
 import { checkUserPackage } from "@/app/utils/api";
 import EmailModal from "@/app/components/email/EmailModal";
-import ProjectNavDropdownMenu from "@/app/components/dashboard/ProjectNavDropdown";
-import ProjectNavDropdownButton from "@/app/components/dashboard/ProjectNavDropdownButton";
+import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
+import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
 // Import the InsightsProps type
 import type { InsightsProps } from "@/app/components/analytics/Insights";
 

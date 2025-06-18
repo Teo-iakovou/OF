@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import DashboardSidebar from "@/app/components/dashboard/DashboardSidebar";
+import DashboardSidebar from "@/app/components/dashboard/sidebar/DashboardSidebar";
 
 const SIDEBAR_COLLAPSED = 64;
 const SIDEBAR_EXPANDED = 256;
@@ -33,7 +33,7 @@ export default function DashboardLayout({
           expanded ? "md:ml-64" : "md:ml-16"
         }`}
       >
-        <main className="flex-1 pt-4 px-6">{children}</main>
+        <main className="flex-1 px-6 -mt-14">{children}</main>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { fetchConversations } from "@/app/utils/api";
+import { BookOpen } from "lucide-react";
 
 interface Conversation {
   _id: string;
@@ -30,7 +31,6 @@ export default function CoachChatHistory({
 
   return (
     <div className="w-full max-w-xs bg-[#181F28] border border-[#232B36] rounded-2xl shadow-lg p-4 space-y-2 overflow-y-auto h-[420px]">
-      <h4 className="font-bold mb-2 text-pink-400">AI Chat History</h4>
       {loading ? (
         <div className="text-xs text-gray-400">Loading...</div>
       ) : convos.length === 0 ? (
@@ -48,7 +48,10 @@ export default function CoachChatHistory({
               }
             `}
           >
-            <span className="font-medium">{c.title || "Untitled"}</span>
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-white" />
+              <span className="font-medium">{c.title || "Untitled"}</span>
+            </div>
             <br />
             <span className="text-xs text-gray-400">
               {c.updatedAt ? new Date(c.updatedAt).toLocaleString() : ""}

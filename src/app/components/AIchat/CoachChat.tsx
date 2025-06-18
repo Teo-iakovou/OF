@@ -60,6 +60,7 @@ export default function CoachChat({
       });
       setConversation(res.conversation);
       setInput("");
+      setIsLoading(false); // <-- Add this line here
     } catch {
       alert("AI coach failed to respond.");
       setIsLoading(false);
@@ -91,7 +92,7 @@ export default function CoachChat({
             </div>
           ))
         ) : (
-          <div className="text-gray-500 text-center italic">
+          <div className="flex flex-1 items-center justify-center text-gray-500 text-center italic">
             Start your conversation with the AI coach...
           </div>
         )}
@@ -101,35 +102,36 @@ export default function CoachChat({
       {/* Input bar */}
       <form
         onSubmit={sendMessage}
-        className="w-full flex gap-2 px-2 md:px-4 py-4 bg-gray-900 rounded-2xl border border-gray-700 shadow-lg 
-             max-w-2xl mx-auto mb-4 sticky bottom-0 z-10"
+        className="w-full max-w-2xl mx-auto px-4 py-2 -mb-10 border-t border-gray-700 bg-transparent"
       >
-        <textarea
-          className="flex-1 px-4 py-3 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 shadow-sm resize-none text-base"
-          placeholder="Type your message..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={isLoading}
-          rows={1}
-          style={{ minHeight: 44, maxHeight: 120 }}
-        />
-        {isLoading ? (
-          <div className="flex items-center px-3">
-            <span className="dot-wave">
-              <span className="dot"></span>
-              <span className="dot"></span>
-              <span className="dot"></span>
-            </span>
-          </div>
-        ) : (
-          <button
-            className="px-5 py-3 rounded-xl font-semibold bg-gray-700 text-white hover:bg-gray-600 transition"
-            disabled={!input.trim()}
-            type="submit"
-          >
-            Send
-          </button>
-        )}
+        <div className="flex items-end gap-3 bg-[#1a1f2b] border border-gray-700 rounded-xl px-3 py-2">
+          <textarea
+            className="flex-1 bg-transparent text-gray-100 placeholder-gray-500 focus:outline-none resize-none text-base leading-[1.5] pt-[0.65rem] pb-[0.65rem]"
+            placeholder="Type your message..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={isLoading}
+            rows={1}
+            style={{ minHeight: 44, maxHeight: 160 }}
+          />
+          {isLoading ? (
+            <div className="flex items-center px-3">
+              <span className="dot-wave">
+                <span className="dot"></span>
+                <span className="dot"></span>
+                <span className="dot"></span>
+              </span>
+            </div>
+          ) : (
+            <button
+              className="px-4 py-2 mb-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition"
+              type="submit"
+              disabled={!input.trim()}
+            >
+              Send
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );

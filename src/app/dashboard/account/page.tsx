@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import ProjectNavDropdownButton from "@/app/components/dashboard/ProjectNavDropdownButton";
-import ProjectNavDropdownMenu from "@/app/components/dashboard/ProjectNavDropdown";
+import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
+import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
 
 export default function AccountPage() {
   const [email, setEmail] = useState<string | null>(null);

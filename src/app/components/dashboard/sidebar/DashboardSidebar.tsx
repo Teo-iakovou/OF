@@ -9,18 +9,15 @@ import {
   User,
   MessageCircle,
   PanelRightOpen,
-  BookOpen,
-  UserCircle,
 } from "lucide-react";
-
+import Image from "next/image";
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/upload", label: "Upload Content", icon: Upload },
   { href: "/dashboard/history", label: "Upload History", icon: History },
   { href: "/dashboard/billing", label: "Plan & Billing", icon: CreditCard },
-  { href: "/dashboard/account", label: "Account Info", icon: User },
   { href: "/dashboard/ai-chat", label: "AI Chat", icon: MessageCircle },
-  { href: "/dashboard/ai-chat/history", label: "Chat History", icon: BookOpen },
+  { href: "/dashboard/account", label: "Account Info", icon: User },
 ];
 
 export default function DashboardSidebar({
@@ -106,11 +103,16 @@ export default function DashboardSidebar({
         </ul>
       </div>
       {/* Bottom: Profile */}
-      <div className="flex flex-col items-center gap-2 pb-2">
-        <UserCircle size={32} className="text-purple-400 mb-2" />
-        {expanded && (
-          <span className="text-sm font-medium text-white">Your Name</span>
-        )}
+      <div className="flex flex-col items-center text-white">
+        <Link href="/" className="flex flex-col items-center group transition">
+          <Image
+            src="/5805591578897663447.jpg"
+            alt="Platform Logo"
+            width={56} // matches h-14 (14 * 4 = 56px)
+            height={56}
+            className="rounded-full object-cover border border-gray-700 group-hover:scale-105 transition"
+          />
+        </Link>
       </div>
     </nav>
   );

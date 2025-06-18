@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import ProjectNavDropdownButton from "@/app/components/dashboard/ProjectNavDropdownButton";
-import ProjectNavDropdownMenu from "@/app/components/dashboard/ProjectNavDropdown";
+import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
+import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
 import StatsDashboard from "@/app/components/dashboard/StatsDashboard";
 
 export default function DashboardPage() {

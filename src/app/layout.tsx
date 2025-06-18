@@ -23,7 +23,7 @@ export default function RootLayout({
         <main className="flex-grow">{children}</main>
 
         <ToastNotification />
-        <Footer />
+        {!pathname.startsWith("/dashboard/ai") && <Footer />}
       </body>
     </html>
   );

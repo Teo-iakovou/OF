@@ -14,7 +14,7 @@ export default function ProjectNavDropdownButton({
       type="button"
       className="
         flex items-center
-        px-3 py-1.5
+        px-8 py-1
         rounded-lg
         bg-[#181F28]
         text-white
@@ -25,7 +25,7 @@ export default function ProjectNavDropdownButton({
         focus:outline-none
         transition-all
         min-h-[36px]
-        min-w-[120px]
+        min-w-[200px]
       "
       onClick={() => setOpen((v) => !v)}
       aria-expanded={open}

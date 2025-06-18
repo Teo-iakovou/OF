@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ProjectNavDropdownButton from "@/app/components/dashboard/ProjectNavDropdownButton";
-import ProjectNavDropdownMenu from "@/app/components/dashboard/ProjectNavDropdown";
+import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
+import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
 import { checkUserPackage } from "@/app/utils/api";
 
 export default function BillingPage() {

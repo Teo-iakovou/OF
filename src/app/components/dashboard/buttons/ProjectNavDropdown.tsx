@@ -6,9 +6,8 @@ const navItems = [
   { href: "/dashboard/upload", label: "Upload Content" },
   { href: "/dashboard/history", label: "Upload History" },
   { href: "/dashboard/billing", label: "Plan & Billing" },
-  { href: "/dashboard/account", label: "Account Info" },
   { href: "/dashboard/ai-chat", label: "AI Chat" },
-  { href: "/dashboard/ai-chat/history", label: "Chat History" },
+  { href: "/dashboard/account", label: "Account Info" },
 ];
 
 interface ProjectNavDropdownMenuProps {

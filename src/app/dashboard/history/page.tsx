@@ -2,8 +2,8 @@
 import { useState, useRef, useEffect } from "react";
 import HistoryList from "@/app/components/uploads/HistoryList";
 import { deleteAnalysisResult, fetchAnalysisHistory } from "@/app/utils/api";
-import ProjectNavDropdownButton from "@/app/components/dashboard/ProjectNavDropdownButton";
-import ProjectNavDropdownMenu from "@/app/components/dashboard/ProjectNavDropdown";
+import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
+import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
 
 interface HistoryItem {
   _id: string;
