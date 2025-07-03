@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { analyzeImage } from "@/app/utils/api";
 import { ClipLoader } from "react-spinners";
-
+import Image from "next/image";
 interface FileUploadProps {
   onUploadSuccess: (insights: any) => void;
 }
@@ -106,7 +106,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
       {previewURL && (
         <div className="text-center">
           <p className="text-sm text-gray-400">Preview:</p>
-          <img
+          <Image
             src={previewURL}
             alt="Preview"
             className="mt-2 w-48 h-48 object-cover rounded-lg shadow-lg border border-gray-700"

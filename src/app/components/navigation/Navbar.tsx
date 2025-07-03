@@ -8,6 +8,7 @@ import {
   Users,
   LifeBuoy,
   Mail,
+  ShoppingBag,
 } from "lucide-react";
 import { useState } from "react";
 import { FiMenu, FiX, FiUser } from "react-icons/fi";
@@ -15,14 +16,21 @@ import { FaTwitter, FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
 import Link from "next/link";
 import Scrollspy from "react-scrollspy";
 import Image from "next/image";
+import { useCart } from "../cart/CartContext"; // Make sure the path is correct!
 
-export default function Navbar() {
+type NavbarProps = {
+  onCartClick: () => void;
+};
+
+export default function Navbar({ onCartClick }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { cartCount } = useCart();
 
   return (
     <>
       <nav className="bg-gray-900 text-white py-4 px-6 fixed top-0 left-0 w-full z-50 shadow-lg">
         <div className="relative flex items-center justify-between md:justify-between w-full">
+          {/* LOGO */}
           <Link
             href="/"
             className="absolute left-1/2 transform -translate-x-1/2 md:static md:transform-none flex items-center space-x-2"
@@ -36,17 +44,47 @@ export default function Navbar() {
             />
           </Link>
 
-          <div className="flex-1 md:hidden" />
+          <div className="flex items-center gap-4 ml-auto">
+            {/* CART BUTTON */}
+            <button
+              onClick={onCartClick}
+              className="relative p-1 hover:text-cyan-400 transition bg-transparent border-none shadow-none"
+              aria-label="View cart"
+              style={{ background: "transparent" }}
+            >
+              <ShoppingBag size={28} />
+              {cartCount > 0 && (
+                <span
+                  className="
+    absolute
+    -top-2 -right-2
+    flex items-center justify-center
+    bg-gradient-to-tr from-cyan-400 to-blue-600
+    text-white
+    text-xs
+    rounded-full
+    w-5 h-5
+    font-bold
+    shadow
+    z-10
+  "
+                >
+                  {cartCount}
+                </span>
+              )}
+            </button>
 
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            className={`p-2 rounded-md border border-gray-700 bg-[#1f2937] hover:bg-[#374151] text-white transition-all shadow-sm ${
-              isMenuOpen ? "z-10" : "z-50"
-            }`}
-          >
-            {isMenuOpen ? <FiX size={22} /> : <FiMenu size={22} />}
-          </button>
+            {/* MENU BUTTON */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              className={`p-2 rounded-md border border-gray-700 bg-[#1f2937] hover:bg-[#374151] text-white transition-all shadow-sm ${
+                isMenuOpen ? "z-10" : "z-50"
+              }`}
+            >
+              {isMenuOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -60,7 +98,20 @@ export default function Navbar() {
               <button
                 onClick={() => setIsMenuOpen(false)}
                 aria-label="Close menu"
-                className="p-2 rounded-md bg-[#1f2937] hover:bg-[#374151] text-white transition border border-gray-700 shadow-sm"
+                className="
+    flex items-center justify-center
+    w-9 h-9
+    rounded-full
+    bg-[#222735]
+    text-white
+    hover:text-cyan-400
+    hover:bg-[#232B36]
+    transition
+    border border-gray-700
+    shadow
+    focus:outline-none
+    focus:ring-2 focus:ring-cyan-500
+  "
               >
                 <FiX size={22} />
               </button>

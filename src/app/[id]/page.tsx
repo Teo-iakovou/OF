@@ -1,56 +1,42 @@
 "use client";
-
 import { useParams } from "next/navigation";
-import { useState } from "react";
 import { packages } from "@/app/components/packages/Packages";
-import CartDrawer from "@/app/components/cart/CartDrawer"; // Make sure this path is correct
+import { useCart } from "@/app/components/cart/CartContext";
+import Image from "next/image";
+import { useState } from "react";
+import CartDrawer from "@/app/components/cart/CartDrawer";
+import { startCheckout } from "@/app/utils/api"; // <<-- Make sure this path is correct!
 
 export default function PackageDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const selectedPackage = packages.find((pkg) => pkg.id === id);
 
-  const [showCart, setShowCart] = useState(false);
+  // Use global cart state!
+  const { cartItems, addToCart } = useCart();
+  const [cartOpen, setCartOpen] = useState(false);
 
-  const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  function handleAddToCart(id: string) {
+    addToCart(id);
+    setCartOpen(true);
+  }
 
+  // Checkout using your utility
   const handleCheckout = async () => {
-    if (!selectedPackage) return;
+    const firstCartItem = cartItems[0];
+    if (!firstCartItem) return;
+    const pkg = packages.find((p) => p.id === firstCartItem.id);
+    if (!pkg) return;
 
-    try {
-      let email = localStorage.getItem("userEmail");
-
-      if (!email) {
-        email = prompt("Enter your email:");
-        if (!email) return; // User cancelled
-        localStorage.setItem("userEmail", email); // ✅ Save it for next time
-      }
-
-      if (email !== "testuser@gmail.com") {
-        alert("Access restricted: Only testuser@gmail.com is allowed.");
-        return; // ❌ Stop everything
-      }
-
-      const response = await fetch(
-        `${BASE_URL}/api/checkout/create-checkout-session`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, packageId: selectedPackage.id }),
-        }
-      );
-
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url; // ✅ Redirect to Stripe Checkout
-      }
-    } catch (err) {
-      console.error("Failed to start Stripe checkout:", err);
+    let email = localStorage.getItem("userEmail");
+    if (!email) {
+      email = prompt("Enter your email:") || "";
+      if (!email) return;
+      localStorage.setItem("userEmail", email);
     }
-  };
 
-  const handleCartClick = () => {
-    setShowCart(true);
+    // This calls your shared util!
+    await startCheckout(email, pkg.id);
   };
 
   if (!selectedPackage) {
@@ -64,48 +50,54 @@ export default function PackageDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-of-background text-white">
-      {/* Main Package Section */}
-      <section className="container mx-auto py-16 px-8 flex flex-col lg:flex-row gap-8 items-center">
-        {/* Image */}
-        <div className="flex-1 flex justify-center items-center">
-          <div className="w-80 h-80 flex items-center justify-center">
-            <img
-              src="/5805591578897663447.jpg"
-              alt={selectedPackage.title}
-              className="w-60 h-60 object-contain rounded-3xl"
-            />
-          </div>
+    <div className="min-h-screen bg-[#181F28] text-white">
+      {/* Hero/Product Section */}
+      <section className="flex flex-col md:flex-row items-center justify-center max-w-5xl mx-auto pt-20 pb-14 px-4 gap-10">
+        {/* Image/Logo Side */}
+        <div className="flex-1 w-full flex items-center justify-center md:justify-start mb-8 md:mb-0">
+          <Image
+            src="/5805591578897663447.jpg"
+            alt={selectedPackage.title}
+            width={320}
+            height={320}
+            className="rounded-2xl object-cover w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80"
+            style={{ maxWidth: 320, maxHeight: 320 }}
+          />
         </div>
-
-        {/* Info */}
-        <div className="flex-1">
-          <h1 className="text-5xl font-bold mb-6">{selectedPackage.title}</h1>
-          <p className="text-3xl font-bold mb-4 text-green-400">
-            {selectedPackage.price}
-          </p>
-          <ul className="space-y-4 text-lg mb-8">
+        {/* Info Side */}
+        <div className="flex-1 w-full max-w-xl p-0 md:p-8 flex flex-col items-center md:items-start text-center md:text-left md:ml-6">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            {selectedPackage.title}
+          </h1>
+          <div className="flex items-baseline gap-2 mb-6">
+            <span className="text-2xl md:text-3xl font-semibold text-cyan-400">
+              {selectedPackage.price}
+            </span>
+            <span className="ml-2 text-base text-gray-400">/one-time</span>
+          </div>
+          <ul className="mb-10">
             {selectedPackage.features.map((feature, idx) => (
               <li
-                key={`${selectedPackage.id}-${idx}`}
-                className="flex items-center gap-2"
+                key={idx}
+                className="flex items-center text-lg mb-2 text-gray-200 justify-center md:justify-start"
               >
-                <span className="text-green-400">✔</span> {feature}
+                <span className="w-6 h-6 flex items-center justify-center mr-2 rounded-full bg-cyan-700 bg-opacity-20">
+                  <span className="text-cyan-400">✔</span>
+                </span>
+                {feature}
               </li>
             ))}
           </ul>
-
-          {/* Buttons */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
             <button
-              onClick={handleCartClick}
-              className="w-full px-6 py-3 bg-pink-600 hover:bg-pink-700 text-xl text-white font-bold rounded-lg shadow-md"
+              onClick={() => handleAddToCart(selectedPackage.id)}
+              className="flex-1 bg-gradient-to-r from-pink-600 to-fuchsia-600 hover:from-pink-700 hover:to-fuchsia-700 transition text-lg font-semibold py-3 rounded-xl shadow-lg"
             >
               Add to Cart
             </button>
             <button
               onClick={handleCheckout}
-              className="w-full bg-[#5A31F4] hover:bg-[#4b27d4] text-white font-semibold py-2 rounded-lg flex items-center justify-center gap-2 shadow-md"
+              className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-700 hover:to-indigo-700 transition text-lg font-semibold py-3 rounded-xl shadow-lg"
             >
               <span>Buy with</span>
               <span className="font-bold text-white text-lg tracking-tight">
@@ -119,36 +111,33 @@ export default function PackageDetailPage() {
         </div>
       </section>
 
-      {/* Marketing Section */}
-      <section className="w-full bg-gradient-to-r from-purple-600 to-pink-500 py-16">
-        <div className="text-center text-white">
-          <h2 className="text-4xl font-bold mb-6">Why Choose Us?</h2>
-          <p className="text-xl mb-8">
-            Unlock the power of AI analytics with our advanced packages. Choose
-            a plan that fits your needs and take your content to the next level!
-          </p>
-          <div className="flex justify-center gap-4">
-            <button className="bg-white text-black px-6 py-3 rounded-full shadow-md hover:bg-gray-100 font-semibold">
-              Learn More
-            </button>
-            <button className="bg-white text-black px-6 py-3 rounded-full shadow-md hover:bg-gray-100 font-semibold">
-              Testimonials
-            </button>
-          </div>
+      {/* Divider */}
+      <div className="max-w-4xl mx-auto border-t border-[#2e3643] my-12" />
+
+      {/* Marketing/Info Section */}
+      <section className="max-w-4xl mx-auto text-center px-4 py-10">
+        <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
+          Why Choose Us?
+        </h2>
+        <p className="text-lg md:text-xl text-gray-300 mb-8">
+          Unlock the power of AI analytics with our advanced packages. Choose a
+          plan that fits your needs and take your content to the next level!
+        </p>
+        <div className="flex justify-center gap-4">
+          <button className="bg-gradient-to-r from-pink-600 to-fuchsia-600 hover:from-pink-700 hover:to-fuchsia-700 transition text-white px-6 py-3 rounded-full shadow-md font-semibold">
+            Learn More
+          </button>
+          <button className="bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-700 hover:to-indigo-700 transition text-white px-6 py-3 rounded-full shadow-md font-semibold">
+            Testimonials
+          </button>
         </div>
       </section>
 
-      {/* Slide-in Cart Drawer */}
+      {/* Slide-in Cart Drawer (context manages items) */}
       <CartDrawer
-        isOpen={showCart}
-        onClose={() => setShowCart(false)}
-        selectedPackageId={selectedPackage.id}
+        isOpen={cartOpen}
+        onClose={() => setCartOpen(false)}
         onCheckout={handleCheckout}
-        packageData={{
-          title: selectedPackage.title,
-          price: selectedPackage.price,
-          features: selectedPackage.features,
-        }}
       />
     </div>
   );
