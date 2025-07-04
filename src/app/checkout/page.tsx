@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { purchasePackage, startCheckout } from "@/app/utils/api"; // 💡 add createStripeSession
+import { purchasePackage, startCheckout } from "@/app/utils/api";
 import { packages } from "@/app/components/packages/Packages";
 
 const Checkout = () => {
@@ -11,6 +11,8 @@ const Checkout = () => {
   const packageId = searchParams.get("packageId");
 
   const selectedPackage = packages.find((pkg) => pkg.id === packageId);
+
+  // Get email from localStorage only
   const [email, setEmail] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -18,6 +20,11 @@ const Checkout = () => {
   useEffect(() => {
     const storedEmail = localStorage.getItem("userEmail");
     if (storedEmail) setEmail(storedEmail);
+    else {
+      // If no email, redirect to login or show a modal
+      router.replace("/"); // or your login page or modal logic
+    }
+    // eslint-disable-next-line
   }, []);
 
   const handlePurchase = async () => {
@@ -28,7 +35,6 @@ const Checkout = () => {
       const response = await purchasePackage(email, packageId);
       if (response.message) {
         setSuccess(true);
-        localStorage.setItem("userEmail", email);
         router.push("/upload");
       }
     } catch (error) {
@@ -44,7 +50,6 @@ const Checkout = () => {
     setLoading(true);
     try {
       await startCheckout(email, packageId);
-      localStorage.setItem("userEmail", email);
     } catch (error) {
       console.error("Stripe checkout error:", error);
     } finally {
@@ -57,6 +62,17 @@ const Checkout = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
         <h1 className="text-3xl text-red-500 font-bold">
           No package selected.
+        </h1>
+      </div>
+    );
+  }
+
+  // Optional: Loading UI while checking for email
+  if (!email) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <h1 className="text-xl text-gray-300 font-bold">
+          Loading user info...
         </h1>
       </div>
     );
@@ -82,19 +98,11 @@ const Checkout = () => {
         <p className="text-red-400">Invalid package</p>
       )}
 
-      <input
-        type="email"
-        placeholder="Enter your email"
-        className="p-3 rounded bg-gray-800 text-white border border-gray-700 mb-4"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-
       <div className="flex gap-4">
         <button
           onClick={handlePurchase}
           className="bg-pink-600 hover:bg-pink-700 px-6 py-3 rounded-lg text-white font-bold"
-          disabled={loading || !email}
+          disabled={loading}
         >
           {loading ? "Processing..." : "Confirm Purchase"}
         </button>
@@ -102,7 +110,7 @@ const Checkout = () => {
         <button
           onClick={handleStripePayment}
           className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg text-white font-bold"
-          disabled={loading || !email}
+          disabled={loading}
         >
           {loading ? "Redirecting..." : "Pay with Stripe"}
         </button>

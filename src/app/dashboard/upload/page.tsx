@@ -5,10 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import FileUpload from "@/app/components/uploads/FileUpload";
 import Insights from "@/app/components/analytics/Insights";
 import { checkUserPackage } from "@/app/utils/api";
-import EmailModal from "@/app/components/email/EmailModal";
 import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
 import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
-// Import the InsightsProps type
 import type { InsightsProps } from "@/app/components/analytics/Insights";
 
 const UploadPage = () => {
@@ -18,9 +16,8 @@ const UploadPage = () => {
   const [userPackage, setUserPackage] = useState<string | null>(null);
   const [uploadsLeft, setUploadsLeft] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
 
-  // Add dropdown state
+  // Dropdown state
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -31,18 +28,9 @@ const UploadPage = () => {
     const fetchUserInfo = async () => {
       const userEmail =
         typeof window !== "undefined"
-          ? localStorage.getItem("userEmail")
-          : null;
-      const status = searchParams.get("status");
-      if (!userEmail && status === "success") {
-        setShowModal(true);
-        return;
-      }
-      if (!userEmail || userEmail !== "testuser@gmail.com") {
-        localStorage.removeItem("userEmail");
-        setShowModal(true);
-        return;
-      }
+          ? localStorage.getItem("userEmail") || ""
+          : "";
+      // No need for modal—layout guarantees userEmail exists!
       try {
         setIsLoading(true);
         const res = await checkUserPackage(userEmail);
@@ -67,26 +55,6 @@ const UploadPage = () => {
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
   }, [open]);
-
-  const handleEmailSubmit = async (emailFromModal: string) => {
-    if (!emailFromModal || emailFromModal !== "testuser@gmail.com") {
-      alert("Access restricted: Only testuser@gmail.com is allowed.");
-      return;
-    }
-    localStorage.setItem("userEmail", emailFromModal);
-    setShowModal(false);
-    router.replace(window.location.origin + window.location.pathname);
-    try {
-      setIsLoading(true);
-      const res = await checkUserPackage(emailFromModal);
-      setUserPackage(res?.package ?? null);
-      setUploadsLeft(res?.uploadsRemaining ?? null);
-    } catch (err) {
-      console.error("Failed to fetch package info after email submit:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleUploadSuccess = (insightsData: InsightsProps["insights"]) => {
     setInsights(insightsData);
@@ -145,14 +113,6 @@ const UploadPage = () => {
           </h2>
           <Insights insights={insights} />
         </section>
-      )}
-
-      {showModal && (
-        <EmailModal
-          isOpen={showModal}
-          onSubmit={handleEmailSubmit}
-          onClose={() => setShowModal(false)}
-        />
       )}
     </main>
   );

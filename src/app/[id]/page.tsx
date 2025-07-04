@@ -5,7 +5,8 @@ import { useCart } from "@/app/components/cart/CartContext";
 import Image from "next/image";
 import { useState } from "react";
 import CartDrawer from "@/app/components/cart/CartDrawer";
-import { startCheckout } from "@/app/utils/api"; // <<-- Make sure this path is correct!
+import { startCheckout } from "@/app/utils/api";
+import EmailModal from "../components/email/EmailModal";
 
 export default function PackageDetailPage() {
   const params = useParams();
@@ -15,6 +16,7 @@ export default function PackageDetailPage() {
   // Use global cart state!
   const { cartItems, addToCart } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   function handleAddToCart(id: string) {
     addToCart(id);
@@ -28,15 +30,22 @@ export default function PackageDetailPage() {
     const pkg = packages.find((p) => p.id === firstCartItem.id);
     if (!pkg) return;
 
-    let email = localStorage.getItem("userEmail");
+    const email =
+      typeof window !== "undefined"
+        ? localStorage.getItem("userEmail") || ""
+        : "";
     if (!email) {
-      email = prompt("Enter your email:") || "";
-      if (!email) return;
-      localStorage.setItem("userEmail", email);
+      setShowEmailModal(true); // <-- open the modal if no email
+      return;
     }
-
-    // This calls your shared util!
     await startCheckout(email, pkg.id);
+  };
+
+  // Handle the modal submit:
+  const handleEmailSubmit = (email: string) => {
+    localStorage.setItem("userEmail", email);
+    setShowEmailModal(false);
+    handleCheckout(); // Try again with the new email
   };
 
   if (!selectedPackage) {
@@ -138,6 +147,13 @@ export default function PackageDetailPage() {
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         onCheckout={handleCheckout}
+      />
+
+      {/* Email Modal */}
+      <EmailModal
+        isOpen={showEmailModal}
+        onSubmit={handleEmailSubmit}
+        onClose={() => setShowEmailModal(false)}
       />
     </div>
   );

@@ -7,8 +7,15 @@ import CoachChatHistory from "@/app/components/AIchat/AiChatHistorySidebar";
 import { BookOpen } from "lucide-react";
 
 export default function AiCoachChatPage() {
-  const userEmail = "testuser@gmail.com";
-  const userId = "680e9586ff7aa4675f16343a"; // example
+  // Get user email from localStorage (replace with auth context/provider if you add one)
+  const userEmail =
+    typeof window !== "undefined"
+      ? localStorage.getItem("userEmail") || ""
+      : "";
+
+  // You may want to fetch userId from backend or global state in the future
+  const userId = ""; // TODO: fetch actual userId if you support it
+
   const [openNav, setOpenNav] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -49,7 +56,7 @@ export default function AiCoachChatPage() {
   }
 
   return (
-    <div className=" flex flex-col h-screen  text-white">
+    <div className="flex flex-col h-screen text-white">
       {/* Header */}
       <header className="pt-20 px-6 md:px-12 lg:px-20 max-w-6xl mx-auto w-full">
         <div className="flex items-center justify-between mb-2 relative">
