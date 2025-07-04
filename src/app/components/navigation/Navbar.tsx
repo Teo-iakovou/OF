@@ -111,9 +111,11 @@ export default function Navbar({ onCartClick }: NavbarProps) {
     shadow
     focus:outline-none
     focus:ring-2 focus:ring-cyan-500
+    text-2xl
+    font-bold
   "
               >
-                <FiX size={22} />
+                ×
               </button>
             </div>
 
