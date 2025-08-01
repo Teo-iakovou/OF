@@ -1,0 +1,1 @@
+{"version":3,"file":"default.js","sourceRoot":"","sources":["../../src/declarations/default.ts"],"names":[],"mappings":";;;;AAAA;;GAEG;AACU,QAAA,OAAO,GAAG;IACrB,qCAAqC;IACrC,OAAO,EAAE,2BAA2B;IAEpC,mBAAmB;IACnB,gBAAgB,EAAE,6BAA6B;IAE/C,qDAAqD;IACrD,QAAQ,EAAE,GAAG;IAEb,sDAAsD;IACtD,GAAG,EAAE,CAAA,MAAA,OAAO,aAAP,OAAO,uBAAP,OAAO,CAAE,GAAG,0CAAE,QAAQ,KAAI,YAAY;CAC5C,CAAC"}
