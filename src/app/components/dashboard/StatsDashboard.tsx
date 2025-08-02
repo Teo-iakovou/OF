@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import HistoryList from "@/app/components/uploads/HistoryList";
-import Insights from "@/app/components/analytics/Insights";
-import { fetchAnalysisHistory } from "@/app/utils/api";
+import Insights from '@/app/components/analytics/Insights';
+import HistoryList from '@/app/components/uploads/HistoryList';
+import { fetchAnalysisHistory } from '@/app/utils/api';
+import { useEffect, useState } from 'react';
 
 export default function StatsDashboard() {
   const [history, setHistory] = useState<any[]>([]);
@@ -36,7 +36,7 @@ export default function StatsDashboard() {
           history={history}
           selectedItems={selectedItems}
           setSelectedItems={setSelectedItems}
-          handleDelete={handleDelete}
+  onDeleteClick={handleDelete}
         />
       </div>
       {/* Insights */}
