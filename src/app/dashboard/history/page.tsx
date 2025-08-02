@@ -4,7 +4,6 @@ import HistoryList from "@/app/components/uploads/HistoryList";
 import { deleteAnalysisResult, fetchAnalysisHistory } from "@/app/utils/api";
 import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
 import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
-import Spinner from "@/app/components/dashboard/loading spinner/page";
 
 interface HistoryItem {
   _id: string;
@@ -16,23 +15,16 @@ interface HistoryItem {
 export default function HistoryPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
       try {
         const { results } = await fetchAnalysisHistory(1);
         setHistory(results);
-      } catch {
-        // Optional: add toast for failed fetch
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        console.error("Failed to load history", err);
       }
     };
     fetchData();
@@ -48,17 +40,13 @@ export default function HistoryPage() {
     return () => document.removeEventListener("mousedown", handle);
   }, [open]);
 
-  const handleDeleteClick = (id: string) => {
-    setItemToDelete(id);
-    setShowConfirmModal(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!itemToDelete) return;
-    await deleteAnalysisResult(itemToDelete);
-    setHistory((prev) => prev.filter((item) => item._id !== itemToDelete));
-    setShowConfirmModal(false);
-    setItemToDelete(null);
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteAnalysisResult(id);
+      setHistory((prev) => prev.filter((item) => item._id !== id));
+    } catch (err) {
+      console.error("Failed to delete item:", err);
+    }
   };
 
   return (
@@ -79,48 +67,14 @@ export default function HistoryPage() {
           </div>
         </div>
       </header>
-
-      <div className="bg-gray-800 rounded-xl p-6 shadow-button min-h-[300px]">
-        {loading ? (
-          <div className="flex justify-center items-center h-48">
-            <Spinner />
-          </div>
-        ) : (
-          <HistoryList
-            history={history}
-            selectedItems={selectedItems}
-            setSelectedItems={setSelectedItems}
-            onDeleteClick={handleDeleteClick}
-          />
-        )}
+      <div className="bg-gray-800 rounded-xl p-6 shadow-button">
+        <HistoryList
+          history={history}
+          selectedItems={selectedItems}
+          setSelectedItems={setSelectedItems}
+  onDeleteClick={handleDelete}
+        />
       </div>
-
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 p-6 rounded-xl shadow-xl w-[90%] max-w-md border border-gray-700">
-            <h3 className="text-white text-lg font-semibold mb-4">
-              Confirm Deletion
-            </h3>
-            <p className="text-gray-400 mb-6">
-              Are you sure you want to delete this item? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

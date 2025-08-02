@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
 import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
 import { checkUserPackage } from "@/app/utils/api";
-import Spinner from "@/app/components/dashboard/loading spinner/page";
 
 export default function BillingPage() {
   const [userPackage, setUserPackage] = useState<null | {
@@ -14,7 +13,6 @@ export default function BillingPage() {
   }>(null);
 
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -34,8 +32,6 @@ export default function BillingPage() {
         }
       } catch (err) {
         console.error("Error loading user package:", err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchPackage();
@@ -53,7 +49,6 @@ export default function BillingPage() {
 
   return (
     <div className="pt-20 px-6 md:px-12 lg:px-20 max-w-6xl mx-auto">
-      {/* Page title (always visible) */}
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-4xl font-semibold tracking-tight text-white">
           Plan & Billing
@@ -68,13 +63,7 @@ export default function BillingPage() {
           )}
         </div>
       </div>
-
-      {/* Content Loader */}
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Spinner />
-        </div>
-      ) : userPackage ? (
+      {userPackage ? (
         <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8 shadow-md space-y-4">
           <p>
             <strong>Current Plan:</strong> {userPackage.name}
@@ -98,3 +87,4 @@ export default function BillingPage() {
     </div>
   );
 }
+
