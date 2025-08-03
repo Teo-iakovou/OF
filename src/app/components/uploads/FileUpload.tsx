@@ -106,9 +106,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
       {previewURL && (
         <div className="text-center">
           <p className="text-sm text-gray-400">Preview:</p>
-          <Image
+              <Image
             src={previewURL}
             alt="Preview"
+            width={400}
+            height={300}
             className="mt-2 w-48 h-48 object-cover rounded-lg shadow-lg border border-gray-700"
           />
         </div>
