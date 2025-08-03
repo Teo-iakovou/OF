@@ -14,20 +14,13 @@ const webhookController = require("./controllers/checkoutController");
 
 const app = express();
 
-// ✅ CORS first, for all routes
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://airecomadations.netlify.app",
-];
-
+// ✅ CORS for all routes (array of allowed origins)
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS"));
-    },
+    origin: [
+      "http://localhost:3000",
+      "https://airecomadations.netlify.app"
+    ],
     credentials: true,
   })
 );
