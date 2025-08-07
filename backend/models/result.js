@@ -12,6 +12,8 @@ const resultSchema = new mongoose.Schema({
   emotion: { type: String, default: "Neutral" },
   ageRange: { type: String },
   createdAt: { type: Date, default: Date.now },
+    email: { type: String, required: true }, // Add this line!
+
 });
 
 module.exports = mongoose.model("Result", resultSchema);

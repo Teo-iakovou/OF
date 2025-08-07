@@ -4,7 +4,7 @@ import HistoryList from "@/app/components/uploads/HistoryList";
 import { deleteAnalysisResult, fetchAnalysisHistory } from "@/app/utils/api";
 import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
 import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
-
+import Spinner from "@/app/components/dashboard/loading spinner/page";
 interface HistoryItem {
   _id: string;
   platform: string;
@@ -15,17 +15,28 @@ interface HistoryItem {
 export default function HistoryPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+    const [loading, setLoading] = useState(true);
+
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+    useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const { results } = await fetchAnalysisHistory(1);
+        const email = localStorage.getItem("userEmail");
+        if (!email) {
+          setHistory([]);
+          setLoading(false);
+          return;
+        }
+        const { results } = await fetchAnalysisHistory(1, "", "", email);
         setHistory(results);
       } catch (err) {
         console.error("Failed to load history", err);
+        setHistory([]);
       }
+      setLoading(false);
     };
     fetchData();
   }, []);
@@ -49,13 +60,15 @@ export default function HistoryPage() {
     }
   };
 
-  return (
+ return (
     <main>
+      {/* Header */}
       <header className="pt-20 px-6 md:px-12 lg:px-20 max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-4xl font-semibold tracking-tight text-white">
             Upload History
           </h1>
+          {/* Navigation dropdown for mobile */}
           <div ref={menuRef} className="relative inline-block md:hidden">
             <ProjectNavDropdownButton open={open} setOpen={setOpen} />
             {open && (
@@ -67,13 +80,29 @@ export default function HistoryPage() {
           </div>
         </div>
       </header>
-      <div className="bg-gray-800 rounded-xl p-6 shadow-button">
-        <HistoryList
-          history={history}
-          selectedItems={selectedItems}
-          setSelectedItems={setSelectedItems}
-  onDeleteClick={handleDelete}
-        />
+
+      {/* Content */}
+      <div className="bg-gray-800 rounded-xl p-6 shadow-button min-h-[320px] max-w-6xl mx-auto">
+        {loading ? (
+          <Spinner />
+        ) : history.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48">
+            <svg width="40" height="40" fill="none" className="mb-2 opacity-50">
+              <circle cx="20" cy="20" r="18" stroke="#38bdf8" strokeWidth="2" />
+              <path d="M14 20l4 4 8-8" stroke="#38bdf8" strokeWidth="2" />
+            </svg>
+            <div className="text-gray-400 text-lg">
+              No uploads yet. Start by uploading your first file!
+            </div>
+          </div>
+        ) : (
+          <HistoryList
+            history={history}
+            selectedItems={selectedItems}
+            setSelectedItems={setSelectedItems}
+            onDeleteClick={handleDelete}
+          />
+        )}
       </div>
     </main>
   );

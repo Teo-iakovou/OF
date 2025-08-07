@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
 import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
 import { checkUserPackage } from "@/app/utils/api";
-
+import Spinner from "@/app/components/dashboard/loading spinner/page";
 export default function BillingPage() {
   const [userPackage, setUserPackage] = useState<null | {
     name: string;
@@ -14,28 +14,36 @@ export default function BillingPage() {
 
   const [open, setOpen] = useState(false);
   const router = useRouter();
+const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const email = localStorage.getItem("userEmail");
-    if (!email) return;
-    const fetchPackage = async () => {
-      try {
-        const res = await checkUserPackage(email);
-        if (res?.hasAccess) {
-          setUserPackage({
-            name: res.package ?? "Unknown",
-            uploadsRemaining: res.uploadsRemaining ?? 0,
-            expiresAt: res.expiresAt,
-          });
-        } else {
-          setUserPackage(null);
-        }
-      } catch (err) {
-        console.error("Error loading user package:", err);
+ useEffect(() => {
+  const email = localStorage.getItem("userEmail");
+  if (!email) {
+    setLoading(false); // If no email, we are done loading.
+    return;
+  }
+  const fetchPackage = async () => {
+    try {
+      const res = await checkUserPackage(email);
+      if (res?.hasAccess) {
+        setUserPackage({
+          name: res.package ?? "Unknown",
+          uploadsRemaining: res.uploadsRemaining ?? 0,
+          expiresAt: res.expiresAt,
+        });
+      } else {
+        setUserPackage(null);
       }
-    };
-    fetchPackage();
-  }, []);
+    } catch (err) {
+      console.error("Error loading user package:", err);
+      setUserPackage(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchPackage();
+}, []);
+
 
   useEffect(() => {
     if (!open) return;
@@ -63,7 +71,9 @@ export default function BillingPage() {
           )}
         </div>
       </div>
-      {userPackage ? (
+           {loading ? (
+        <Spinner />
+      ) : userPackage ? (
         <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8 shadow-md space-y-4">
           <p>
             <strong>Current Plan:</strong> {userPackage.name}
@@ -84,6 +94,7 @@ export default function BillingPage() {
       ) : (
         <div className="text-red-400 text-lg">No active plan found.</div>
       )}
+
     </div>
   );
 }

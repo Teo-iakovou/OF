@@ -10,24 +10,28 @@ interface Conversation {
 }
 
 export default function CoachChatHistory({
-  userId,
   onSelect,
   selectedId,
+  refreshKey,
+  userEmail,
 }: {
-  userId: string;
+  userEmail: string;
   onSelect: (id: string) => void;
   selectedId?: string;
+  refreshKey: number;
 }) {
   const [convos, setConvos] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!userId) return;
-    setLoading(true);
-    fetchConversations(userId)
-      .then(setConvos)
-      .finally(() => setLoading(false));
-  }, [userId]);
+  // CoachChatHistory.tsx
+useEffect(() => {
+  if (!userEmail) return;
+  setLoading(true);
+  fetchConversations(userEmail)
+    .then(setConvos)
+    .finally(() => setLoading(false));
+}, [userEmail, refreshKey]);
+
 
   return (
     <div className="w-full max-w-xs bg-[#181F28] border border-[#232B36] rounded-2xl shadow-lg p-4 space-y-2 overflow-y-auto h-[420px]">

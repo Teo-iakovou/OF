@@ -53,6 +53,7 @@ const analyzeImage = async (req, res) => {
       hashtags: dynamicData.hashtags,
       tip: dynamicData.tip,
       aiCaption,
+      email,
       objects: visionData.objects,
       emotion: visionData.emotion,
       ageRange: visionData.ageRange,
@@ -82,15 +83,23 @@ const analyzeImage = async (req, res) => {
 
 // Other endpoints remain unchanged
 const fetchAnalysisHistory = async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
+  // Get email, page, and limit from the query string
+  const { email, page = 1, limit = 10 } = req.query;
+
+  // If no email provided, return an error
+  if (!email) {
+    return res.status(400).json({ error: "Email is required." });
+  }
 
   try {
-    const results = await Result.find({})
+    // Only fetch results that belong to the user with this email
+    const results = await Result.find({ email })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
-    const total = await Result.countDocuments();
+    // Get total number of results for this user
+    const total = await Result.countDocuments({ email });
 
     res.json({ results, total });
   } catch (error) {
@@ -98,6 +107,7 @@ const fetchAnalysisHistory = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch results" });
   }
 };
+
 
 const deleteAnalysisResult = async (req, res) => {
   const { id } = req.params;

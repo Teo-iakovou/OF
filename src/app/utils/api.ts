@@ -30,11 +30,19 @@ export const analyzeImage = async (file: File, email: string) => {
 export const fetchAnalysisHistory = async (
   currentPage: number,
   searchTerm: string = "",
-  filterPlatform: string = ""
+  filterPlatform: string = "",
+  email?: string // add email argument
 ) => {
   try {
+    // Build the query string, including email if provided
+    const params = new URLSearchParams();
+    params.append("page", String(currentPage));
+    if (searchTerm) params.append("search", searchTerm);
+    if (filterPlatform) params.append("platform", filterPlatform);
+    if (email) params.append("email", email);
+
     const response = await fetch(
-      `${BASE_URL}/api/analyze?page=${currentPage}&search=${searchTerm}&platform=${filterPlatform}`
+      `${BASE_URL}/api/analyze?${params.toString()}`
     );
 
     if (!response.ok) {
@@ -47,6 +55,7 @@ export const fetchAnalysisHistory = async (
     throw error;
   }
 };
+
 
 export const deleteAnalysisResult = async (id: string) => {
   try {
@@ -180,9 +189,10 @@ export async function coachChat({
 }
 
 // Get all conversations for a user (for sidebar/history)
-export async function fetchConversations(userId: string) {
-  const res = await fetch(`${BASE_URL}/api/conversations?userId=${userId}`);
-  if (!res.ok) throw new Error("Failed to fetch conversations");
+export const fetchConversations = async (email: string) => {
+  const res = await fetch(
+    `${BASE_URL}/api/conversations?email=${encodeURIComponent(email)}`
+  );
   return res.json();
 }
 
@@ -200,4 +210,38 @@ export async function deleteConversation(conversationId: string) {
   });
   if (!res.ok) throw new Error("Failed to delete conversation");
   return res.json();
+}
+
+export async function generateConversationTitle(conversationId: string, firstUserMessage: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${BASE_URL}/api/conversations/${conversationId}/generate-title`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstUserMessage }),
+    });
+
+    if (!response.ok) throw new Error('Failed to generate title');
+    const data = await response.json();
+    return data.title || null;
+  } catch (error) {
+    console.error('Error generating conversation title:', error);
+    return null;
+  }
+}
+
+export async function createEmptyConversation(email: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/conversations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) throw new Error("Failed to create conversation");
+    const data = await res.json();
+    // Support for both _id and id
+    return data._id || data.id || null;
+  } catch (error) {
+    console.error("Error creating new conversation:", error);
+    return null;
+  }
 }

@@ -1,23 +1,28 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { coachChat, fetchConversation } from "@/app/utils/api";
+import { generateConversationTitle } from "@/app/utils/api";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   _id?: string;
+
 }
 interface Conversation {
   _id: string;
   title?: string;
   messages: Message[];
+
 }
 
 export default function CoachChat({
   email,
   latestContentInfo,
   initialConversationId,
+  onNewConversation,  
 }: {
+  onNewConversation: (newId: string) => void;
   email: string;
   latestContentInfo?: string;
   initialConversationId?: string;
@@ -47,25 +52,34 @@ export default function CoachChat({
   }, [initialConversationId]);
 
   const sendMessage = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!input.trim() || !email) return;
-    setIsLoading(true);
-    try {
-      const res = await coachChat({
-        email,
-        question: input.trim(),
-        latestContentInfo,
-        conversationId: conversation?._id,
-        title: conversation ? conversation.title : "AI Coach Chat",
-      });
-      setConversation(res.conversation);
-      setInput("");
-      setIsLoading(false); // <-- Add this line here
-    } catch {
-      alert("AI coach failed to respond.");
-      setIsLoading(false);
-    }
-  };
+  e?.preventDefault();
+  if (!input.trim() || !email) return;
+  setIsLoading(true);
+  try {
+    const res = await coachChat({
+      email,
+      question: input.trim(),
+      latestContentInfo,
+      conversationId: conversation?._id,
+      title: conversation ? conversation.title : "AI Coach Chat",
+    });
+    setConversation(res.conversation);
+    setInput("");
+    setIsLoading(false);
+
+    // If this was a NEW conversation, notify parent to refresh sidebar & select
+    if (!conversation?._id && res.conversation._id && typeof onNewConversation === "function") {
+  // Auto-generate the title using the first user message
+  await generateConversationTitle(res.conversation._id, input.trim());
+  onNewConversation(res.conversation._id);
+}
+
+  } catch {
+    alert("AI coach failed to respond.");
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div className="flex flex-col flex-1">

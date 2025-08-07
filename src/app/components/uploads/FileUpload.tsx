@@ -5,7 +5,7 @@ import { analyzeImage } from "@/app/utils/api";
 import { ClipLoader } from "react-spinners";
 import Image from "next/image";
 interface FileUploadProps {
-  onUploadSuccess: (insights: any) => void;
+  onUploadSuccess: (insights: unknown) => void;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {

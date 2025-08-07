@@ -763,8 +763,14 @@ video {
 .h-screen {
   height: 100vh;
 }
+.h-72 {
+  height: 18rem;
+}
 .min-h-\[220px\] {
   min-height: 220px;
+}
+.min-h-\[320px\] {
+  min-height: 320px;
 }
 .min-h-\[36px\] {
   min-height: 36px;
@@ -1672,6 +1678,9 @@ video {
 }
 .opacity-20 {
   opacity: 0.2;
+}
+.opacity-50 {
+  opacity: 0.5;
 }
 .opacity-75 {
   opacity: 0.75;

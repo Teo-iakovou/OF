@@ -2,27 +2,25 @@
 import { useState, useRef, useEffect } from "react";
 import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
 import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
+import {createEmptyConversation} from "@/app/utils/api";
+import { BookOpen } from "lucide-react";
 import CoachChat from "@/app/components/AIchat/CoachChat";
 import CoachChatHistory from "@/app/components/AIchat/AiChatHistorySidebar";
-import { BookOpen } from "lucide-react";
 
 export default function AiCoachChatPage() {
-  // Get user email from localStorage (replace with auth context/provider if you add one)
-  const userEmail =
-    typeof window !== "undefined"
-      ? localStorage.getItem("userEmail") || ""
-      : "";
-
-  // You may want to fetch userId from backend or global state in the future
-  const userId = ""; // TODO: fetch actual userId if you support it
+  const userEmail = typeof window !== "undefined"
+    ? localStorage.getItem("userEmail") || ""
+    : "";
+  
 
   const [openNav, setOpenNav] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
 
   const [selectedConvoId, setSelectedConvoId] = useState<string | undefined>();
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Close project nav dropdown on outside click
   useEffect(() => {
     if (!openNav) return;
     function handle(e: MouseEvent) {
@@ -33,8 +31,6 @@ export default function AiCoachChatPage() {
     return () => document.removeEventListener("mousedown", handle);
   }, [openNav]);
 
-  // Close chat history on outside click
-  const historyRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!historyOpen) return;
     function handle(e: MouseEvent) {
@@ -50,10 +46,28 @@ export default function AiCoachChatPage() {
     setHistoryOpen(false);
   }
 
-  function handleNewChat() {
+
+  async function handleNewChat() {
+  if (!userEmail) return;
+  const newId = await createEmptyConversation(userEmail);
+  if (newId) {
+    setSelectedConvoId(newId);
+    setRefreshKey((k) => k + 1);
+    setHistoryOpen(false);
+  } else {
     setSelectedConvoId(undefined);
+    setRefreshKey((k) => k + 1);
     setHistoryOpen(false);
   }
+}
+
+
+  
+  function handleNewConversationCreated(newId: string) {
+    setSelectedConvoId(newId);
+    setRefreshKey((k) => k + 1);
+  }
+  
 
   return (
     <div className="flex flex-col h-screen text-white">
@@ -64,7 +78,6 @@ export default function AiCoachChatPage() {
             AI Chat
           </h1>
           <div className="flex items-center gap-4">
-            {/* Chat History Button */}
             <button
               className="px-5 py-2 rounded hover:bg-gray-800 bg-gray-900 text-gray-100 hover:text-cyan-400 transition flex items-center gap-2"
               onClick={() => setHistoryOpen((v) => !v)}
@@ -72,8 +85,6 @@ export default function AiCoachChatPage() {
               <span className="hidden md:inline font-medium">Chat History</span>
               <BookOpen className="w-5 h-5 md:hidden" />
             </button>
-
-            {/* Dropdown for Chat History */}
             {historyOpen && (
               <div
                 ref={historyRef}
@@ -90,14 +101,15 @@ export default function AiCoachChatPage() {
                     + New
                   </button>
                 </div>
-                <CoachChatHistory
-                  userId={userId}
-                  onSelect={handleSelectHistory}
-                  selectedId={selectedConvoId}
-                />
+               <CoachChatHistory
+  userEmail={userEmail}
+  onSelect={handleSelectHistory}
+  selectedId={selectedConvoId}
+  refreshKey={refreshKey}
+/>
+
               </div>
             )}
-            {/* Project Nav Dropdown (mobile only) */}
             <div ref={menuRef} className="relative inline-block md:hidden">
               <ProjectNavDropdownButton open={openNav} setOpen={setOpenNav} />
               {openNav && (
@@ -113,7 +125,11 @@ export default function AiCoachChatPage() {
 
       {/* Main Chat UI */}
       <div className="flex-1 flex flex-col w-full max-w-3xl mx-auto px-2 md:px-0 justify-center">
-        <CoachChat email={userEmail} initialConversationId={selectedConvoId} />
+        <CoachChat
+          email={userEmail}
+          initialConversationId={selectedConvoId}
+          onNewConversation={handleNewConversationCreated}
+        />
       </div>
     </div>
   );
