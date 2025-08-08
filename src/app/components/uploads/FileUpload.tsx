@@ -1,11 +1,25 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { analyzeImage } from "@/app/utils/api";
 import { ClipLoader } from "react-spinners";
 import Image from "next/image";
+
+// ✅ Single source of truth for insights
+export type Insight = {
+  platform: string;
+  bestPostTime: string;
+  aiCaption?: string;
+  tip?: string;
+  hashtags?: string[];
+  objects?: string[];
+  emotion?: string;
+  dominantColors?: string[];
+};
+
 interface FileUploadProps {
-  onUploadSuccess: (insights: unknown) => void;
+  // ✅ onUploadSuccess now expects a typed Insight
+  onUploadSuccess: (insights: Insight) => void;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
@@ -13,28 +27,39 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
   const [previewURL, setPreviewURL] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [justDropped, setJustDropped] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Revoke blob URL on unmount or when file changes (avoid leaks)
+  useEffect(() => {
+    return () => {
+      if (previewURL) URL.revokeObjectURL(previewURL);
+    };
+  }, [previewURL]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setPreviewURL(URL.createObjectURL(file));
-    }
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
+    setSelectedFile(file);
+    setPreviewURL((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return URL.createObjectURL(file);
+    });
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    setJustDropped(true); // ✅ Mark that a drop just happened
-    const file = e.dataTransfer.files[0];
+    setJustDropped(true);
+
+    const file = e.dataTransfer.files?.[0] || null;
     if (file) {
       setSelectedFile(file);
-      setPreviewURL(URL.createObjectURL(file));
+      setPreviewURL((old) => {
+        if (old) URL.revokeObjectURL(old);
+        return URL.createObjectURL(file);
+      });
     }
-
-    // Reset the drop state after a short delay so future clicks work
     setTimeout(() => setJustDropped(false), 300);
   };
 
@@ -43,26 +68,35 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
     setIsDragging(true);
   };
 
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
+  const handleDragLeave = () => setIsDragging(false);
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
+  const triggerFileInput = () => fileInputRef.current?.click();
 
   const TEST_EMAIL =
-    localStorage.getItem("userEmail") || "thedoros09@gmail.com";
+    (typeof window !== "undefined" && localStorage.getItem("userEmail")) ||
+    "thedoros09@gmail.com";
 
-  // inside handleSubmit
+  const resetAfterSuccess = () => {
+    setSelectedFile(null);
+    setPreviewURL((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return null;
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleSubmit = async () => {
     if (!selectedFile) return;
-
     setLoading(true);
-
     try {
-      const response = await analyzeImage(selectedFile, TEST_EMAIL);
+      // Assume your API returns: { insights: Insight, ... }
+      const response = (await analyzeImage(
+        selectedFile,
+        TEST_EMAIL
+      )) as { insights: Insight };
+
       onUploadSuccess(response.insights);
+      resetAfterSuccess();
     } catch (error) {
       console.error("Upload failed:", error);
     } finally {
@@ -106,7 +140,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
       {previewURL && (
         <div className="text-center">
           <p className="text-sm text-gray-400">Preview:</p>
-              <Image
+          <Image
             src={previewURL}
             alt="Preview"
             width={400}
