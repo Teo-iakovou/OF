@@ -1,3 +1,4 @@
+import { dbg } from "@/app/utils/debug";
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export const analyzeImage = async (file: File, email: string) => {
@@ -188,13 +189,6 @@ export async function coachChat({
   return res.json();
 }
 
-// Get all conversations for a user (for sidebar/history)
-export const fetchConversations = async (email: string) => {
-  const res = await fetch(
-    `${BASE_URL}/api/conversations?email=${encodeURIComponent(email)}`
-  );
-  return res.json();
-}
 
 // Get a single conversation (full messages)
 export async function fetchConversation(conversationId: string) {
@@ -212,22 +206,6 @@ export async function deleteConversation(conversationId: string) {
   return res.json();
 }
 
-export async function generateConversationTitle(conversationId: string, firstUserMessage: string): Promise<string | null> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/conversations/${conversationId}/generate-title`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ firstUserMessage }),
-    });
-
-    if (!response.ok) throw new Error('Failed to generate title');
-    const data = await response.json();
-    return data.title || null;
-  } catch (error) {
-    console.error('Error generating conversation title:', error);
-    return null;
-  }
-}
 
 export async function createEmptyConversation(email: string): Promise<string | null> {
   try {
@@ -244,4 +222,38 @@ export async function createEmptyConversation(email: string): Promise<string | n
     console.error("Error creating new conversation:", error);
     return null;
   }
+}
+
+export async function generateConversationTitle(conversationId: string, firstUserMessage: string) {
+  const t0 = performance.now();
+  dbg("title:request", { conversationId, firstUserMessagePreview: firstUserMessage.slice(0, 80) });
+  const response = await fetch(`${BASE_URL}/api/conversations/${conversationId}/generate-title`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ firstUserMessage }),
+    cache: "no-store",
+  });
+  const t1 = performance.now();
+
+  dbg("title:responseMeta", { ok: response.ok, status: response.status, ms: Math.round(t1 - t0) });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "");
+    dbg("title:errorBody", errText);
+    throw new Error("Failed to generate title");
+  }
+  const data = await response.json();
+  dbg("title:data", data);
+  return data.title || null;
+}
+
+export async function fetchConversations(email: string) {
+  const url = `${BASE_URL}/api/conversations?email=${encodeURIComponent(email)}&ts=${Date.now()}`;
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store", // <- important
+  });
+  if (!res.ok) throw new Error("Failed to fetch conversations");
+  return res.json();
 }

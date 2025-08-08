@@ -1,7 +1,7 @@
 const Conversation = require("../models/conversation");
 const User = require("../models/user");
 const OpenAI = require("openai");
-
+const mongoose = require("mongoose");
 // Get all conversations for a user (sidebar/history)
 const getConversations = async (req, res) => {
   try {
@@ -46,41 +46,96 @@ const deleteConversation = async (req, res) => {
     res.status(500).json({ error: "Failed to delete conversation." });
   }
 };
-// Generate a title for a conversation based on the first user message
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const cleanTitle = (t = "") => t.replace(/^["'\s]+|["'\s]+$/g, "").slice(0, 60);
 
 const generateTitle = async (req, res) => {
+  const t0 = Date.now();
   try {
     const { id } = req.params;
-    const { firstUserMessage } = req.body;
+    const { firstUserMessage } = req.body || {};
 
-    // Use Chat Completions API!
-    const chatResponse = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // or "gpt-4o" if you have access
-      messages: [
-        {
-          role: "system",
-          content: "You are a helpful assistant. Write a short, clear chat title in 6 words or fewer.",
-        },
-        {
-          role: "user",
-          content: `Write a short, clear title for this conversation: "${firstUserMessage}"`,
-        },
-      ],
-      max_tokens: 12,
-      temperature: 0.5,
+    // --- input validation ---
+    if (!id) return res.status(400).json({ error: "Missing conversation id" });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.error("[genTitle] Invalid ObjectId:", id);
+      return res.status(400).json({ error: "Invalid conversation id" });
+    }
+    if (!firstUserMessage || typeof firstUserMessage !== "string") {
+      console.error("[genTitle] Missing firstUserMessage");
+      return res.status(400).json({ error: "firstUserMessage is required" });
+    }
+
+    // --- ensure conversation exists ---
+    const convo = await Conversation.findById(id).lean();
+    if (!convo) {
+      console.error("[genTitle] Conversation not found:", id);
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    // --- build prompt/messages ---
+    const systemMsg =
+      "You are a helpful assistant. Write a short, clear chat title in 6 words or fewer. No quotes.";
+    const userMsg = `Write a short, clear title for this conversation: "${firstUserMessage}"`;
+
+    console.log("[genTitle] START", {
+      convoId: id,
+      userMsgPreview: firstUserMessage.slice(0, 120),
+      model: "gpt-3.5-turbo",
     });
 
-    const title = chatResponse.choices[0].message.content.trim();
+    const t1 = Date.now();
 
-    await Conversation.findByIdAndUpdate(id, { title });
+    // --- OpenAI call ---
+    const chatResponse = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemMsg },
+        { role: "user", content: userMsg },
+      ],
+      max_tokens: 12,
+      temperature: 0.4,
+    });
 
-    res.json({ title });
+    const raw = chatResponse?.choices?.[0]?.message?.content || "";
+    const candidate = cleanTitle(raw) || "Quick chat";
+
+    const t2 = Date.now();
+    console.log("[genTitle] OpenAI response", {
+      raw,
+      candidate,
+      latencyMs: t2 - t1,
+      requestId: chatResponse?.id,
+    });
+
+    // --- save to DB ---
+    const updated = await Conversation.findByIdAndUpdate(
+      id,
+      { $set: { title: candidate, updatedAt: new Date() } },
+      { new: true }
+    ).lean();
+
+    const t3 = Date.now();
+    console.log("[genTitle] DB updated", {
+      convoId: id,
+      savedTitle: updated?.title,
+      openaiLatencyMs: t2 - t1,
+      totalMs: t3 - t0,
+    });
+
+    return res.json({
+      ok: true,
+      title: updated?.title || candidate,
+      conversationId: id,
+      timings: {
+        totalMs: t3 - t0,
+        openaiMs: t2 - t1,
+        dbMs: t3 - t2,
+      },
+    });
   } catch (err) {
-    console.error("Error in generateTitle:", err);
-    res.status(500).json({ error: "Failed to generate title" });
+    console.error("[genTitle] ERROR", err);
+    return res.status(500).json({ error: "Failed to generate title" });
   }
 };
 
@@ -116,6 +171,6 @@ module.exports = {
   getConversations,
   getConversationById,
   deleteConversation,
-  generateTitle,
   createConversation,
+  generateTitle,
 };

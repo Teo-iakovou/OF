@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { fetchConversations } from "@/app/utils/api";
 import { BookOpen } from "lucide-react";
-
+import { dbg } from "@/app/utils/debug";
 interface Conversation {
   _id: string;
   title?: string;
@@ -27,11 +27,16 @@ export default function CoachChatHistory({
 useEffect(() => {
   if (!userEmail) return;
   setLoading(true);
+  dbg("history:load:start", { userEmail, refreshKey });
+
   fetchConversations(userEmail)
-    .then(setConvos)
+    .then((list) => {
+      dbg("history:load:success", { count: list.length, titles: list.map((c: Conversation) => c.title).slice(0,5) });
+      setConvos(list);
+    })
+    .catch((e) => dbg("history:load:error", e))
     .finally(() => setLoading(false));
 }, [userEmail, refreshKey]);
-
 
   return (
     <div className="w-full max-w-xs bg-[#181F28] border border-[#232B36] rounded-2xl shadow-lg p-4 space-y-2 overflow-y-auto h-[420px]">

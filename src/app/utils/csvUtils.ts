@@ -1,6 +1,6 @@
 import { Parser } from "json2csv";
 
-export const exportToCSV = (data: any[], filename: string) => {
+export const exportToCSV = (data: Record<string, unknown>[], filename: string) => {
   if (!data || data.length === 0) {
     console.error("No data available for export.");
     return;
