@@ -54,23 +54,15 @@ export default function Navbar({ onCartClick }: NavbarProps) {
             >
               <ShoppingBag size={28} />
               {cartCount > 0 && (
-                <span
-                  className="
-    absolute
-    -top-2 -right-2
-    flex items-center justify-center
-    bg-gradient-to-tr from-cyan-400 to-blue-600
-    text-white
-    text-xs
-    rounded-full
-    w-5 h-5
-    font-bold
-    shadow
-    z-10
+<span
+  className="
+    absolute -top-2 -right-2 flex items-center justify-center
+    bg-gradient-to-tr from-cyan-400 to-blue-600 text-white text-xs
+    rounded-full w-5 h-5 font-bold shadow z-10
   "
-                >
-                  {cartCount}
-                </span>
+>
+  {cartCount || 0}
+</span>
               )}
             </button>
 

@@ -39,6 +39,17 @@ export default function ProjectNavDropdownMenu({
             </Link>
           </li>
         ))}
+
+        {/* Exit Dashboard */}
+        <li className="border-t border-gray-700 mt-2 pt-2">
+          <Link
+            href="/"
+            className="block px-5 py-2 text-red-400 hover:text-red-500 hover:bg-gray-800 rounded transition font-semibold"
+            onClick={onClose}
+          >
+            Exit Dashboard
+          </Link>
+        </li>
       </ul>
     </div>
   );

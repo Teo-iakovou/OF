@@ -3,15 +3,26 @@ const multer = require("multer");
 const {
   analyzeImage,
   fetchAnalysisHistory,
+  getAnalysisById,
   deleteAnalysisResult,
+updateAnalysisResult
 } = require("../controllers/analyzeController");
 
 const router = express.Router();
-const upload = multer({ dest: "uploads/" }); // ✅ Save uploaded files in the "uploads" directory
+const upload = multer({ dest: "uploads/" });
 
-// Define routes
-router.post("/", upload.single("image"), analyzeImage); // ✅ Upload an image
-router.get("/", fetchAnalysisHistory); // ✅ Fetch analysis history
-router.delete("/:id", deleteAnalysisResult); // ✅ Delete an entry
+// Upload an image (supports ?captions=false)
+router.post("/", upload.single("image"), analyzeImage);
+router.patch("/:id", updateAnalysisResult); 
+
+
+// Paginated history
+router.get("/", fetchAnalysisHistory);
+
+// NEW: fetch a single result (for polling or detail)
+router.get("/:id", getAnalysisById);
+
+// Delete an entry
+router.delete("/:id", deleteAnalysisResult);
 
 module.exports = router;

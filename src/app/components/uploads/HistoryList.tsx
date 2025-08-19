@@ -1,27 +1,39 @@
 "use client";
+
 import React, { useState } from "react";
 import HistoryCard from "./HistoryCard";
 import ConfirmModal from "@/app/components/common/ConfirmModal";
 
-type HistoryItem = {
+export type HistoryItem = {
   _id: string;
-  platform: string;
-  hashtags: string[];
   createdAt: string;
+  promotion?: {
+    recommendedPlatforms?: Array<{
+      platform: string;
+      bestTimesLocal?: string[];
+      hashtags?: string[];
+      caption?: string;
+    }>;
+    contentSafety?: { csl: number };
+    niche?: string;
+  };
 };
 
-const HistoryList = ({
-  history,
-  selectedItems,
-  setSelectedItems,
-  onDeleteClick, // ✅ NEW
-}: {
+type Props = {
   history: HistoryItem[];
   selectedItems: string[];
   setSelectedItems: React.Dispatch<React.SetStateAction<string[]>>;
   onDeleteClick: (id: string) => void;
-}) => {
+  onOpenClick: (id: string) => void; // NEW: required
+};
 
+const HistoryList: React.FC<Props> = ({
+  history,
+  selectedItems,
+  setSelectedItems,
+  onDeleteClick,
+  onOpenClick, // NEW
+}) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
@@ -31,11 +43,11 @@ const HistoryList = ({
   };
 
   const confirmDelete = async () => {
-  if (!pendingDeleteId) return;
- onDeleteClick(pendingDeleteId); // ✅ correct function
-  setModalOpen(false);
-  setPendingDeleteId(null);
-};
+    if (!pendingDeleteId) return;
+    onDeleteClick(pendingDeleteId);
+    setModalOpen(false);
+    setPendingDeleteId(null);
+  };
 
   return (
     <>
@@ -47,6 +59,7 @@ const HistoryList = ({
             selectedItems={selectedItems}
             setSelectedItems={setSelectedItems}
             onDeleteClick={openConfirmModal}
+            onOpenClick={onOpenClick}     
           />
         ))}
       </div>
