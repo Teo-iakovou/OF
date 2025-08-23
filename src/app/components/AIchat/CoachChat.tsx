@@ -27,14 +27,14 @@ export default function CoachChat({
 }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [input, setInput] = useState("");
-  const [isSending, setIsSending] = useState(false); // only controls typing dots
+  const [isSending, setIsSending] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(!!initialConversationId);
   const [error, setError] = useState<string | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const prevMsgCount = useRef<number>(0);
 
-  // ----- load existing conversation (avoid refetch flicker) -----
+  // Load existing conversation
   useEffect(() => {
     let ignore = false;
     if (initialConversationId && conversation?._id !== initialConversationId) {
@@ -48,7 +48,7 @@ export default function CoachChat({
     };
   }, [initialConversationId, conversation?._id]);
 
-  // ----- autoscroll on new messages -----
+  // Autoscroll on new messages
   useEffect(() => {
     if (conversation?.messages && conversation.messages.length > prevMsgCount.current) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -56,7 +56,6 @@ export default function CoachChat({
     prevMsgCount.current = conversation?.messages?.length || 0;
   }, [conversation]);
 
-  // ----- send message with optimistic UI -----
   const sendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const text = input.trim();
@@ -95,16 +94,13 @@ export default function CoachChat({
       });
 
       setConversation(res.conversation);
-
-      // ✅ stop typing dots as soon as assistant reply arrives
       setIsSending(false);
 
-      // Generate title ONLY if this was the first user message in this convo
       const wasFirstUserMessage = (conversation?.messages?.length ?? 0) === 0;
       if (res.conversation._id && wasFirstUserMessage && typeof onNewConversation === "function") {
         const title = await generateConversationTitle(res.conversation._id, text);
         setConversation({ ...res.conversation, title: title || res.conversation.title });
-        onNewConversation(res.conversation._id); // sidebar refresh
+        onNewConversation(res.conversation._id);
       }
     } catch (err) {
       dbg("send:error", err);
@@ -122,8 +118,11 @@ export default function CoachChat({
     }
   };
 
+  const isEmpty = !bootstrapping && !(conversation?.messages?.length);
+
   return (
-    <div className="flex flex-col flex-1">
+    // 🔧 Fill available height from the page, allow inner list to scroll
+    <div className="flex flex-col h-full min-h-0">
       {/* Error banner */}
       {error && (
         <div className="w-full max-w-2xl mx-auto px-4 mb-2">
@@ -134,23 +133,29 @@ export default function CoachChat({
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-2 md:px-4 py-6 space-y-4">
+      <div
+        className={[
+          "flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 md:px-4",
+          isEmpty ? "flex items-center justify-center py-0" : "py-6",
+        ].join(" ")}
+        style={{ scrollbarGutter: "stable" }}
+      >
         {bootstrapping ? (
-          <div className="animate-pulse space-y-3">
+          <div className="animate-pulse space-y-3 w-full">
             <div className="h-5 w-2/3 rounded-xl bg-gray-200/40" />
             <div className="h-5 w-1/2 rounded-xl bg-gray-200/40" />
             <div className="h-5 w-3/5 rounded-xl bg-gray-200/40" />
           </div>
-        ) : conversation?.messages?.length ? (
+        ) : isEmpty ? (
+          <p className="text-gray-500 text-center italic">
+            Start your conversation with the AI coach...
+          </p>
+        ) : (
           <>
-            {conversation.messages.map((msg, idx) => (
-              <div
-                key={msg._id || idx}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
+            {conversation!.messages.map((msg, idx) => (
+              <div key={msg._id || idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} mb-3`}>
                 <div
-                  className={`px-4 py-2 text-sm md:text-base max-w-[85%] rounded-2xl leading-relaxed shadow-sm
-                  ${
+                  className={`px-4 py-2 text-sm md:text-base max-w-[85%] rounded-2xl leading-relaxed shadow-sm ${
                     msg.role === "user"
                       ? "bg-gray-200 text-black"
                       : "bg-gray-100 text-gray-800 border border-gray-300"
@@ -161,7 +166,6 @@ export default function CoachChat({
               </div>
             ))}
 
-            {/* Typing indicator bubble while awaiting assistant */}
             {isSending && (
               <div className="flex justify-start">
                 <div className="px-4 py-2 text-sm max-w-[85%] rounded-2xl shadow-sm bg-gray-100 text-gray-600 border border-gray-300">
@@ -174,18 +178,17 @@ export default function CoachChat({
               </div>
             )}
           </>
-        ) : (
-          <div className="flex flex-1 items-center justify-center text-gray-500 text-center italic">
-            Start your conversation with the AI coach...
-          </div>
         )}
+
+        {/* Anchor to keep scroll at bottom */}
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input bar */}
+      {/* Input bar (no negative margins) */}
       <form
         onSubmit={sendMessage}
-        className="w-full max-w-2xl mx-auto px-4 py-2 -mb-10 border-t border-gray-700 bg-transparent"
+        className="shrink-0 w-full max-w-2xl mx-auto px-4 py-3 border-t border-gray-700/50 bg-transparent"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-center gap-3 bg-[#1a1f2b] border border-gray-700 rounded-xl px-3 py-2">
           <textarea

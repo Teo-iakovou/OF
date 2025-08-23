@@ -1,8 +1,9 @@
 {
-  "/page": "app/page.js",
+  "/not-found": "app/not-found.js",
   "/[id]/page": "app/[id]/page.js",
-  "/dashboard/billing/page": "app/dashboard/billing/page.js",
+  "/page": "app/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/dashboard/upload/page": "app/dashboard/upload/page.js",
-  "/dashboard/history/page": "app/dashboard/history/page.js"
+  "/dashboard/history/page": "app/dashboard/history/page.js",
+  "/dashboard/billing/page": "app/dashboard/billing/page.js",
+  "/dashboard/account/page": "app/dashboard/account/page.js"
 }

@@ -11,12 +11,14 @@ import {
   PanelRightOpen,
 } from "lucide-react";
 import Image from "next/image";
+import { useFloatingChat } from "@/app/components/AIchat/FloatingChatContext";
+
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/upload", label: "Upload Content", icon: Upload },
   { href: "/dashboard/history", label: "Upload History", icon: History },
   { href: "/dashboard/billing", label: "Plan & Billing", icon: CreditCard },
-  { href: "/dashboard/ai-chat", label: "AI Chat", icon: MessageCircle },
+  { label: "AI Chat", icon: MessageCircle, action: "chat" },
   { href: "/dashboard/account", label: "Account Info", icon: User },
 ];
 
@@ -28,15 +30,16 @@ export default function DashboardSidebar({
   setExpanded: (value: boolean) => void;
 }) {
   const pathname = usePathname();
+  const { open } = useFloatingChat();
 
   return (
     <nav
       className={`
-    bg-[#171d29] rounded-2xl shadow-2xl flex flex-col justify-between items-center
-    transition-all duration-200 fixed top-6 left-4
-    ${expanded ? "w-64" : "w-16"}
-    py-4 px-2 z-30
-  `}
+        bg-[#171d29] rounded-2xl shadow-2xl flex flex-col justify-between items-center
+        transition-all duration-200 fixed top-6 left-4
+        ${expanded ? "w-64" : "w-16"}
+        py-4 px-2 z-30
+      `}
       style={{
         minWidth: expanded ? 256 : 64,
         maxWidth: expanded ? 256 : 64,
@@ -45,7 +48,7 @@ export default function DashboardSidebar({
     >
       {/* Top Section: Toggle + Nav */}
       <div className="flex flex-col items-center gap-2 pt-2">
-        {/* Toggle: PanelRightOpen icon, same style as all icons */}
+        {/* Toggle: PanelRightOpen icon */}
         <div
           role="button"
           tabIndex={0}
@@ -59,41 +62,64 @@ export default function DashboardSidebar({
         >
           <PanelRightOpen
             size={22}
-            className={
-              expanded ? "" : "rotate-180 transition-transform duration-300"
-            }
+            className={expanded ? "" : "rotate-180 transition-transform duration-300"}
           />
         </div>
+
         {/* Nav Items */}
         <ul className="flex flex-col items-center gap-2 mt-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <li key={item.href} className="relative group">
-                <Link href={item.href}>
-                  <span
-                    className={`flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer font-medium text-base
-                      transition-colors duration-150 w-full
-                      ${
-                        isActive
-                          ? "bg-blue-600 text-white"
-                          : "text-blue-300 hover:bg-[#232B36]"
-                      }
-                    `}
+            const isActive = item.href ? pathname === item.href : false;
+
+            // shared styles
+            const base =
+              "flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer font-medium text-base transition-colors duration-150 w-full";
+            const idle = "text-blue-300 hover:bg-[#232B36]";
+            const active = "bg-blue-600 text-white";
+
+            // AI Chat → active when floating chat is open
+            if (item.action === "chat") {
+              return (
+                <li key={item.label} className="relative group">
+                  <button
+                    onClick={() => open()}
+                    className={`${base} ${idle}`}
                   >
                     <Icon size={22} />
-                    {expanded && (
-                      <span className="whitespace-nowrap">{item.label}</span>
-                    )}
+                    {expanded && <span className="whitespace-nowrap">{item.label}</span>}
+                  </button>
+
+                  {!expanded && (
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto bg-black text-white px-3 py-1 rounded shadow-lg text-xs font-semibold z-50 transition whitespace-nowrap">
+                      {item.label}
+                    </div>
+                  )}
+                </li>
+              );
+            }
+
+            // Normal links → active when route matches, otherwise idle
+            return (
+              <li key={item.label} className="relative group">
+                {item.href ? (
+                  <Link href={item.href}>
+                    <span className={`${base} ${isActive ? active : idle}`}>
+                      <Icon size={22} />
+                      {expanded && (
+                        <span className="whitespace-nowrap">{item.label}</span>
+                      )}
+                    </span>
+                  </Link>
+                ) : (
+                  <span className={`${base} ${idle}`}>
+                    <Icon size={22} />
+                    {expanded && <span className="whitespace-nowrap">{item.label}</span>}
                   </span>
-                </Link>
-                {/* Tooltip on hover (only when collapsed) */}
+                )}
+
                 {!expanded && (
-                  <div
-                    className="absolute left-full top-1/2 -translate-y-1/2 ml-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto
-                    bg-black text-white px-3 py-1 rounded shadow-lg text-xs font-semibold z-50 transition whitespace-nowrap"
-                  >
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto bg-black text-white px-3 py-1 rounded shadow-lg text-xs font-semibold z-50 transition whitespace-nowrap">
                     {item.label}
                   </div>
                 )}
@@ -102,13 +128,14 @@ export default function DashboardSidebar({
           })}
         </ul>
       </div>
+
       {/* Bottom: Profile */}
       <div className="flex flex-col items-center text-white">
         <Link href="/" className="flex flex-col items-center group transition">
           <Image
             src="/5805591578897663447.jpg"
             alt="Platform Logo"
-            width={56} // matches h-14 (14 * 4 = 56px)
+            width={56}
             height={56}
             className="rounded-full object-cover border border-gray-700 group-hover:scale-105 transition"
           />
