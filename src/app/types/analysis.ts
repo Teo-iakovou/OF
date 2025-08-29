@@ -1,22 +1,21 @@
 // src/app/types/analysis.ts
-export type Likelihood = "VERY_UNLIKELY" | "UNLIKELY" | "POSSIBLE" | "LIKELY" | "VERY_LIKELY" | undefined;
+
+export type Likelihood =
+  | "VERY_UNLIKELY"
+  | "UNLIKELY"
+  | "POSSIBLE"
+  | "LIKELY"
+  | "VERY_LIKELY"
+  | undefined;
 
 export type PipelineStatus = "processing" | "ready" | "error";
 
-declare module "@/app/types/analysis" {
-  interface ResultDoc {
-    status?: PipelineStatus;
-    stage?: string;
-    imageHash?: string;
-    _id: string;
-    captionsGenerated?: boolean;
-    id: string;
-  }
-}
-
 export interface DominantColor {
-  r: number; g: number; b: number;
-  score: number; pixelFraction: number;
+  r: number;
+  g: number;
+  b: number;
+  score: number;
+  pixelFraction: number;
 }
 
 export interface VisionMeta {
@@ -43,12 +42,12 @@ export interface ColorMood {
 export interface RecommendedPlatform {
   platform: "Instagram" | "TikTok" | "Twitter" | "Reddit" | "Telegram" | string;
   preview: Record<string, unknown>;
-  caption: string;                 // filled by caption generator
+  caption?: string;                 // may be empty when captions=false fast-path
   hashtags: string[];
   link: { url: string; placement: string };
-  bestTimesLocal?: string[];
+  bestTimesLocal?: string[];        // ["18:00-21:00", ...]
   notes?: string[];
-  subreddits?: string[];           // for Reddit
+  subreddits?: string[];            // for Reddit
 }
 
 export interface Promotion {
@@ -72,11 +71,19 @@ export interface PromotionMeta {
 export interface ResultDoc {
   _id: string;
   email: string;
+
   csl: number;
   niche: string;
   hasFace: boolean;
+
+  // pipeline / storage info
+  status?: PipelineStatus;
+  stage?: string;
+  imageHash?: string;
+  captionsGenerated?: boolean;
+
   promotion: Promotion;
   meta: PromotionMeta;
+
   createdAt: string;
 }
-

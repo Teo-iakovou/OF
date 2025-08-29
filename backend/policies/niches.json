@@ -1,0 +1,12 @@
+{
+  "version": "2025-08-25",
+  "cosplay": { "tone": ["playful","in-character"], "seeds": ["#cosplay","#anime"] },
+  "fitness": { "tone": ["motivational","focused"], "seeds": ["#fitness","#gym"] },
+  "glamour": { "tone": ["elegant","confident"], "seeds": ["#glamour","#fashion"] },
+  "bikini":  { "tone": ["sunny","tease"],       "seeds": ["#bikini","#swimwear"] },
+  "alt":     { "tone": ["edgy","bold"],         "seeds": ["#tattoo","#alt"] },
+  "travel":  { "tone": ["wander","vivid"],      "seeds": ["#travel","#wanderlust"] },
+  "city":    { "tone": ["night","aesthetic"],   "seeds": ["#city","#nightphotography"] },
+  "food":    { "tone": ["tasty","clean"],       "seeds": ["#foodie","#food"] },
+  "general": { "tone": ["clean","direct"],      "seeds": ["#creator","#content"] }
+}

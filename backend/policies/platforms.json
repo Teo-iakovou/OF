@@ -1,0 +1,39 @@
+{
+  "version": "2025-08-25",
+  "instagram": {
+    "captionMax": 2200,
+    "hashtagsMax": 30,
+    "bestTimeWindowsLocal": {
+      "weekday": ["11:00-13:00", "18:00-21:00"],
+      "weekend": ["10:00-12:00", "17:00-21:00"]
+    },
+    "nsfw": { "allow": false, "notes": ["No OF links in caption; push bio"] }
+  },
+  "tiktok": {
+    "captionMax": 220,
+    "hashtagsMax": 5,
+    "bestTimeWindowsLocal": {
+      "weekday": ["12:00-14:00", "19:00-22:00"],
+      "weekend": ["11:00-13:00", "18:00-22:00"]
+    },
+    "nsfw": { "allow": false, "notes": ["Avoid direct OF mention"] }
+  },
+  "twitter": {
+    "captionMax": 280,
+    "hashtagsMax": 8,
+    "bestTimeWindowsLocal": {
+      "weekday": ["19:00-22:00"],
+      "weekend": ["18:00-23:00"]
+    },
+    "nsfw": { "allow": true }
+  },
+  "reddit": {
+    "captionMax": 300,
+    "hashtagsMax": 0,
+    "bestTimeWindowsLocal": {
+      "weekday": ["18:00-23:00"],
+      "weekend": ["17:00-23:00"]
+    },
+    "nsfw": { "allow": true }
+  }
+}

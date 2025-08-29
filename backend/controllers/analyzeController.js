@@ -11,7 +11,7 @@ const User = require("../models/user");
 const { analyzeImageBufferWithGoogleVision } = require("../utils/analyzeImageWithGoogleVision");
 const { buildPromotionBlueprint } = require("../utils/buildPromotionBlueprint");
 const { generateCaptionWithOpenAI } = require("../utils/generateCaptionWithOpenAI");
-
+const { isNearDuplicate } = require("../utils/textDiversity");
 // --- helpers ---
 const sendErr = (res, status, msg, detail) => {
   const payload = { error: msg };
@@ -173,6 +173,13 @@ const analyzeImage = async (req, res) => {
     let promotion, meta;
     try {
       const out = buildPromotionBlueprint(visionData, ctx);
+      log(requestId, "blueprint_done", {
+  niche: promotion?.niche,
+  csl: promotion?.contentSafety?.csl,
+  policiesVersion: meta?.policiesVersion,
+  engineVersion: meta?.engineVersion,
+  platforms: (promotion?.recommendedPlatforms || []).map(r => r.platform),
+});
       promotion = out.promotion;
       meta = out.meta;
       if (!promotion) {
@@ -183,33 +190,57 @@ const analyzeImage = async (req, res) => {
       return sendErr(res, 500, "Failed to build promotion plan.", { stage: "blueprint_throw", message: e?.message });
     }
 
-    // 4) Captions (optional)
-    const tCap0 = Date.now();
-    try {
-      if (!skipCaptions && Array.isArray(promotion.recommendedPlatforms)) {
-        const withCaptions = await Promise.all(
-          promotion.recommendedPlatforms.map(async (rec) => {
-            try {
-              const dynamicForPlatform = {
-                platform: rec.platform,
-                bestPostTime: (rec.bestTimesLocal && rec.bestTimesLocal[0]) || "18:00",
-                tip: (promotion.ctaVariants && promotion.ctaVariants[0]) || "",
-                hashtags: rec.hashtags || [],
-              };
-              const caption = await generateCaptionWithOpenAI(visionData, dynamicForPlatform, { requestId });
-              return { ...rec, caption: caption || rec.caption || "" };
-            } catch (e) {
-              log(requestId, "caption_error", { platform: rec.platform, message: e?.message });
-              return rec;
-            }
-          })
-        );
-        promotion.recommendedPlatforms = withCaptions;
-      }
-    } catch (e) {
-      log(requestId, "caption_loop_error", { message: e?.message });
-    }
-    log(requestId, "captions_done", { skipped: !!skipCaptions, duration_ms: Date.now() - tCap0 });
+   // 4) Captions (optional)
+const tCap0 = Date.now();
+try {
+  if (!skipCaptions && Array.isArray(promotion.recommendedPlatforms)) {
+    // gather user’s recent captions to avoid repeats
+    const recent = await Result.find({ email }).sort({ createdAt: -1 }).limit(50);
+    const recentCaps = recent
+      .flatMap(r => (r.promotion?.recommendedPlatforms || [])
+        .map(x => x.caption)
+        .filter(Boolean));
+
+    const withCaptions = await Promise.all(
+      promotion.recommendedPlatforms.map(async (rec) => {
+        try {
+          const dynamicForPlatform = {
+            platform: rec.platform,
+            bestPostTime: (rec.bestTimesLocal && rec.bestTimesLocal[0]) || "18:00",
+            tip: (promotion.ctaVariants && promotion.ctaVariants[0]) || "",
+            hashtags: rec.hashtags || [],
+          };
+
+          // attempt 1
+          let caption = await generateCaptionWithOpenAI(visionData, dynamicForPlatform, { requestId });
+
+          // if too similar, regenerate once with directive + avoid list
+          if (caption && recentCaps.some(c => isNearDuplicate(caption, c))) {
+            caption = await generateCaptionWithOpenAI(
+              visionData,
+              dynamicForPlatform,
+              {
+                requestId,
+                styleDirective: "Use a different structure and hook than previous posts.",
+                avoidPhrases: recentCaps.slice(0, 12)
+              }
+            );
+            log(requestId, "caption_similarity_blocked", { blocked: true });
+          }
+
+          return { ...rec, caption: caption || rec.caption || "" };
+        } catch (e) {
+          log(requestId, "caption_error", { platform: rec.platform, message: e?.message });
+          return rec;
+        }
+      })
+    );
+    promotion.recommendedPlatforms = withCaptions;
+  }
+} catch (e) {
+  log(requestId, "caption_loop_error", { message: e?.message });
+}
+log(requestId, "captions_done", { skipped: !!skipCaptions, duration_ms: Date.now() - tCap0 });
 
     // 5) Save
     let newResult;

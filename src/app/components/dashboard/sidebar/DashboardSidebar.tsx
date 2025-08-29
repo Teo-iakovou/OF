@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Upload,
   History,
-  CreditCard,
   User,
   MessageCircle,
   PanelRightOpen,
@@ -17,11 +16,9 @@ const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/upload", label: "Upload Content", icon: Upload },
   { href: "/dashboard/history", label: "Upload History", icon: History },
-  { href: "/dashboard/billing", label: "Plan & Billing", icon: CreditCard },
   { label: "AI Chat", icon: MessageCircle, action: "chat" },
-  { href: "/dashboard/account", label: "Account Info", icon: User },
+  { href: "/dashboard/account", label: "Account & Billing", icon: User },
 ];
-
 export default function DashboardSidebar({
   expanded,
   setExpanded,

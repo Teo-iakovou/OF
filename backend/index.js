@@ -12,9 +12,11 @@ const userRoutes = require("./routes/userRoutes");
 const checkoutRoutes = require("./routes/checkout");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const webhookController = require("./controllers/checkoutController");
+const { requestId } = require("./middleware/requestId");
+
 
 const app = express();
-
+app.use(requestId);
 // ✅ CORS for all routes (array of allowed origins)
 app.use(
   cors({

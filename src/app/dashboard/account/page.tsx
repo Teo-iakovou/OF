@@ -1,25 +1,66 @@
 "use client";
+
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
 import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
+import { checkUserPackage } from "@/app/utils/api";
+import Spinner from "@/app/components/dashboard/loading spinner/page";
 
-export default function AccountPage() {
+type UserPkg = {
+  name: string;
+  uploadsRemaining: number;
+  expiresAt?: string;
+} | null;
+
+export default function AccountAndBillingPage() {
   const [email, setEmail] = useState<string | null>(null);
-  const router = useRouter();
+  const [userPackage, setUserPackage] = useState<UserPkg>(null);
+  const [loading, setLoading] = useState(true);
 
   // Mobile Project Nav
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const router = useRouter();
+
   useEffect(() => {
-    setEmail(localStorage.getItem("userEmail"));
+    const stored = localStorage.getItem("userEmail");
+    setEmail(stored);
+
+    if (!stored) {
+      setLoading(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await checkUserPackage(stored);
+        if (res?.hasAccess) {
+          setUserPackage({
+            name: res.package ?? "Unknown",
+            uploadsRemaining: res.uploadsRemaining ?? 0,
+            expiresAt: res.expiresAt,
+          });
+        } else {
+          setUserPackage(null);
+        }
+      } catch (err) {
+        console.error("Error loading user package:", err);
+        setUserPackage(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
+  // Close mobile Project Nav on outside click
   useEffect(() => {
     if (!open) return;
     function handle(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
     }
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
@@ -35,7 +76,11 @@ export default function AccountPage() {
     <div className="h-full flex flex-col overflow-hidden text-white">
       {/* Header */}
       <header className="shrink-0 pt-12 md:pt-20 px-6 md:px-12 lg:px-20 max-w-6xl mx-auto w-full">
-        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Account Info</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+            Account &amp; Billing
+          </h1>
+        </div>
 
         {/* Mobile Project Nav under the title */}
         <div className="mt-3 md:hidden" ref={menuRef}>
@@ -48,26 +93,80 @@ export default function AccountPage() {
         </div>
       </header>
 
-      {/* Centered content */}
-      <main className="flex-1 min-h-0 overflow-y-auto px-6 md:px-12 lg:px-20 grid place-items-center">
-        <div className="w-full max-w-xl">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md space-y-4">
-            {email ? (
-              <>
-                <p>
-                  <strong>Email:</strong> {email}
-                </p>
-                <button
-                  className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium transition"
-                  onClick={handleLogout}
-                >
-                  Log Out
-                </button>
-              </>
-            ) : (
-              <p className="text-red-400">No account information found.</p>
-            )}
-          </div>
+      {/* Content */}
+      <main className="flex-1 min-h-0 overflow-y-auto px-6 md:px-12 lg:px-20">
+        <div className="max-w-6xl mx-auto pb-8">
+          {loading ? (
+            <div className="py-10 grid place-items-center">
+              <Spinner />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Account card */}
+              <section className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md space-y-4">
+                <h2 className="text-xl font-semibold">Account</h2>
+                {email ? (
+                  <>
+                    <p>
+                      <strong>Email:</strong> {email}
+                    </p>
+                    <div className="pt-2">
+                      <button
+                        className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium transition"
+                        onClick={handleLogout}
+                      >
+                        Log Out
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-red-400">No account information found.</p>
+                )}
+              </section>
+
+              {/* Plan card */}
+              <section className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md space-y-4">
+                <h2 className="text-xl font-semibold">Plan</h2>
+                {userPackage ? (
+                  <>
+                    <div className="grid grid-cols-1 gap-3">
+                      <p>
+                        <strong>Current Plan:</strong> {userPackage.name}
+                      </p>
+                      <p>
+                        <strong>Uploads Remaining:</strong> {userPackage.uploadsRemaining}
+                      </p>
+                      {userPackage.expiresAt && (
+                        <p>
+                          <strong>Expires:</strong>{" "}
+                          {new Date(userPackage.expiresAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        onClick={() => router.push("/#packages")}
+                        className="inline-flex items-center justify-center rounded-lg px-4 py-2 bg-cyan-600 hover:bg-cyan-700 transition text-white font-medium"
+                      >
+                        Upgrade Plan
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-red-400">No active plan found.</p>
+                    <button
+                      onClick={() => router.push("/#packages")}
+                      className="inline-flex items-center justify-center rounded-lg px-4 py-2 bg-cyan-600 hover:bg-cyan-700 transition text-white font-medium"
+                    >
+                      View Plans
+                    </button>
+                  </>
+                )}
+              </section>
+            </div>
+          )}
         </div>
       </main>
     </div>

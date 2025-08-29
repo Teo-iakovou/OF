@@ -2,11 +2,15 @@
 import type { ResultDoc } from "@/app/types/analysis";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-// src/app/utils/auth-lite.ts
+
+// -------------------------------
+// Small helpers
+// -------------------------------
 export function getClientEmail(): string {
   if (typeof window === "undefined") return "";
   return localStorage.getItem("userEmail") || "";
 }
+
 async function readJsonOrText(res: Response) {
   const text = await res.text();
   try {
@@ -28,8 +32,8 @@ function ensureOk<T = unknown>(
   return r.data as T;
 }
 
-
-
+// -------------------------------
+/** Analysis history */
 export async function fetchAnalysisHistory(
   email: string,
   page = 1,
@@ -63,9 +67,8 @@ export async function deleteAnalysisResult(id: string) {
   return ensureOk<{ message: string }>(parsed, "Delete analysis result");
 }
 
-// ============================================================================
-// Stripe checkout (unchanged)
-// ============================================================================
+// -------------------------------
+/** Stripe (unchanged) */
 export async function startCheckout(email: string, packageId: string) {
   const res = await fetch(`${BASE_URL}/api/checkout/create-checkout-session`, {
     method: "POST",
@@ -73,14 +76,19 @@ export async function startCheckout(email: string, packageId: string) {
     body: JSON.stringify({ email, packageId }),
   });
   const { ok, data } = await readJsonOrText(res);
-  if (!ok) throw new Error(typeof data === "string" ? data : data?.error || "Failed to start checkout");
+  if (!ok)
+    throw new Error(
+      typeof data === "string" ? data : data?.error || "Failed to start checkout"
+    );
   if (!data?.url) throw new Error("No checkout URL returned");
   window.location.href = data.url;
 }
 
 export async function verifySession(sessionId: string) {
   const res = await fetch(
-    `${BASE_URL}/api/checkout/verify-session?session_id=${encodeURIComponent(sessionId)}`
+    `${BASE_URL}/api/checkout/verify-session?session_id=${encodeURIComponent(
+      sessionId
+    )}`
   );
   const parsed = await readJsonOrText(res);
   return ensureOk<{ status: string; email?: string; packageId?: string }>(
@@ -101,9 +109,8 @@ export async function purchasePackage(email: string, packageId: string) {
   return ensureOk<PurchaseResponse>(parsed, "Purchase package");
 }
 
-// ============================================================================
-// User/package
-// ============================================================================
+// -------------------------------
+/** User/package */
 export interface UserPackageResponse {
   hasAccess: boolean;
   package?: string;
@@ -111,7 +118,9 @@ export interface UserPackageResponse {
   expiresAt?: string;
 }
 
-export async function checkUserPackage(email: string): Promise<UserPackageResponse> {
+export async function checkUserPackage(
+  email: string
+): Promise<UserPackageResponse> {
   const res = await fetch(
     `${BASE_URL}/api/user/check-package?email=${encodeURIComponent(email)}`
   );
@@ -119,9 +128,80 @@ export async function checkUserPackage(email: string): Promise<UserPackageRespon
   return ensureOk<UserPackageResponse>(parsed, "Check user package");
 }
 
-// ============================================================================
-// Coach chat + conversations (unchanged from your working setup)
-// ============================================================================
+// -------------------------------
+// Chat types (inline)
+// -------------------------------
+export interface ChatMeta {
+  usedContextIds?: string[];
+  requestId?: string;
+  latencyMs?: number;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  _id?: string;
+  meta?: ChatMeta;
+}
+
+export interface ChatConversation {
+  _id: string;
+  title?: string;
+  messages: ChatMessage[];
+  updatedAt?: string;
+}
+
+export interface ConversationSummary {
+  _id: string;
+  title?: string;
+  updatedAt?: string;
+}
+
+export interface Conversation {
+  _id: string;
+  title?: string;
+  messages: ChatMessage[];
+  updatedAt?: string;
+}
+
+// 200 OK payload
+export interface CoachChatResponse {
+  ai: string;
+  conversation: ChatConversation;
+  usedContextIds?: string[];
+  requestId?: string;
+  latencyMs?: number;
+  quota?: { used: number; limit: number }; // optional
+}
+
+// non-200 payloads
+export interface CoachChatLimitData {
+  error: string;
+  action?: "upgrade";
+  quota?: { used: number; limit: number };
+}
+export interface CoachChatRateLimitData {
+  error?: string;
+  message?: string;
+}
+export interface CoachChatNetworkError {
+  error: string;
+}
+export interface CoachChatGenericError {
+  error?: string;
+  message?: string;
+}
+
+// Discriminated union (no `any`)
+export type CoachChatResult =
+  | { status: 200; data: CoachChatResponse }
+  | { status: 402; data: CoachChatLimitData }
+  | { status: 429; data: CoachChatRateLimitData }
+  | { status: 0; data: CoachChatNetworkError }
+  | { status: number; data: CoachChatGenericError };
+
+// -------------------------------
+/** Coach chat + conversations */
 export async function coachChat({
   email,
   question,
@@ -134,14 +214,31 @@ export async function coachChat({
   latestContentInfo?: string;
   conversationId?: string;
   title?: string;
-}): Promise<CoachChatResponse> {
-  const res = await fetch(`${BASE_URL}/api/coach-chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, question, latestContentInfo, conversationId, title }),
-  });
-  const parsed = await readJsonOrText(res);
-  return ensureOk<CoachChatResponse>(parsed, "AI chat");
+}): Promise<CoachChatResult> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/coach-chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        question,
+        latestContentInfo,
+        conversationId,
+        title,
+      }),
+    });
+
+    const parsed = await readJsonOrText(res);
+    if (res.status === 200)
+      return { status: 200, data: parsed.data as CoachChatResponse };
+    if (res.status === 402)
+      return { status: 402, data: parsed.data as CoachChatLimitData };
+    if (res.status === 429)
+      return { status: 429, data: parsed.data as CoachChatRateLimitData };
+    return { status: res.status, data: parsed.data as CoachChatGenericError };
+  } catch {
+    return { status: 0, data: { error: "Network error" } };
+  }
 }
 
 export async function fetchConversation(id: string): Promise<Conversation> {
@@ -162,7 +259,9 @@ export async function deleteConversation(conversationId: string) {
   return ensureOk(parsed, "Delete conversation");
 }
 
-export async function createEmptyConversation(email: string): Promise<string | null> {
+export async function createEmptyConversation(
+  email: string
+): Promise<string | null> {
   try {
     const res = await fetch(`${BASE_URL}/api/conversations`, {
       method: "POST",
@@ -170,7 +269,10 @@ export async function createEmptyConversation(email: string): Promise<string | n
       body: JSON.stringify({ email }),
     });
     const parsed = await readJsonOrText(res);
-    const data = ensureOk<{ _id?: string; id?: string }>(parsed, "Create conversation");
+    const data = ensureOk<{ _id?: string; id?: string }>(
+      parsed,
+      "Create conversation"
+    );
     return data._id ?? data.id ?? null;
   } catch (error) {
     console.error("Error creating new conversation:", error);
@@ -182,19 +284,26 @@ export async function generateConversationTitle(
   conversationId: string,
   firstUserMessage: string
 ) {
-  const res = await fetch(`${BASE_URL}/api/conversations/${conversationId}/generate-title`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ firstUserMessage }),
-    cache: "no-store",
-  });
+  const res = await fetch(
+    `${BASE_URL}/api/conversations/${conversationId}/generate-title`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ firstUserMessage }),
+      cache: "no-store",
+    }
+  );
   const parsed = await readJsonOrText(res);
   const data = ensureOk<{ title: string | null }>(parsed, "Generate title");
   return data.title || null;
 }
 
-export async function fetchConversations(email: string): Promise<ConversationSummary[]> {
-  const url = `${BASE_URL}/api/conversations?email=${encodeURIComponent(email)}&ts=${Date.now()}`;
+export async function fetchConversations(
+  email: string
+): Promise<ConversationSummary[]> {
+  const url = `${BASE_URL}/api/conversations?email=${encodeURIComponent(
+    email
+  )}&ts=${Date.now()}`;
   const res = await fetch(url, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
@@ -204,36 +313,12 @@ export async function fetchConversations(email: string): Promise<ConversationSum
   return ensureOk<ConversationSummary[]>(parsed, "Fetch conversations");
 }
 
-export interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  _id?: string;
-}
-
-export interface ChatConversation {
-  _id: string;
-  title?: string;
-  messages: ChatMessage[];
-}
-
-export interface CoachChatResponse {
-  conversation: ChatConversation;
-}
-
-export interface ConversationSummary {
-  _id: string;
-  title?: string;
-  updatedAt?: string;
-}
-export interface Conversation {
-  _id: string;
-  title?: string;
-  messages: ChatMessage[];
-  updatedAt?: string;
-}
-
-
-export async function sendFeedback(message: string, email?: string): Promise<{ success: boolean }> {
+// -------------------------------
+/** Feedback */
+export async function sendFeedback(
+  message: string,
+  email?: string
+): Promise<{ success: boolean }> {
   const res = await fetch(`${BASE_URL}/api/feedback`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -248,26 +333,29 @@ export async function sendFeedback(message: string, email?: string): Promise<{ s
         : parsed.data?.error || `Failed to send feedback (${parsed.status})`
     );
   }
-  // backend returns { success: true }
   return parsed.data as { success: boolean };
 }
 
-// add this type near your other exports
+// -------------------------------
+/** Analyze (upload + get/update) */
 export type AnalyzeResponse = {
   message?: string;
   requestId?: string;
   insights: ResultDoc;
-  durations?: { total_ms: number; vision_ms: number; captions_ms: number };
+  durations?: {
+    total_ms: number;
+    vision_ms: number;
+    captions_ms: number;
+  };
   duplicate?: boolean;
 };
 
-// REPLACE your analyzeImageMultipart with this version
 export function analyzeImageMultipart(opts: {
   file: File;
   email: string;
   goal?: "subs" | "ppv" | "customs";
   linkBase?: string;
-  captions?: boolean; // NEW: default true (compat with your current UX)
+  captions?: boolean; // default true
   onProgress?: (pct: number) => void;
 }): Promise<AnalyzeResponse> {
   const { file, email, goal, linkBase, onProgress, captions = true } = opts;
@@ -277,6 +365,12 @@ export function analyzeImageMultipart(opts: {
   form.append("email", email);
   if (goal) form.append("goal", goal);
   if (linkBase) form.append("linkBase", linkBase);
+
+  // Include browser timezone so backend returns local windows
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (timezone) form.append("timezone", timezone);
+  } catch {}
 
   const url =
     `${BASE_URL}/api/analyze` + (captions === false ? `?captions=false` : "");
@@ -290,7 +384,7 @@ export function analyzeImageMultipart(opts: {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const json = JSON.parse(xhr.responseText) as AnalyzeResponse;
-          resolve(json);
+        resolve(json);
         } catch {
           reject(new Error("Invalid JSON from server."));
         }
@@ -315,13 +409,19 @@ export function analyzeImageMultipart(opts: {
     xhr.send(form);
   });
 }
+
 export async function getAnalysisById(id: string) {
-  const res = await fetch(`${BASE_URL}/api/analyze/${id}`, { cache: "no-store" });
+  const res = await fetch(`${BASE_URL}/api/analyze/${id}`, {
+    cache: "no-store",
+  });
   const parsed = await readJsonOrText(res);
   return ensureOk<ResultDoc>(parsed, "Fetch result by id");
 }
 
-export async function updateAnalysisById(id: string, patch: Partial<ResultDoc>): Promise<ResultDoc> {
+export async function updateAnalysisById(
+  id: string,
+  patch: Partial<ResultDoc>
+): Promise<ResultDoc> {
   const res = await fetch(`${BASE_URL}/api/analyze/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -329,4 +429,23 @@ export async function updateAnalysisById(id: string, patch: Partial<ResultDoc>):
   });
   const parsed = await readJsonOrText(res);
   return ensureOk<ResultDoc>(parsed, "Update analysis");
+}
+// --- Quick Prompts types ---
+export interface SuggestPromptsResponse {
+  prompts: string[];
+  meta: { plan: string; niche: string; tz: string };
+}
+
+// --- Quick Prompts API ---
+export async function fetchCoachChatPrompts(
+  email: string
+): Promise<SuggestPromptsResponse> {
+  const url = `${BASE_URL}/api/coach-chat/prompts?email=${encodeURIComponent(email)}&ts=${Date.now()}`;
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+  });
+  const parsed = await readJsonOrText(res);
+  return ensureOk<SuggestPromptsResponse>(parsed, "Fetch coach prompts");
 }

@@ -20,6 +20,9 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  chatUsedThisCycle: { type: Number, default: 0 },
+chatMonthlyLimit:  { type: Number, default: 20 }, // will be overwritten per plan
+chatCycleEndsAt:   { type: Date },
 });
 
 module.exports = mongoose.model("User", userSchema);

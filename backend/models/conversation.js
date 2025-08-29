@@ -12,7 +12,6 @@ const conversationSchema = new mongoose.Schema({
   messages: [messageSchema],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
-  title: { type: String, default: ''},
 });
 
 module.exports = mongoose.model("Conversation", conversationSchema);
