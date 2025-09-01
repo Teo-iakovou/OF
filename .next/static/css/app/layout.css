@@ -559,6 +559,10 @@ video {
 .inset-0 {
   inset: 0px;
 }
+.inset-x-0 {
+  left: 0px;
+  right: 0px;
+}
 .-right-2 {
   right: -0.5rem;
 }
@@ -610,6 +614,9 @@ video {
 .top-full {
   top: 100%;
 }
+.bottom-0 {
+  bottom: 0px;
+}
 .z-10 {
   z-index: 10;
 }
@@ -627,6 +634,9 @@ video {
 }
 .z-\[60\] {
   z-index: 60;
+}
+.z-\[5\] {
+  z-index: 5;
 }
 .col-span-1 {
   grid-column: span 1 / span 1;
@@ -792,6 +802,9 @@ video {
 }
 .min-h-screen {
   min-height: 100vh;
+}
+.min-h-\[100svh\] {
+  min-height: 100svh;
 }
 .w-1 {
   width: 0.25rem;
