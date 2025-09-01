@@ -1,11 +1,9 @@
-// src/app/dashboard/layout.tsx
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation"; // ← add this
 import DashboardSidebar from "@/app/components/dashboard/sidebar/DashboardSidebar";
 import EmailModal from "@/app/components/email/EmailModal";
-
-// ⬇️ Floating chat additions
 import { FloatingChatProvider } from "@/app/components/AIchat/FloatingChatContext";
 import FloatingChatWidget from "@/app/components/AIchat/FloatingChatWidget";
 
@@ -17,6 +15,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
+
+  const pathname = usePathname(); // ← read current route
 
   useEffect(() => {
     const email = localStorage.getItem("userEmail") || "";
@@ -33,6 +33,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const sidebarWidth = expanded ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED;
 
+  // Hide floating chat on any dedicated chat routes
+  const hideFloatingOn = [
+    "/dashboard/ai-chat",
+    "/dashboard/ai-coach",
+    "/dashboard/coaching",
+  ];
+  const showFloating = !hideFloatingOn.some((r) => pathname?.startsWith(r));
+
   if (!hasMounted) return null;
 
   return (
@@ -44,9 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       />
 
       {!showEmailModal && (
-        // Provider wraps the whole dashboard so the widget works on every page
         <FloatingChatProvider email={userEmail}>
-          {/* Fixed viewport height; children manage their own scrolling */}
           <div className="h-[100dvh] overflow-hidden overflow-x-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black flex">
             {/* Sidebar */}
             <div
@@ -56,18 +62,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <DashboardSidebar expanded={expanded} setExpanded={setExpanded} />
             </div>
 
-            {/* Content column */}
-            <div
-              className={`flex-1 flex flex-col min-h-0 transition-all duration-200 ${
-                expanded ? "md:ml-64" : "md:ml-16"
-              }`}
-            >
+            {/* Content */}
+            <div className={`flex-1 flex flex-col min-h-0 transition-all duration-200 ${expanded ? "md:ml-64" : "md:ml-16"}`}>
               <main className="flex-1 min-h-0 overflow-hidden px-6 pt-2">{children}</main>
               <div className="h-4 shrink-0" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
             </div>
 
-            {/* Floating chat lives once per layout (fixed & draggable) */}
-            <FloatingChatWidget />
+            {/* Floating chat (hidden on chat routes) */}
+            {showFloating && <FloatingChatWidget />}
           </div>
         </FloatingChatProvider>
       )}

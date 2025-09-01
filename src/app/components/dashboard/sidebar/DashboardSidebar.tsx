@@ -10,15 +10,16 @@ import {
   PanelRightOpen,
 } from "lucide-react";
 import Image from "next/image";
-import { useFloatingChat } from "@/app/components/AIchat/FloatingChatContext";
 
+// ✅ Now AI Chat is a normal route link (no floating chat action)
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/upload", label: "Upload Content", icon: Upload },
   { href: "/dashboard/history", label: "Upload History", icon: History },
-  { label: "AI Chat", icon: MessageCircle, action: "chat" },
+  { href: "/dashboard/ai-chat", label: "AI Chat", icon: MessageCircle },
   { href: "/dashboard/account", label: "Account & Billing", icon: User },
 ];
+
 export default function DashboardSidebar({
   expanded,
   setExpanded,
@@ -27,7 +28,13 @@ export default function DashboardSidebar({
   setExpanded: (value: boolean) => void;
 }) {
   const pathname = usePathname();
-  const { open } = useFloatingChat();
+
+  // Helper: exact match for root (/dashboard), prefix match for subpages
+  const isItemActive = (href?: string) => {
+    if (!href) return false;
+    if (href === "/dashboard") return pathname === href;
+    return pathname?.startsWith(href);
+  };
 
   return (
     <nav
@@ -67,41 +74,18 @@ export default function DashboardSidebar({
         <ul className="flex flex-col items-center gap-2 mt-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = item.href ? pathname === item.href : false;
+            const active = isItemActive(item.href);
 
-            // shared styles
             const base =
               "flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer font-medium text-base transition-colors duration-150 w-full";
             const idle = "text-blue-300 hover:bg-[#232B36]";
-            const active = "bg-blue-600 text-white";
+            const activeCls = "bg-blue-600 text-white";
 
-            // AI Chat → active when floating chat is open
-            if (item.action === "chat") {
-              return (
-                <li key={item.label} className="relative group">
-                  <button
-                    onClick={() => open()}
-                    className={`${base} ${idle}`}
-                  >
-                    <Icon size={22} />
-                    {expanded && <span className="whitespace-nowrap">{item.label}</span>}
-                  </button>
-
-                  {!expanded && (
-                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto bg-black text-white px-3 py-1 rounded shadow-lg text-xs font-semibold z-50 transition whitespace-nowrap">
-                      {item.label}
-                    </div>
-                  )}
-                </li>
-              );
-            }
-
-            // Normal links → active when route matches, otherwise idle
             return (
               <li key={item.label} className="relative group">
                 {item.href ? (
                   <Link href={item.href}>
-                    <span className={`${base} ${isActive ? active : idle}`}>
+                    <span className={`${base} ${active ? activeCls : idle}`}>
                       <Icon size={22} />
                       {expanded && (
                         <span className="whitespace-nowrap">{item.label}</span>

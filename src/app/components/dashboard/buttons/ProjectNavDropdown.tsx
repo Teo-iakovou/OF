@@ -5,7 +5,6 @@ const navItems = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/upload", label: "Upload Content" },
   { href: "/dashboard/history", label: "Upload History" },
-  { href: "/dashboard/billing", label: "Plan & Billing" },
   { href: "/dashboard/ai-chat", label: "AI Chat" },
   { href: "/dashboard/account", label: "Account Info" },
 ];

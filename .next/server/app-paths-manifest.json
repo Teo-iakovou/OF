@@ -1,10 +1,9 @@
 {
-  "/not-found": "app/not-found.js",
-  "/page": "app/page.js",
   "/[id]/page": "app/[id]/page.js",
-  "/dashboard/upload/page": "app/dashboard/upload/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
+  "/dashboard/ai-chat/page": "app/dashboard/ai-chat/page.js",
   "/dashboard/billing/page": "app/dashboard/billing/page.js",
+  "/dashboard/upload/page": "app/dashboard/upload/page.js",
+  "/dashboard/history/page": "app/dashboard/history/page.js",
   "/dashboard/account/page": "app/dashboard/account/page.js",
-  "/dashboard/history/page": "app/dashboard/history/page.js"
+  "/dashboard/page": "app/dashboard/page.js"
 }
