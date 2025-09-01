@@ -116,15 +116,13 @@ export default function AiCoachChatPage() {
       {/* Main fills the rest; chat is anchored to bottom.
           The wrapper below gives CoachChat a real height to work with. */}
       <main className="flex-1 min-h-0 w-full">
-        <div className="h-full w-full max-w-3xl mx-auto px-2 md:px-0 flex flex-col min-h-0">
-          <div className="flex-1 min-h-0 flex flex-col justify-end overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
-            <CoachChat
-              email={userEmail}
-              initialConversationId={selectedConvoId}
-              onNewConversation={handleNewConversationCreated}
-            />
-          </div>
-        </div>
+        <div className="flex-1 min-h-0 flex flex-col justify-end overflow-hidden">
+    <CoachChat
+      email={userEmail}
+      initialConversationId={selectedConvoId}
+      onNewConversation={handleNewConversationCreated}
+    />
+  </div>
       </main>
     </div>
   );

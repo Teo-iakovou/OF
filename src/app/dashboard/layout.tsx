@@ -1,7 +1,6 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation"; // ← add this
+import { usePathname } from "next/navigation";
 import DashboardSidebar from "@/app/components/dashboard/sidebar/DashboardSidebar";
 import EmailModal from "@/app/components/email/EmailModal";
 import { FloatingChatProvider } from "@/app/components/AIchat/FloatingChatContext";
@@ -16,7 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [hasMounted, setHasMounted] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
 
-  const pathname = usePathname(); // ← read current route
+  const pathname = usePathname();
 
   useEffect(() => {
     const email = localStorage.getItem("userEmail") || "";
@@ -33,13 +32,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const sidebarWidth = expanded ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED;
 
-  // Hide floating chat on any dedicated chat routes
-  const hideFloatingOn = [
-    "/dashboard/ai-chat",
-    "/dashboard/ai-coach",
-    "/dashboard/coaching",
-  ];
-  const showFloating = !hideFloatingOn.some((r) => pathname?.startsWith(r));
+  // 👇 routes where we DON'T want the bottom spacer (no footer UI)
+  const noBottomSpacerRoutes = ["/dashboard/ai-chat", "/dashboard/ai-coach", "/dashboard/coaching"];
+  const showBottomSpacer = !noBottomSpacerRoutes.some((r) => pathname?.startsWith(r));
+
+  // 👇 also hide the floating widget on the dedicated chat routes
+  const showFloating = showBottomSpacer;
 
   if (!hasMounted) return null;
 
@@ -53,22 +51,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {!showEmailModal && (
         <FloatingChatProvider email={userEmail}>
-          <div className="h-[100dvh] overflow-hidden overflow-x-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black flex">
+          {/* use 100svh to avoid iOS extra space */}
+          <div className="h-[100svh] overflow-hidden overflow-x-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black flex">
             {/* Sidebar */}
             <div
               className="hidden md:flex fixed top-6 left-6 z-30 transition-all duration-200"
-              style={{ width: sidebarWidth, height: "calc(100dvh - 3rem)", padding: "0.5rem 0" }}
+              style={{ width: sidebarWidth, height: "calc(100svh - 3rem)", padding: "0.5rem 0" }}
             >
               <DashboardSidebar expanded={expanded} setExpanded={setExpanded} />
             </div>
 
-            {/* Content */}
+            {/* Content column */}
             <div className={`flex-1 flex flex-col min-h-0 transition-all duration-200 ${expanded ? "md:ml-64" : "md:ml-16"}`}>
               <main className="flex-1 min-h-0 overflow-hidden px-6 pt-2">{children}</main>
-              <div className="h-4 shrink-0" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
+
+              {/* ⛔ remove spacer on AI chat routes to kill the black strip */}
+              {showBottomSpacer ? (
+                <div className="h-4 shrink-0" />
+              ) : null}
             </div>
 
-            {/* Floating chat (hidden on chat routes) */}
             {showFloating && <FloatingChatWidget />}
           </div>
         </FloatingChatProvider>
