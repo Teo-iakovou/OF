@@ -5,6 +5,8 @@ import DashboardSidebar from "@/app/components/dashboard/sidebar/DashboardSideba
 import EmailModal from "@/app/components/email/EmailModal";
 import { FloatingChatProvider } from "@/app/components/AIchat/FloatingChatContext";
 import FloatingChatWidget from "@/app/components/AIchat/FloatingChatWidget";
+import MobileProjectNavDrawer from "@/app/components/dashboard/buttons/MobileProjectNavDrawer";
+import { Menu } from "lucide-react";
 
 const SIDEBAR_COLLAPSED = 64;
 const SIDEBAR_EXPANDED = 256;
@@ -14,6 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const pathname = usePathname();
 
@@ -51,8 +54,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {!showEmailModal && (
         <FloatingChatProvider email={userEmail}>
-          {/* use 100svh to avoid iOS extra space */}
-          <div className="h-[100svh] overflow-hidden overflow-x-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black flex">
+          {/* allow natural page scroll; sidebar remains fixed */}
+          <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black flex">
             {/* Sidebar */}
             <div
               className="hidden md:flex fixed top-6 left-6 z-30 transition-all duration-200"
@@ -62,8 +65,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
 
             {/* Content column */}
-          <div className={`flex-1 flex flex-col min-h-0 transition-all duration-200 ${expanded ? "md:ml-64" : "md:ml-16"}`}>
-  <main className="flex-1 min-h-0 overflow-hidden px-6 pt-2">{children}</main>
+          <div className={`flex-1 flex flex-col transition-all duration-200 ${expanded ? "md:ml-64" : "md:ml-16"}`}>
+  <main className="px-6 pt-2">{children}</main>
 
   {showBottomSpacer ? (
     <div className="h-4 shrink-0" />
@@ -80,6 +83,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 )}
 
 {showFloating && <FloatingChatWidget />}
+
+            {/* Mobile header menu button */}
+            <div className="md:hidden fixed top-3 left-3 z-40">
+              <button
+                aria-label="Open navigation"
+                onClick={() => setMobileNavOpen(true)}
+                className="p-2 rounded-xl bg-[#171d29] border border-[#232B36] text-white shadow"
+              >
+                <Menu size={20} />
+              </button>
+            </div>
+
+            {/* Mobile Project Navigation Drawer */}
+            <MobileProjectNavDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
           </div>
         </FloatingChatProvider>
       )}

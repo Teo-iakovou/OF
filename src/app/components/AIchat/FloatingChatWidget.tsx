@@ -81,15 +81,7 @@ export default function FloatingChatWidget() {
     };
   }, []);
 
-  // Smart panel position: try to place up-left of the FAB, but keep on-screen
-  const computePanelPos = useCallback(
-    (fab: { x: number; y: number }) => {
-      const desiredX = fab.x - (PANEL_W - BUBBLE / 2);
-      const desiredY = fab.y - (PANEL_H - BUBBLE / 2);
-      return clamp(desiredX, desiredY, PANEL_W, PANEL_H);
-    },
-    [clamp]
-  );
+  // Panel opens centered now; no need to compute relative position
 
   // Drag via React pointerdown + global move/up + rAF
   const dragState = useRef({
@@ -211,7 +203,7 @@ export default function FloatingChatWidget() {
     emailFromCtx ??
     (typeof window !== "undefined" ? localStorage.getItem("userEmail") || "" : "");
 
-  const panelPos = computePanelPos(anchor);
+  // centered panel, no computed position needed
 
   // “+ New” from dropdown
   async function handleNewChat() {
@@ -255,86 +247,109 @@ export default function FloatingChatWidget() {
   <MessageCircle className="h-6 w-6" />
 </button>
 
-      {/* Chat panel */}
+      {/* Overlay + centered chat panel */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            ref={panelRef}
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 260, damping: 24 }}
-            style={{
-              position: "fixed",
-              left: 0,
-              top: 0,
-              transform: `translate3d(${panelPos.x}px, ${panelPos.y}px, 0)`,
-              zIndex: 2147483646,
-              width: PANEL_W,
-              maxWidth: "95vw",
-              height: PANEL_H,
-              maxHeight: "80vh",
-              willChange: "transform",
-            }}
-            className="rounded-2xl shadow-2xl border border-[#232B36] bg-[#0f1520] overflow-hidden flex flex-col"
-          >
-            {/* Header with History dropdown */}
-            <div className="relative px-4 py-2 border-b border-[#232B36] bg-[#121A24] text-gray-200 flex items-center justify-between">
-              <span className="text-sm font-medium">AI Coach</span>
+          <>
+            {/* Backdrop overlay to blur and dim background */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={() => {
+                // clicking backdrop closes panel
+                close();
+                setHistoryOpen(false);
+              }}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 2147483645,
+              }}
+              className="bg-black/30 backdrop-blur-sm"
+            />
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setHistoryOpen((v) => !v)}
-                  className="px-2 py-1 text-xs rounded text-white bg-gray-700 hover:bg-gray-600 transition"
-                >
-                  History
-                </button>
-                <button
-                  onClick={() => {
-                    close();
-                    setHistoryOpen(false);
-                  }}
-                  className="p-1 rounded-md hover:bg-[#1f2732]"
-                  aria-label="Close"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+            {/* Center container to perfectly center the panel with padding */}
+            <div
+              className="fixed inset-0 flex items-center justify-center p-4 md:p-6"
+              style={{ zIndex: 2147483646, pointerEvents: "none" }}
+            >
+              <motion.div
+                ref={panelRef}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                style={{
+                  width: PANEL_W,
+                  maxWidth: "95vw",
+                  height: PANEL_H,
+                  maxHeight: "80vh",
+                  willChange: "transform",
+                  pointerEvents: "auto",
+                }}
+                className="rounded-2xl shadow-2xl border border-[#232B36] bg-[#0f1520] overflow-hidden flex flex-col"
+              >
+              {/* Header with History dropdown */}
+              <div className="relative px-4 py-2 border-b border-[#232B36] bg-[#121A24] text-gray-200 flex items-center justify-between">
+                <span className="text-sm font-medium">AI Coach</span>
 
-              {/* Dropdown popover */}
-              {historyOpen && (
-                <div
-                  ref={historyRef}
-                  className="absolute right-2 top-full mt-2 z-[100] w-[320px]"
-                >
-                  <CoachChatHistory
-                    userEmail={email}
-                    onSelect={(id) => {
-                      setSelectedConvoId(id);
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setHistoryOpen((v) => !v)}
+                    className="px-2 py-1 text-xs rounded text-white bg-gray-700 hover:bg-gray-600 transition"
+                  >
+                    History
+                  </button>
+                  <button
+                    onClick={() => {
+                      close();
                       setHistoryOpen(false);
                     }}
-                    selectedId={selectedConvoId}
-                    refreshKey={refreshKey}
-                    showHeader
-                    onNew={handleNewChat}
-                    maxHeight={420}
+                    className="p-1 rounded-md hover:bg-[#1f2732]"
+                    aria-label="Close"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Dropdown popover */}
+                {historyOpen && (
+                  <div
+                    ref={historyRef}
+                    className="absolute right-2 top-full mt-2 z-[100] w-[320px]"
+                  >
+                    <CoachChatHistory
+                      userEmail={email}
+                      onSelect={(id) => {
+                        setSelectedConvoId(id);
+                        setHistoryOpen(false);
+                      }}
+                      selectedId={selectedConvoId}
+                      refreshKey={refreshKey}
+                      showHeader
+                      onNew={handleNewChat}
+                      maxHeight={420}
+                    />
+                  </div>
+                )}
+              </div>
+
+                {/* Chat body */}
+                <div className="flex-1 min-h-0">
+                  <CoachChat
+                    email={email}
+                    initialConversationId={selectedConvoId}
+                    onNewConversation={(newId: string) => {
+                      setSelectedConvoId(newId);
+                      setRefreshKey((k) => k + 1);
+                    }}
                   />
                 </div>
-              )}
+              </motion.div>
             </div>
-
-            {/* Chat body */}
-            <div className="flex-1 min-h-0">
-              <CoachChat
-                email={email}
-                initialConversationId={selectedConvoId}
-                onNewConversation={(newId: string) => {
-                  setSelectedConvoId(newId);
-                  setRefreshKey((k) => k + 1);
-                }}
-              />
-            </div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>,

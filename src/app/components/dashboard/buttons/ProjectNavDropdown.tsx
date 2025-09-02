@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 
-const navItems = [
+export const navItems = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/upload", label: "Upload Content" },
   { href: "/dashboard/history", label: "Upload History" },

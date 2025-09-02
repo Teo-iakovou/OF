@@ -34,6 +34,22 @@ export default function CoachChatHistory({
 }: Props) {
   const [convos, setConvos] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  function formatDate(iso?: string) {
+    if (!iso) return "";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
+    }
+  }
 
   useEffect(() => {
     if (!userEmail) return;
@@ -55,15 +71,15 @@ export default function CoachChatHistory({
   return (
     <div
       className={[
-        "w-full bg-[#181F28] border border-[#232B36] rounded-2xl shadow-lg overflow-hidden",
+        "w-full bg-[#0f1520] border border-[#232B36] rounded-2xl shadow-2xl overflow-hidden",
         className || "",
       ].join(" ")}
       style={{ maxHeight }}
     >
       {showHeader && (
-        <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-gray-700">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#232B36] bg-[#121A24]">
           <span className="font-semibold text-gray-200 text-sm inline-flex items-center gap-2">
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-4 h-4 text-cyan-400" />
             AI Chat History
           </span>
           {!!onNew && (
@@ -77,31 +93,35 @@ export default function CoachChatHistory({
         </div>
       )}
 
-      <div className="p-4 space-y-2 overflow-y-auto" style={{ maxHeight: typeof maxHeight === "number" ? maxHeight : undefined }}>
+      <div className="p-3 md:p-4 space-y-2 overflow-y-auto" style={{ maxHeight: typeof maxHeight === "number" ? maxHeight : undefined }}>
         {loading ? (
           <div className="text-xs text-gray-400">Loading...</div>
         ) : convos.length === 0 ? (
           <div className="text-xs text-gray-400">No conversations yet.</div>
         ) : (
-          convos.map((c) => (
-            <button
-              key={c._id}
-              onClick={() => onSelect(c._id)}
-              className={`w-full text-left px-3 py-2 rounded-lg transition ${
-                selectedId === c._id
-                  ? "bg-pink-700 text-white"
-                  : "bg-gray-900 text-pink-200 hover:bg-pink-800/30"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-white" />
-                <span className="font-medium">{c.title || "Untitled"}</span>
-              </div>
-              <div className="mt-1 text-xs text-gray-400">
-                {c.updatedAt ? new Date(c.updatedAt).toLocaleString() : ""}
-              </div>
-            </button>
-          ))
+          convos.map((c) => {
+            const active = selectedId === c._id;
+            return (
+              <button
+                key={c._id}
+                onClick={() => onSelect(c._id)}
+                className={[
+                  "w-full text-left px-3 py-2 rounded-xl transition border",
+                  active
+                    ? "bg-cyan-600/15 border-cyan-600/40 text-cyan-100 ring-1 ring-cyan-500/30"
+                    : "bg-[#141a26]/70 hover:bg-[#17202d] border-[#232B36] text-gray-200",
+                ].join(" ")}
+              >
+                <div className="flex items-center gap-2">
+                  <BookOpen className={`w-4 h-4 ${active ? "text-cyan-400" : "text-gray-400"}`} />
+                  <span className="font-medium truncate">{c.title || "Untitled"}</span>
+                </div>
+                <div className="mt-1 text-[11px] text-gray-400">
+                  {formatDate(c.updatedAt)}
+                </div>
+              </button>
+            );
+          })
         )}
       </div>
     </div>

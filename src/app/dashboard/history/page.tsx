@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Insights from "@/app/components/analytics/Insights";
 import HistoryList, { HistoryItem as HistoryItemType } from "@/app/components/uploads/HistoryList";
 import { deleteAnalysisResult, fetchAnalysisHistory, getClientEmail } from "@/app/utils/api";
-import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
-import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
+ 
 import Spinner from "@/app/components/dashboard/loading spinner/page";
 import type { ResultDoc } from "@/app/types/analysis";
 
@@ -15,8 +14,7 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [selectedResult, setSelectedResult] = useState<ResultDoc | null>(null);
 
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  
 
   const loadHistory = useCallback(async () => {
     const email = getClientEmail();
@@ -69,15 +67,7 @@ export default function HistoryPage() {
     };
   }, [loadHistory]);
 
-  // Close mobile Project Nav on outside click
-  useEffect(() => {
-    if (!open) return;
-    function handle(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, [open]);
+  
 
   const handleDelete = async (id: string) => {
     try {
@@ -97,8 +87,8 @@ export default function HistoryPage() {
   };
 
   return (
-    // Fill the dashboard layout; header is fixed-height, content scrolls
-    <div className="h-full flex flex-col overflow-hidden text-white">
+    // Natural page scroll; sidebar is fixed in layout
+    <div className="min-h-screen flex flex-col text-white">
       {/* Header */}
       <header className="shrink-0 pt-12 md:pt-20 px-4 md:px-12 lg:px-20 max-w-6xl mx-auto w-full">
         <div className="flex items-center justify-between">
@@ -111,19 +101,11 @@ export default function HistoryPage() {
           </button>
         </div>
 
-        {/* Mobile Project Nav under the title */}
-        <div className="mt-3 md:hidden" ref={menuRef}>
-          <ProjectNavDropdownButton open={open} setOpen={setOpen} />
-          {open && (
-            <div className="relative z-40">
-              <ProjectNavDropdownMenu overlayMode onClose={() => setOpen(false)} />
-            </div>
-          )}
-        </div>
+        {/* Mobile Project Nav moved to global drawer in layout */}
       </header>
 
       {/* Scrollable content area */}
-      <main className="flex-1 min-h-0 overflow-y-auto">
+      <main>
         <div className="px-4 md:px-12 lg:px-20 max-w-6xl mx-auto pb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {/* Left: list */}

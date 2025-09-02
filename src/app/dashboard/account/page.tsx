@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ProjectNavDropdownButton from "@/app/components/dashboard/buttons/ProjectNavDropdownButton";
-import ProjectNavDropdownMenu from "@/app/components/dashboard/buttons/ProjectNavDropdown";
+ 
 import { checkUserPackage } from "@/app/utils/api";
 import Spinner from "@/app/components/dashboard/loading spinner/page";
 
@@ -18,9 +17,7 @@ export default function AccountAndBillingPage() {
   const [userPackage, setUserPackage] = useState<UserPkg>(null);
   const [loading, setLoading] = useState(true);
 
-  // Mobile Project Nav
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  
 
   const router = useRouter();
 
@@ -54,17 +51,7 @@ export default function AccountAndBillingPage() {
     })();
   }, []);
 
-  // Close mobile Project Nav on outside click
-  useEffect(() => {
-    if (!open) return;
-    function handle(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, [open]);
+  
 
   const handleLogout = () => {
     localStorage.removeItem("userEmail");
@@ -72,8 +59,8 @@ export default function AccountAndBillingPage() {
   };
 
   return (
-    // Fill dashboard layout; header fixed height, content scrolls
-    <div className="h-full flex flex-col overflow-hidden text-white">
+    // Natural page scroll; sidebar is fixed in layout
+    <div className="min-h-screen flex flex-col text-white">
       {/* Header */}
       <header className="shrink-0 pt-12 md:pt-20 px-6 md:px-12 lg:px-20 max-w-6xl mx-auto w-full">
         <div className="flex items-center justify-between">
@@ -82,19 +69,11 @@ export default function AccountAndBillingPage() {
           </h1>
         </div>
 
-        {/* Mobile Project Nav under the title */}
-        <div className="mt-3 md:hidden" ref={menuRef}>
-          <ProjectNavDropdownButton open={open} setOpen={setOpen} />
-          {open && (
-            <div className="relative z-40">
-              <ProjectNavDropdownMenu overlayMode onClose={() => setOpen(false)} />
-            </div>
-          )}
-        </div>
+        {/* Mobile Project Nav moved to global drawer in layout */}
       </header>
 
       {/* Content */}
-      <main className="flex-1 min-h-0 overflow-y-auto px-6 md:px-12 lg:px-20">
+      <main className="px-6 md:px-12 lg:px-20">
         <div className="max-w-6xl mx-auto pb-8">
           {loading ? (
             <div className="py-10 grid place-items-center">

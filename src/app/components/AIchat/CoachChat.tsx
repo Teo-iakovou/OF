@@ -37,11 +37,13 @@ function CoachChat({
   latestContentInfo,
   initialConversationId,
   onNewConversation,
+  layout = "panel",
 }: {
   onNewConversation: (newId: string) => void;
   email: string;
   latestContentInfo?: string;
   initialConversationId?: string;
+  layout?: "page" | "panel";
 }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [input, setInput] = useState("");
@@ -353,6 +355,7 @@ function tokenizeWordsWithSpaces(s: string) {
 
 
   const isEmpty = !bootstrapping && !(conversation?.messages?.length);
+  const isPageLayout = layout === "page";
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -370,6 +373,7 @@ function tokenizeWordsWithSpaces(s: string) {
   className={[
     "flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 md:px-4",
     isEmpty ? "flex items-center justify-center py-0" : "py-6",
+    isPageLayout ? "pb-40" : "",
   ].join(" ")}
   style={{ scrollbarGutter: "stable" }}
 >
@@ -432,7 +436,10 @@ function tokenizeWordsWithSpaces(s: string) {
       {/* Input bar */}
       <form
         onSubmit={sendMessage}
-        className="shrink-0 w-full max-w-2xl mx-auto px-4 py-3 border-t border-gray-700/50 bg-transparent"
+        className={[
+          "shrink-0 w-full max-w-2xl mx-auto px-4 py-3 border-t border-gray-700/50",
+          isPageLayout ? "fixed inset-x-0 bottom-0 z-30 bg-transparent" : "bg-transparent",
+        ].join(" ")}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         {showPrompts && prompts.length > 0 && (
