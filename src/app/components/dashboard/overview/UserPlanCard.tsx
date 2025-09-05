@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { checkUserPackage } from "@/app/utils/api";
+import { Skeleton } from "@/app/components/ui/Skeleton";
 
 export default function UserPlanCard() {
   const [plan, setPlan] = useState<null | {
@@ -8,20 +9,39 @@ export default function UserPlanCard() {
     uploadsRemaining: number;
     expiresAt?: string;
   }>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const email = localStorage.getItem("userEmail");
-    if (!email) return;
-    checkUserPackage(email).then((res) => {
-      if (res?.hasAccess) {
-        setPlan({
-          name: res.package ?? "Unknown",
-          uploadsRemaining: res.uploadsRemaining ?? 0,
-          expiresAt: res.expiresAt,
-        });
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await checkUserPackage();
+        if (cancelled) return;
+        if (res?.hasAccess) {
+          setPlan({
+            name: res.package ?? "Unknown",
+            uploadsRemaining: res.uploadsRemaining ?? 0,
+            expiresAt: res.expiresAt,
+          });
+        } else {
+          setPlan(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    });
+    })();
+    return () => { cancelled = true; };
   }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 shadow-md">
+        <Skeleton className="h-6 w-40 mb-4" />
+        <Skeleton className="h-4 w-56 mb-3" />
+        <Skeleton className="h-4 w-48" />
+      </div>
+    );
+  }
 
   if (!plan) return null;
 

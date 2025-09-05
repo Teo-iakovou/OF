@@ -1,25 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useUser } from "@/app/hooks/useUser";
 import Link from "next/link";
 import UserPlanCard from "@/app/components/dashboard/overview/UserPlanCard";
 import QuickStartPanel from "@/app/components/dashboard/overview/QuickStartPanel";
 import TipsCard from "@/app/components/dashboard/overview/TipsCard";
+import { Skeleton } from "@/app/components/ui/Skeleton";
 
 export default function DashboardPage() {
-
-  // derive a friendly display name from the stored email
-  const [email, setEmail] = useState<string>("");
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setEmail(localStorage.getItem("userEmail") || "");
-    }
-  }, []);
+  const { user, loading } = useUser({ required: false });
   const displayName = useMemo(() => {
-    if (!email) return "Creator";
-    const base = email.split("@")[0] || "Creator";
-    return base.charAt(0).toUpperCase() + base.slice(1);
-  }, [email]);
+    const email = user?.email || "";
+    if (!email) return ""; // avoid placeholder flicker
+    const base = email.split("@")[0] || "";
+    return base ? base.charAt(0).toUpperCase() + base.slice(1) : "";
+  }, [user]);
 
 
   return (
@@ -40,7 +36,15 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <p className="text-sm text-gray-400">Welcome back</p>
-                <h2 className="text-2xl md:text-3xl font-bold text-white mt-1">{displayName} 👋</h2>
+                <h2 className="text-2xl md:text-3xl font-bold text-white mt-1 min-h-[1.75rem]">
+                  {loading ? (
+                    <Skeleton className="h-7 w-40" />
+                  ) : displayName ? (
+                    `${displayName} 👋`
+                  ) : (
+                    ""
+                  )}
+                </h2>
                 <p className="text-gray-300 mt-2">
                   Upload content and get platform-ready captions, hashtags, and best posting times — fast.
                 </p>

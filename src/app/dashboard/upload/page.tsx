@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import FileUpload from "@/app/components/uploads/FileUpload";
 import Insights from "@/app/components/analytics/Insights";
-import { checkUserPackage, getClientEmail } from "@/app/utils/api";
- 
+import { checkUserPackage } from "@/app/utils/api";
+
 import Spinner from "@/app/components/dashboard/loading spinner/page";
 import Link from "next/link";
 import type { ResultDoc } from "@/app/types/analysis";
+import { Skeleton } from "@/app/components/ui/Skeleton";
 
 export default function UploadPage() {
   // fresh result shown inline AFTER upload only (not persisted anywhere)
@@ -17,7 +18,6 @@ export default function UploadPage() {
   const [userPackage, setUserPackage] = useState<string | null>(null);
   const [uploadsLeft, setUploadsLeft] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showSpinner, setShowSpinner] = useState(false);
 
   
 
@@ -25,21 +25,16 @@ export default function UploadPage() {
   const router = useRouter();
 
   useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout>;
     const fetchUserInfo = async () => {
-      const userEmail = getClientEmail();
       try {
         setIsLoading(true);
-        timeout = setTimeout(() => setShowSpinner(true), 2500);
-        const res = await checkUserPackage(userEmail);
+        const res = await checkUserPackage();
         setUserPackage(res?.package ?? null);
         setUploadsLeft(res?.uploadsRemaining ?? null);
       } catch (err) {
         console.error("Failed to fetch package info:", err);
       } finally {
-        clearTimeout(timeout);
         setIsLoading(false);
-        setShowSpinner(false);
       }
     };
     fetchUserInfo();
@@ -84,11 +79,15 @@ export default function UploadPage() {
         <div className="px-6 md:px-12 lg:px-20 max-w-6xl mx-auto pb-8">
           {/* Eligibility & Upload section */}
           {isLoading ? (
-            showSpinner ? (
-              <div className="flex justify-center py-12">
-                <Spinner />
+            <section className="mt-8 mx-auto w-full max-w-3xl bg-gray-800 rounded-lg p-6 sm:p-8 shadow-lg">
+              <Skeleton className="h-7 w-64 mb-4 mx-auto" />
+              <Skeleton className="h-4 w-40 mb-6 mx-auto" />
+              <div className="space-y-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-10 w-32 mx-auto" />
               </div>
-            ) : null
+            </section>
           ) : !userPackage ? (
             <div className="mt-10 text-center text-red-400 text-xl">
               You don&apos;t have a package yet. Please purchase a plan to start uploading.

@@ -5,16 +5,10 @@ const mongoose = require("mongoose");
 // Get all conversations for a user (sidebar/history)
 const getConversations = async (req, res) => {
   try {
-    // Accept email instead of userId
-    const { email } = req.query;
-    if (!email) return res.status(400).json({ error: "Email is required" });
-
-    // Find user by email
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
 
     // Find conversations by user._id
-    const conversations = await Conversation.find({ user: user._id })
+    const conversations = await Conversation.find({ user: req.user.id })
       .sort({ updatedAt: -1 })
       .select("-messages");
     res.json(conversations);
@@ -141,20 +135,11 @@ const generateTitle = async (req, res) => {
 
 const createConversation = async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: "Email is required" });
-
-    // Find user by email (or create user if you want auto-provisioning)
-    let user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-      // Or, to auto-create user on demand:
-      // user = await User.create({ email });
-    }
+    if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
 
     // Create a new empty conversation for this user
     const conversation = await Conversation.create({
-      user: user._id,
+      user: req.user.id,
       title: "",
       messages: [],
     });

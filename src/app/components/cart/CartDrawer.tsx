@@ -42,15 +42,11 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
   const handleStripePayment = async () => {
     if (!cartItems.length) return;
-    const storedEmail = localStorage.getItem("userEmail");
-    if (!storedEmail) {
-      alert("Please log in first.");
-      return;
-    }
     try {
-      await startCheckout(storedEmail, cartItems[0].id);
+      await startCheckout(cartItems[0].id);
     } catch (error) {
       console.error("Stripe checkout error:", error);
+      alert("Please sign in before checkout.");
     }
   };
 

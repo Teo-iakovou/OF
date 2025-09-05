@@ -1,16 +1,10 @@
 // src/app/utils/api.ts
 import type { ResultDoc } from "@/app/types/analysis";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+import { BASE_URL, fetchJson } from "@/app/utils/fetcher";
 
 // -------------------------------
 // Small helpers
 // -------------------------------
-export function getClientEmail(): string {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem("userEmail") || "";
-}
-
 async function readJsonOrText(res: Response) {
   const text = await res.text();
   try {
@@ -34,28 +28,11 @@ function ensureOk<T = unknown>(
 
 // -------------------------------
 /** Analysis history */
-export async function fetchAnalysisHistory(
-  email: string,
-  page = 1,
-  limit = 10
-): Promise<{ results: ResultDoc[]; total: number }> {
-  const params = new URLSearchParams({
-    email,
-    page: String(page),
-    limit: String(limit),
-    ts: String(Date.now()),
-  });
-
-  const res = await fetch(`${BASE_URL}/api/analyze?${params.toString()}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-  });
-  const parsed = await readJsonOrText(res);
-  return ensureOk<{ results: ResultDoc[]; total: number }>(
-    parsed,
-    "Fetch analysis history"
-  );
+export async function fetchAnalysisHistory(page = 1, limit = 10): Promise<{ results: ResultDoc[]; total: number }> {
+  const url = `${BASE_URL}/api/analyze?page=${page}&limit=${limit}&ts=${Date.now()}`;
+  const r = await fetchJson(url, { method: "GET", cache: "no-store" });
+  if (!r.ok) throw new Error("Fetch analysis history failed");
+  return r.data as any;
 }
 
 export async function deleteAnalysisResult(id: string) {
@@ -69,11 +46,12 @@ export async function deleteAnalysisResult(id: string) {
 
 // -------------------------------
 /** Stripe (unchanged) */
-export async function startCheckout(email: string, packageId: string) {
+export async function startCheckout(packageId: string) {
   const res = await fetch(`${BASE_URL}/api/checkout/create-checkout-session`, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, packageId }),
+    body: JSON.stringify({ packageId }),
   });
   const { ok, data } = await readJsonOrText(res);
   if (!ok)
@@ -99,11 +77,12 @@ export async function verifySession(sessionId: string) {
 
 export type PurchaseResponse = { message: string };
 
-export async function purchasePackage(email: string, packageId: string) {
-  const res = await fetch(`${BASE_URL}/api/purchase`, {
+export async function purchasePackage(packageId: string) {
+  const res = await fetch(`${BASE_URL}/api/user/purchase`, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, packageId }),
+    body: JSON.stringify({ packageId }),
   });
   const parsed = await readJsonOrText(res);
   return ensureOk<PurchaseResponse>(parsed, "Purchase package");
@@ -118,14 +97,10 @@ export interface UserPackageResponse {
   expiresAt?: string;
 }
 
-export async function checkUserPackage(
-  email: string
-): Promise<UserPackageResponse> {
-  const res = await fetch(
-    `${BASE_URL}/api/user/check-package?email=${encodeURIComponent(email)}`
-  );
-  const parsed = await readJsonOrText(res);
-  return ensureOk<UserPackageResponse>(parsed, "Check user package");
+export async function checkUserPackage(): Promise<UserPackageResponse> {
+  const r = await fetchJson(`${BASE_URL}/api/user/check-package`, { method: "GET" });
+  if (!r.ok) throw new Error("Check user package failed");
+  return r.data as any;
 }
 
 // -------------------------------
@@ -203,13 +178,11 @@ export type CoachChatResult =
 // -------------------------------
 /** Coach chat + conversations */
 export async function coachChat({
-  email,
   question,
   latestContentInfo,
   conversationId,
   title,
 }: {
-  email: string;
   question: string;
   latestContentInfo?: string;
   conversationId?: string;
@@ -219,8 +192,8 @@ export async function coachChat({
     const res = await fetch(`${BASE_URL}/api/coach-chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
-        email,
         question,
         latestContentInfo,
         conversationId,
@@ -245,6 +218,7 @@ export async function fetchConversation(id: string): Promise<Conversation> {
   const res = await fetch(`${BASE_URL}/api/conversations/${id}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     cache: "no-store",
   });
   const parsed = await readJsonOrText(res);
@@ -254,19 +228,20 @@ export async function fetchConversation(id: string): Promise<Conversation> {
 export async function deleteConversation(conversationId: string) {
   const res = await fetch(`${BASE_URL}/api/conversations/${conversationId}`, {
     method: "DELETE",
+    credentials: "include",
   });
   const parsed = await readJsonOrText(res);
   return ensureOk(parsed, "Delete conversation");
 }
 
 export async function createEmptyConversation(
-  email: string
 ): Promise<string | null> {
   try {
     const res = await fetch(`${BASE_URL}/api/conversations`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({}),
     });
     const parsed = await readJsonOrText(res);
     const data = ensureOk<{ _id?: string; id?: string }>(
@@ -289,6 +264,7 @@ export async function generateConversationTitle(
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ firstUserMessage }),
       cache: "no-store",
     }
@@ -298,31 +274,21 @@ export async function generateConversationTitle(
   return data.title || null;
 }
 
-export async function fetchConversations(
-  email: string
-): Promise<ConversationSummary[]> {
-  const url = `${BASE_URL}/api/conversations?email=${encodeURIComponent(
-    email
-  )}&ts=${Date.now()}`;
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-  });
-  const parsed = await readJsonOrText(res);
-  return ensureOk<ConversationSummary[]>(parsed, "Fetch conversations");
+export async function fetchConversations(): Promise<ConversationSummary[]> {
+  const url = `${BASE_URL}/api/conversations?ts=${Date.now()}`;
+  const r = await fetchJson(url, { method: "GET", cache: "no-store" });
+  if (!r.ok) throw new Error("Fetch conversations failed");
+  return r.data as any;
 }
 
 // -------------------------------
 /** Feedback */
-export async function sendFeedback(
-  message: string,
-  email?: string
-): Promise<{ success: boolean }> {
+export async function sendFeedback(message: string): Promise<{ success: boolean }> {
   const res = await fetch(`${BASE_URL}/api/feedback`, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, email }),
+    body: JSON.stringify({ message }),
   });
 
   const parsed = await readJsonOrText(res);
@@ -352,17 +318,16 @@ export type AnalyzeResponse = {
 
 export function analyzeImageMultipart(opts: {
   file: File;
-  email: string;
   goal?: "subs" | "ppv" | "customs";
   linkBase?: string;
   captions?: boolean; // default true
   onProgress?: (pct: number) => void;
+  signal?: AbortSignal;
 }): Promise<AnalyzeResponse> {
-  const { file, email, goal, linkBase, onProgress, captions = true } = opts;
+  const { file, goal, linkBase, onProgress, captions = true, signal } = opts;
 
   const form = new FormData();
   form.append("image", file);
-  form.append("email", email);
   if (goal) form.append("goal", goal);
   if (linkBase) form.append("linkBase", linkBase);
 
@@ -378,6 +343,7 @@ export function analyzeImageMultipart(opts: {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
+    xhr.withCredentials = true;
 
     xhr.onreadystatechange = () => {
       if (xhr.readyState !== 4) return;
@@ -406,7 +372,25 @@ export function analyzeImageMultipart(opts: {
     }
 
     xhr.onerror = () => reject(new Error("Network error"));
+
+    // Support external abort via AbortController
+    let aborted = false;
+    const onAbort = () => {
+      aborted = true;
+      try { xhr.abort(); } catch {}
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    if (signal) {
+      if (signal.aborted) return onAbort();
+      signal.addEventListener("abort", onAbort, { once: true });
+    }
     xhr.send(form);
+
+    // Cleanup abort listener when promise settles
+    const cleanup = () => {
+      if (signal) signal.removeEventListener("abort", onAbort);
+    };
+    xhr.onloadend = () => { if (!aborted) cleanup(); };
   });
 }
 
@@ -424,6 +408,7 @@ export async function updateAnalysisById(
 ): Promise<ResultDoc> {
   const res = await fetch(`${BASE_URL}/api/analyze/${id}`, {
     method: "PATCH",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(patch),
   });
@@ -437,15 +422,22 @@ export interface SuggestPromptsResponse {
 }
 
 // --- Quick Prompts API ---
-export async function fetchCoachChatPrompts(
-  email: string
-): Promise<SuggestPromptsResponse> {
-  const url = `${BASE_URL}/api/coach-chat/prompts?email=${encodeURIComponent(email)}&ts=${Date.now()}`;
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-  });
-  const parsed = await readJsonOrText(res);
-  return ensureOk<SuggestPromptsResponse>(parsed, "Fetch coach prompts");
+export async function fetchCoachChatPrompts(): Promise<SuggestPromptsResponse> {
+  const url = `${BASE_URL}/api/coach-chat/prompts?ts=${Date.now()}`;
+  const r = await fetchJson(url, { method: "GET", cache: "no-store" });
+  if (!r.ok) throw new Error("Fetch coach prompts failed");
+  return r.data as any;
+}
+
+// -------------------------------
+/** Text-to-Speech (ElevenLabs passthrough) */
+export async function ttsSynthesize(
+  text: string,
+  opts: { voiceId?: string; format?: "mp3" | "ogg" } = {}
+): Promise<string> {
+  const params = new URLSearchParams({ text });
+  if (opts.voiceId) params.set("voiceId", opts.voiceId);
+  if (opts.format) params.set("format", opts.format);
+  params.set("ts", String(Date.now()));
+  return `${BASE_URL}/api/tts?${params.toString()}`;
 }

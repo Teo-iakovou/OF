@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/app/hooks/useUser";
+import { BASE_URL } from "@/app/utils/fetcher";
+import { Skeleton } from "@/app/components/ui/Skeleton";
  
 import { checkUserPackage } from "@/app/utils/api";
 import Spinner from "@/app/components/dashboard/loading spinner/page";
@@ -13,7 +16,7 @@ type UserPkg = {
 } | null;
 
 export default function AccountAndBillingPage() {
-  const [email, setEmail] = useState<string | null>(null);
+  const { user, loading: userLoading } = useUser({ required: false });
   const [userPackage, setUserPackage] = useState<UserPkg>(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,17 +25,9 @@ export default function AccountAndBillingPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const stored = localStorage.getItem("userEmail");
-    setEmail(stored);
-
-    if (!stored) {
-      setLoading(false);
-      return;
-    }
-
     (async () => {
       try {
-        const res = await checkUserPackage(stored);
+        const res = await checkUserPackage();
         if (res?.hasAccess) {
           setUserPackage({
             name: res.package ?? "Unknown",
@@ -53,9 +48,11 @@ export default function AccountAndBillingPage() {
 
   
 
-  const handleLogout = () => {
-    localStorage.removeItem("userEmail");
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      await fetch(`${BASE_URL}/api/auth/logout`, { method: "POST", credentials: "include" });
+    } catch {}
+    router.replace("/login");
   };
 
   return (
@@ -84,10 +81,17 @@ export default function AccountAndBillingPage() {
               {/* Account card */}
               <section className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md space-y-4">
                 <h2 className="text-xl font-semibold">Account</h2>
-                {email ? (
+                {userLoading ? (
+                  <>
+                    <Skeleton className="h-5 w-56" />
+                    <div className="pt-2">
+                      <Skeleton className="h-9 w-28" />
+                    </div>
+                  </>
+                ) : user?.email ? (
                   <>
                     <p>
-                      <strong>Email:</strong> {email}
+                      <strong>Email:</strong> {user.email}
                     </p>
                     <div className="pt-2">
                       <button
@@ -99,7 +103,7 @@ export default function AccountAndBillingPage() {
                     </div>
                   </>
                 ) : (
-                  <p className="text-red-400">No account information found.</p>
+                  <p className="text-gray-400">Not signed in.</p>
                 )}
               </section>
 

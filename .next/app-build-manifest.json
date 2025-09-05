@@ -51,10 +51,25 @@
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/history/page.js"
     ],
-    "/not-found": [
+    "/(legal)/cookies/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/not-found.js"
+      "static/chunks/app/(legal)/cookies/page.js"
+    ],
+    "/(legal)/terms/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(legal)/terms/page.js"
+    ],
+    "/(legal)/privacy/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(legal)/privacy/page.js"
+    ],
+    "/(auth)/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(auth)/login/page.js"
     ]
   }
 }

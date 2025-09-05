@@ -7,15 +7,13 @@ import { MessageCircle } from "lucide-react";
 export default function FeedbackWidget() {
   const [showForm, setShowForm] = useState(false);
   const [message, setMessage] = useState("");
-  const [email, setEmail] = useState("");
   const modalRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = async () => {
     try {
-      await sendFeedback(message, email);
+      await sendFeedback(message);
       toast.success("Thank you for your feedback!");
       setMessage("");
-      setEmail("");
       setShowForm(false);
     } catch (err) {
       console.error("Feedback error:", err);
@@ -64,13 +62,7 @@ export default function FeedbackWidget() {
               onChange={(e) => setMessage(e.target.value)}
             />
 
-            <input
-              type="email"
-              placeholder="Your email (optional)"
-              className="w-full mt-3 p-3 rounded-lg bg-gray-900 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            {/* Email no longer needed; server derives from session */}
 
             <div className="flex justify-end mt-4 space-x-3">
               <button

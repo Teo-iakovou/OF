@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { fetchConversations, type ConversationSummary } from "@/app/utils/api";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Volume2 } from "lucide-react";
 import { dbg } from "@/app/utils/debug";
+import { Skeleton } from "@/app/components/ui/Skeleton";
+import { ttsSynthesize } from "@/app/utils/api";
 
 type Props = {
-  userEmail: string;
   onSelect: (id: string) => void;
   selectedId?: string;
   refreshKey: number;
@@ -23,7 +24,6 @@ type Props = {
 };
 
 export default function CoachChatHistory({
-  userEmail,
   onSelect,
   selectedId,
   refreshKey,
@@ -52,11 +52,10 @@ export default function CoachChatHistory({
   }
 
   useEffect(() => {
-    if (!userEmail) return;
     setLoading(true);
-    dbg("history:load:start", { userEmail, refreshKey });
+    dbg("history:load:start", { refreshKey });
 
-    fetchConversations(userEmail)
+    fetchConversations()
       .then((list) => {
         dbg("history:load:success", {
           count: list.length,
@@ -66,7 +65,7 @@ export default function CoachChatHistory({
       })
       .catch((e) => dbg("history:load:error", e))
       .finally(() => setLoading(false));
-  }, [userEmail, refreshKey]);
+  }, [refreshKey]);
 
   return (
     <div
@@ -95,7 +94,12 @@ export default function CoachChatHistory({
 
       <div className="p-3 md:p-4 space-y-2 overflow-y-auto" style={{ maxHeight: typeof maxHeight === "number" ? maxHeight : undefined }}>
         {loading ? (
-          <div className="text-xs text-gray-400">Loading...</div>
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-3/4" />
+          </div>
         ) : convos.length === 0 ? (
           <div className="text-xs text-gray-400">No conversations yet.</div>
         ) : (
@@ -115,6 +119,23 @@ export default function CoachChatHistory({
                 <div className="flex items-center gap-2">
                   <BookOpen className={`w-4 h-4 ${active ? "text-cyan-400" : "text-gray-400"}`} />
                   <span className="font-medium truncate">{c.title || "Untitled"}</span>
+                  <span className="ml-auto">
+                    <button
+                      type="button"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          const url = await ttsSynthesize(c.title || "Conversation");
+                          const a = new Audio(url);
+                          a.play();
+                        } catch {}
+                      }}
+                      className="inline-flex items-center text-xs text-gray-300 hover:text-white"
+                      aria-label="Play title"
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                  </span>
                 </div>
                 <div className="mt-1 text-[11px] text-gray-400">
                   {formatDate(c.updatedAt)}

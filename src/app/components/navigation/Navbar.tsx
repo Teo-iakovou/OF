@@ -10,7 +10,7 @@ import {
   Mail,
   ShoppingBag,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiMenu, FiX, FiUser } from "react-icons/fi";
 import { FaTwitter, FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
 import Link from "next/link";
@@ -24,7 +24,11 @@ type NavbarProps = {
 
 export default function Navbar({ onCartClick }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { cartCount } = useCart();
+
+  // Avoid hydration mismatch for client-only cart count badge
+  useEffect(() => setMounted(true), []);
 
   return (
     <>
@@ -53,7 +57,7 @@ export default function Navbar({ onCartClick }: NavbarProps) {
               style={{ background: "transparent" }}
             >
               <ShoppingBag size={28} />
-              {cartCount > 0 && (
+              {mounted && cartCount > 0 && (
 <span
   className="
     absolute -top-2 -right-2 flex items-center justify-center

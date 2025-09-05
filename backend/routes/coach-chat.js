@@ -9,26 +9,24 @@ const User = require("../models/user");
 const { checkChatQuota } = require("../middleware/chatLimits");
 const { coachChatHandler, suggestPrompts } = require("../controllers/coachChatController");
 
-// Per-user rate limit (POST /): prefer email, fallback to IPv6-safe IP
+// Per-user rate limit (POST /): prefer authenticated user id, fallback to IPv6-safe IP
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
   keyGenerator: (req) => {
-    const email = (req.body?.email || "").toLowerCase().trim();
-    if (email) return `email:${email}`;
+    if (req.user && req.user.id) return `uid:${req.user.id}`;
     return ipKeyGenerator(req);
   },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Per-user rate limit (GET /prompts): use query.email, fallback to IPv6-safe IP
+// Per-user rate limit (GET /prompts): prefer authenticated user id, fallback to IPv6-safe IP
 const promptsLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
   keyGenerator: (req) => {
-    const email = (req.query?.email || "").toLowerCase().trim();
-    if (email) return `email:${email}`;
+    if (req.user && req.user.id) return `uid:${req.user.id}`;
     return ipKeyGenerator(req);
   },
   standardHeaders: true,
@@ -38,9 +36,8 @@ const promptsLimiter = rateLimit({
 // Prefetch user so checkChatQuota can use req._user
 async function attachUser(req, res, next) {
   try {
-    const { email } = req.body || {};
-    if (!email) return res.status(400).json({ error: "Email is required" });
-    const user = await User.findOne({ email });
+    if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
+    const user = await User.findById(req.user.id);
     if (!user) return res.status(403).json({ error: "User not found." });
     req._user = user;
     next();

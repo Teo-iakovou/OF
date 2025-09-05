@@ -1,19 +1,12 @@
+"use client";
+import Link from "next/link";
 import { FaTwitter, FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
+import { useConsent } from "@/app/components/consent/ConsentContext";
 const Footer = () => (
   <footer className="bg-gradient-to-r from-blue-900 to-blue-700 text-gray-300 py-6 text-center">
     <div className="container mx-auto">
       <p>© 2025 AI Content Helper. All rights reserved.</p>
-      <div className="flex justify-center space-x-6 mt-4">
-        <a href="#" className="hover:text-white transition">
-          Privacy Policy
-        </a>
-        <a href="#" className="hover:text-white transition">
-          Terms of Service
-        </a>
-        <a href="#" className="hover:text-white transition">
-          Support
-        </a>
-      </div>
+      <FooterLinks />
       <div className="flex justify-center space-x-6 mt-6">
         <a
           href="https://twitter.com"
@@ -49,3 +42,15 @@ const Footer = () => (
 );
 
 export default Footer;
+
+function FooterLinks() {
+  const { open } = useConsent();
+  return (
+    <div className="flex justify-center flex-wrap gap-6 mt-4">
+      <Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link>
+      <Link href="/terms" className="hover:text-white transition">Terms of Service</Link>
+      <Link href="/cookies" className="hover:text-white transition">Cookie Policy</Link>
+      <button onClick={open} className="hover:text-white transition underline underline-offset-2">Cookie preferences</button>
+    </div>
+  );
+}

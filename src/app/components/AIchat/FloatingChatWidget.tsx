@@ -30,7 +30,6 @@ export default function FloatingChatWidget() {
     close,
     anchor,
     setAnchor,
-    email: emailFromCtx,
   } = useFloatingChat();
 
   // Chat session state
@@ -199,16 +198,11 @@ export default function FloatingChatWidget() {
 
   if (!isClient) return null;
 
-  const email =
-    emailFromCtx ??
-    (typeof window !== "undefined" ? localStorage.getItem("userEmail") || "" : "");
-
   // centered panel, no computed position needed
 
   // “+ New” from dropdown
   async function handleNewChat() {
-  if (!email) return;
-  const newId = await createEmptyConversation(email);
+  const newId = await createEmptyConversation();
   if (newId) {
     setSelectedConvoId(newId);
   }
@@ -321,7 +315,6 @@ export default function FloatingChatWidget() {
                     className="absolute right-2 top-full mt-2 z-[100] w-[320px]"
                   >
                     <CoachChatHistory
-                      userEmail={email}
                       onSelect={(id) => {
                         setSelectedConvoId(id);
                         setHistoryOpen(false);
@@ -339,7 +332,6 @@ export default function FloatingChatWidget() {
                 {/* Chat body */}
                 <div className="flex-1 min-h-0">
                   <CoachChat
-                    email={email}
                     initialConversationId={selectedConvoId}
                     onNewConversation={(newId: string) => {
                       setSelectedConvoId(newId);

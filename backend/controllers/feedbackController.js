@@ -1,14 +1,14 @@
 const Feedback = require("../models/feedback");
 
 const createFeedback = async (req, res) => {
-  const { message, email } = req.body;
+  const { message } = req.body || {};
 
   if (!message || message.trim() === "") {
     return res.status(400).json({ error: "Feedback message is required" });
   }
 
   try {
-    await Feedback.create({ message, email });
+    await Feedback.create({ message, email: req.user?.email });
     res.status(201).json({ success: true });
   } catch (err) {
     console.error("❌ Feedback error:", err);

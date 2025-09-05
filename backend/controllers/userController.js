@@ -3,11 +3,10 @@ const User = require("../models/user");
 const Result = require("../models/result");
 
 const getUserDashboard = async (req, res) => {
-  const { email } = req.query;
-  if (!email) return res.status(400).json({ error: "Email is required" });
+  if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const uploadsRemaining = user.uploadLimit - user.uploadsUsed;
@@ -35,14 +34,14 @@ const PACKAGE_LIMITS = {
 };
 
 const purchasePackage = async (req, res) => {
-  const { email, packageId } = req.body;
+  const { packageId } = req.body || {};
 
-  if (!email || !packageId) {
-    return res.status(400).json({ error: "Email and package ID required" });
+  if (!req.user || !req.user.id || !packageId) {
+    return res.status(400).json({ error: "Package ID required" });
   }
 
   try {
-    let user = await User.findOne({ email });
+    let user = await User.findById(req.user.id);
 
     const uploadLimit = PACKAGE_LIMITS[packageId] || 0;
 
@@ -67,14 +66,12 @@ const purchasePackage = async (req, res) => {
 };
 
 const checkUserPackage = async (req, res) => {
-  const { email } = req.query;
-
-  if (!email) {
-    return res.status(400).json({ error: "Email required" });
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findById(req.user.id);
 
     if (!user || !user.purchasedPackage) {
       return res.json({ hasAccess: false });

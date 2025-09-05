@@ -4,6 +4,9 @@ import "./styles/globals.css";
 import ToastNotification from "./components/notifications/ToastNotification";
 import Navbar from "../app/components/navigation/Navbar";
 import Footer from "../app/components/navigation/Footer";
+import { ConsentProvider } from "./components/consent/ConsentContext";
+import ConsentBanner from "./components/consent/ConsentBanner";
+import ConsentModal from "./components/consent/ConsentModal";
 import { usePathname } from "next/navigation";
 import CartDrawer from "./components/cart/CartDrawer";
 import { CartProvider } from "./components/cart/CartContext";
@@ -24,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       {/* <head /> is optional; Next injects it for you */}
       <body className="bg-of-background font-sans min-h-[100svh] flex flex-col">
+        <ConsentProvider>
         <CartProvider>
           {!pathname.startsWith("/dashboard") && (
             <Navbar onCartClick={handleCartClick} />
@@ -34,12 +38,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ToastNotification />
           {!pathname.startsWith("/dashboard/ai") && <Footer />}
 
+          {/* Consent UI (always mounted) */}
+          <ConsentBanner />
+          <ConsentModal />
+
           <CartDrawer
             isOpen={cartDrawerOpen}
             onClose={() => setCartDrawerOpen(false)}
             onCheckout={() => {}}
           />
         </CartProvider>
+        </ConsentProvider>
       </body>
     </html>
   );

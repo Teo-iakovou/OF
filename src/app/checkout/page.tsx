@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { purchasePackage, startCheckout } from "@/app/utils/api";
+import { useUser } from "@/app/hooks/useUser";
 import { packages } from "@/app/components/packages/Packages";
 
 const Checkout = () => {
@@ -12,21 +13,19 @@ const Checkout = () => {
 
   const selectedPackage = packages.find((pkg) => pkg.id === packageId);
 
-  const [email, setEmail] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const { user, loading: userLoading } = useUser({ required: true });
 
   useEffect(() => {
-    const storedEmail = typeof window !== "undefined" ? localStorage.getItem("userEmail") : null;
-    if (storedEmail) setEmail(storedEmail);
-    else router.replace("/");
-  }, [router]);
+    // useUser enforces auth; nothing to do here
+  }, []);
 
   const handlePurchase = async () => {
-    if (!packageId || !email) return;
+    if (!packageId) return;
     setLoading(true);
     try {
-      const response = await purchasePackage(email, packageId);
+      const response = await purchasePackage(packageId);
       if (response.message) {
         setSuccess(true);
         router.push("/dashboard");
@@ -39,10 +38,10 @@ const Checkout = () => {
   };
 
   const handleStripePayment = async () => {
-    if (!packageId || !email) return;
+    if (!packageId) return;
     setLoading(true);
     try {
-      await startCheckout(email, packageId); // redirects to Stripe
+      await startCheckout(packageId); // redirects to Stripe
     } catch (error) {
       console.error("Stripe checkout error:", error);
       setLoading(false);
@@ -57,7 +56,7 @@ const Checkout = () => {
     );
   }
 
-  if (!email) {
+  if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
         <h1 className="text-xl text-gray-300 font-bold">Loading user info...</h1>

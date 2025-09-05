@@ -17,9 +17,10 @@ const PACKAGES = { lite: 500, pro: 1500, ultimate: 3000 }; // cents
 // POST /api/checkout/create-checkout-session
 const createCheckoutSession = async (req, res) => {
   try {
-    const { email, packageId } = req.body || {};
+    const { packageId } = req.body || {};
+    const email = req.user?.email;
     if (!email || !packageId || !PACKAGES[packageId]) {
-      return res.status(400).json({ error: "Invalid email or packageId" });
+      return res.status(400).json({ error: "Invalid user or packageId" });
     }
 
     // Pick safe origin (local or prod) based on caller

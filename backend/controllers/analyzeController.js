@@ -37,7 +37,7 @@ const analyzeImage = async (req, res) => {
   const t0 = Date.now();
 
   const { file } = req;
-  const email = req.body?.email;
+  const email = req.user?.email;
   const captionsParam = String(req.query?.captions ?? "").toLowerCase();
   const skipCaptions = captionsParam === "false";
 
@@ -64,7 +64,8 @@ const analyzeImage = async (req, res) => {
     // 0) User checks
     let user;
     try {
-      user = await User.findOne({ email });
+      if (!req.user || !req.user.id) return sendErr(res, 401, "Unauthorized");
+      user = await User.findById(req.user.id);
       if (!user) return sendErr(res, 403, "User not found.");
       if (!user.isAdmin && user.uploadsUsed >= user.uploadLimit) {
         return sendErr(res, 403, "Upload limit reached.");
@@ -289,10 +290,11 @@ log(requestId, "captions_done", { skipped: !!skipCaptions, duration_ms: Date.now
 
 // GET /api/analyze?email=&page=&limit=
 const fetchAnalysisHistory = async (req, res) => {
-  const { email, page = 1, limit = 10 } = req.query;
-  if (!email) return sendErr(res, 400, "Email is required.");
+  const { page = 1, limit = 10 } = req.query;
+  if (!req.user || !req.user.id) return sendErr(res, 401, "Unauthorized");
 
   try {
+    const email = req.user.email;
     const results = await Result.find({ email })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)

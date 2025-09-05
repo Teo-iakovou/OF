@@ -30,11 +30,11 @@ const coachChatHandler = async (req, res) => {
   const t0 = Date.now();
 
   try {
-    const { email, question, latestContentInfo, conversationId, title } =
-      req.body || {};
+    const { question, latestContentInfo, conversationId, title } = req.body || {};
+    const email = req.user?.email || "";
     log(rid, "chat_start", { email });
 
-    const user = await User.findOne({ email });
+    const user = req._user || (email ? await User.findOne({ email }) : null);
     if (!user) {
       log(rid, "chat_user_not_found", { email });
       return res.status(403).json({ error: "User not found." });
@@ -151,16 +151,14 @@ Always be clear and direct about what features are available for each plan.
 // --- NEW: quick prompts endpoint (personalized; no token cost) ---
 async function suggestPrompts(req, res) {
   try {
-    const email = String(req.query.email || "").trim();
-    if (!email) return res.status(400).json({ error: "Missing email" });
-
-    const user = await User.findOne({ email });
+    if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
+    const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const plan = user.purchasedPackage || "lite";
 
     // Peek at recent uploads to personalize
-    const recent = await Result.find({ email })
+    const recent = await Result.find({ email: user.email })
       .sort({ createdAt: -1 })
       .limit(5)
       .lean();

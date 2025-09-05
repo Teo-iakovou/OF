@@ -6,7 +6,6 @@ import Image from "next/image";
 import { useState } from "react";
 import CartDrawer from "@/app/components/cart/CartDrawer";
 import { startCheckout } from "@/app/utils/api";
-import EmailModal from "../components/email/EmailModal";
 
 export default function PackageDetailPage() {
   const params = useParams();
@@ -16,7 +15,6 @@ export default function PackageDetailPage() {
   // Use global cart state!
   const { cartItems, addToCart } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
-  const [showEmailModal, setShowEmailModal] = useState(false);
 
   function handleAddToCart(id: string) {
     addToCart(id);
@@ -30,22 +28,11 @@ export default function PackageDetailPage() {
     const pkg = packages.find((p) => p.id === firstCartItem.id);
     if (!pkg) return;
 
-    const email =
-      typeof window !== "undefined"
-        ? localStorage.getItem("userEmail") || ""
-        : "";
-    if (!email) {
-      setShowEmailModal(true); // <-- open the modal if no email
-      return;
+    try {
+      await startCheckout(pkg.id);
+    } catch (e) {
+      alert("Please sign in to continue.");
     }
-    await startCheckout(email, pkg.id);
-  };
-
-  // Handle the modal submit:
-  const handleEmailSubmit = (email: string) => {
-    localStorage.setItem("userEmail", email);
-    setShowEmailModal(false);
-    handleCheckout(); // Try again with the new email
   };
 
   if (!selectedPackage) {
@@ -149,12 +136,7 @@ export default function PackageDetailPage() {
         onCheckout={handleCheckout}
       />
 
-      {/* Email Modal */}
-      <EmailModal
-        isOpen={showEmailModal}
-        onSubmit={handleEmailSubmit}
-        onClose={() => setShowEmailModal(false)}
-      />
+      {/* Auth is required for checkout; handled server-side */}
     </div>
   );
 }

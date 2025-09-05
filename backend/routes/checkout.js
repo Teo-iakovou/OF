@@ -6,9 +6,10 @@ const {
   handleStripeWebhook,
   verifyCheckoutSession,
 } = require("../controllers/checkoutController");
+const { requireAuth } = require("../middleware/requireAuth");
 
 // Create a Stripe Checkout session
-router.post("/create-checkout-session", createCheckoutSession);
+router.post("/create-checkout-session", requireAuth, createCheckoutSession);
 
 // Verify a session (client convenience after redirect)
 router.get("/verify-session", verifyCheckoutSession);

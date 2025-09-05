@@ -7,9 +7,6 @@ import CoachChat from "@/app/components/AIchat/CoachChat";
 import CoachChatHistory from "@/app/components/AIchat/AiChatHistorySidebar";
 
 export default function AiCoachChatPage() {
-  const userEmail =
-    typeof window !== "undefined" ? localStorage.getItem("userEmail") || "" : "";
-
   const [historyOpen, setHistoryOpen] = useState(false);
   
   const historyRef = useRef<HTMLDivElement>(null);
@@ -34,8 +31,7 @@ export default function AiCoachChatPage() {
   }
 
   async function handleNewChat() {
-    if (!userEmail) return;
-    const newId = await createEmptyConversation(userEmail);
+    const newId = await createEmptyConversation();
     if (newId) {
       setSelectedConvoId(newId);
       setRefreshKey(k => k + 1);
@@ -54,7 +50,7 @@ export default function AiCoachChatPage() {
   return (
     <div className="min-h-screen flex flex-col text-white">
       {/* Header */}
-      <header className="sticky top-0 z-40 shrink-0 pt-4 md:pt-12 px-4 md:px-12 lg:px-20 max-w-6xl mx-auto w-full bg-transparent">
+      <header className="sticky top-0 z-40 shrink-0 pt-4 md:pt-12 pl-16 pr-4 md:px-12 lg:px-20 max-w-6xl mx-auto w-full bg-transparent">
         <div className="relative">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">AI Chat</h1>
@@ -74,7 +70,6 @@ export default function AiCoachChatPage() {
           {historyOpen && (
             <div ref={historyRef} className="absolute right-0 mt-2 z-50 w-[340px]">
               <CoachChatHistory
-                userEmail={userEmail}
                 onSelect={handleSelectHistory}
                 selectedId={selectedConvoId}
                 refreshKey={refreshKey}
@@ -92,7 +87,6 @@ export default function AiCoachChatPage() {
         <div className="w-full max-w-3xl mx-auto px-2 md:px-0 flex flex-col min-h-0">
           <div className="flex-1 min-h-0 flex flex-col">
             <CoachChat
-              email={userEmail}
               initialConversationId={selectedConvoId}
               onNewConversation={handleNewConversationCreated}
               layout="page"

@@ -2,36 +2,26 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import DashboardSidebar from "@/app/components/dashboard/sidebar/DashboardSidebar";
-import EmailModal from "@/app/components/email/EmailModal";
 import { FloatingChatProvider } from "@/app/components/AIchat/FloatingChatContext";
 import FloatingChatWidget from "@/app/components/AIchat/FloatingChatWidget";
 import MobileProjectNavDrawer from "@/app/components/dashboard/buttons/MobileProjectNavDrawer";
 import { Menu } from "lucide-react";
+import { useConsent } from "@/app/components/consent/ConsentContext";
+import { useUser } from "@/app/hooks/useUser";
 
 const SIDEBAR_COLLAPSED = 64;
 const SIDEBAR_EXPANDED = 256;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [expanded, setExpanded] = useState(false);
-  const [showEmailModal, setShowEmailModal] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
-  const [userEmail, setUserEmail] = useState<string>("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { open: openConsent } = useConsent();
+  const { loading: userLoading } = useUser({ required: true });
 
   const pathname = usePathname();
 
-  useEffect(() => {
-    const email = localStorage.getItem("userEmail") || "";
-    setUserEmail(email);
-    setShowEmailModal(!email);
-    setHasMounted(true);
-  }, []);
-
-  const handleEmailSubmit = (email: string) => {
-    localStorage.setItem("userEmail", email);
-    setUserEmail(email);
-    setShowEmailModal(false);
-  };
+  useEffect(() => { setHasMounted(true); }, []);
 
   const sidebarWidth = expanded ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED;
 
@@ -42,18 +32,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // 👇 also hide the floating widget on the dedicated chat routes
   const showFloating = showBottomSpacer;
 
-  if (!hasMounted) return null;
+  if (!hasMounted || userLoading) return null;
 
   return (
     <>
-      <EmailModal
-        isOpen={showEmailModal}
-        onSubmit={handleEmailSubmit}
-        onClose={() => setShowEmailModal(false)}
-      />
-
-      {!showEmailModal && (
-        <FloatingChatProvider email={userEmail}>
+      <FloatingChatProvider>
           {/* allow natural page scroll; sidebar remains fixed */}
           <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black flex">
             {/* Sidebar */}
@@ -97,9 +80,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Mobile Project Navigation Drawer */}
             <MobileProjectNavDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+
+            {/* Persistent cookie prefs on dashboard routes (footer is hidden here) */}
+            <button
+              onClick={openConsent}
+              className="fixed bottom-3 right-3 z-40 text-xs text-gray-300/80 hover:text-white underline underline-offset-2"
+            >
+              Cookie preferences
+            </button>
           </div>
         </FloatingChatProvider>
-      )}
     </>
   );
 }

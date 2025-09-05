@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Insights from "@/app/components/analytics/Insights";
 import HistoryList, { HistoryItem as HistoryItemType } from "@/app/components/uploads/HistoryList";
-import { deleteAnalysisResult, fetchAnalysisHistory, getClientEmail } from "@/app/utils/api";
+import { deleteAnalysisResult, fetchAnalysisHistory } from "@/app/utils/api";
  
 import Spinner from "@/app/components/dashboard/loading spinner/page";
 import type { ResultDoc } from "@/app/types/analysis";
@@ -17,16 +17,9 @@ export default function HistoryPage() {
   
 
   const loadHistory = useCallback(async () => {
-    const email = getClientEmail();
-    if (!email) {
-      setHistory([]);
-      setSelectedResult(null);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     try {
-      const { results } = await fetchAnalysisHistory(email, 1, 20);
+      const { results } = await fetchAnalysisHistory(1, 20);
       setHistory(results);
       setSelectedResult((prev) =>
         prev && results.some((r) => r._id === prev._id)

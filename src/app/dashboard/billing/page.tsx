@@ -17,14 +17,9 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const email = localStorage.getItem("userEmail");
-    if (!email) {
-      setLoading(false);
-      return;
-    }
     (async () => {
       try {
-        const res = await checkUserPackage(email);
+        const res = await checkUserPackage();
         if (res?.hasAccess) {
           setUserPackage({
             name: res.package ?? "Unknown",

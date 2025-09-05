@@ -6,7 +6,6 @@ import HistoryList, {
   HistoryItem as HistoryItemType,
 } from "@/app/components/uploads/HistoryList";
 import { fetchAnalysisHistory, deleteAnalysisResult } from "@/app/utils/api";
-import { getClientEmail } from "@/app/utils/api";
 import type { ResultDoc } from "@/app/types/analysis";
 
 export default function StatsDashboard() {
@@ -15,13 +14,10 @@ export default function StatsDashboard() {
   const [selectedResult, setSelectedResult] = useState<ResultDoc | null>(null);
 
   useEffect(() => {
-    const email = getClientEmail();
-    if (!email) return;
-
     let cancelled = false;
     (async () => {
       try {
-        const { results } = await fetchAnalysisHistory(email, 1, 10);
+        const { results } = await fetchAnalysisHistory(1, 10);
         if (cancelled) return;
         setHistory(results);
         if (results.length > 0) setSelectedResult(results[0]);

@@ -11,9 +11,12 @@ import type {
 } from "@/app/utils/api";
 import { fetchCoachChatPrompts } from "@/app/utils/api";
 import { QuickPromptsBar } from "../AIchat/QuickPromptsBar";
+import { Skeleton } from "@/app/components/ui/Skeleton";
 import { AssistantFooter } from "../AIchat/AssistantFooter";
 import { CreditsChip } from "../AIchat/CreditsChip";
 import { UpgradeCta } from "../AIchat/UpgradeCta";
+import { Volume2 } from "lucide-react";
+import { ttsSynthesize } from "@/app/utils/api";
 
 // Message with meta for requestId/latency/context
 interface Message {
@@ -33,14 +36,12 @@ interface Conversation {
 }
 
 function CoachChat({
-  email,
   latestContentInfo,
   initialConversationId,
   onNewConversation,
   layout = "panel",
 }: {
   onNewConversation: (newId: string) => void;
-  email: string;
   latestContentInfo?: string;
   initialConversationId?: string;
   layout?: "page" | "panel";
@@ -56,10 +57,15 @@ function CoachChat({
   const [isLimited, setIsLimited] = useState(false);
   const [credits, setCredits] = useState<{ used: number; limit: number } | null>(null);
   const [prompts, setPrompts] = useState<string[]>([]);
+  const [promptsLoading, setPromptsLoading] = useState<boolean>(true);
   const [showPrompts, setShowPrompts] = useState(true);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const audioCache = useRef<Map<string, string>>(new Map());
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
+  const ttsSeqRef = useRef(0);
 
   // FIX: track which conversationId we've already loaded to avoid refetch/remount blink
   const loadedIdRef = useRef<string | null>(null);
@@ -120,6 +126,92 @@ function tokenizeWordsWithSpaces(s: string) {
   return s.match(/\S+|\s+/g) ?? [];
 }
 
+  // Split into ~400-char chunks by sentence to reduce initial latency on long texts
+  function chunkText(s: string, maxLen = 400): string[] {
+    const parts = s.split(/(?<=[\.!?])\s+/);
+    const out: string[] = [];
+    let buf = "";
+    for (const p of parts) {
+      if ((buf + (buf ? " " : "") + p).length > maxLen) {
+        if (buf) out.push(buf);
+        buf = p;
+      } else {
+        buf = buf ? buf + " " + p : p;
+      }
+    }
+    if (buf) out.push(buf);
+    return out.length ? out : [s];
+  }
+
+  async function playTTS(key: string, text: string) {
+    try {
+      // Toggle off if same key is playing
+      if (playingKey === key) {
+        audioRef.current?.pause();
+        audioRef.current = null;
+        setPlayingKey(null);
+        return;
+      }
+
+      // Stop any existing playback
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      setPlayingKey(key);
+      const seq = ++ttsSeqRef.current;
+
+      const chunks = text.length > 500 ? chunkText(text) : [text];
+      let idx = 0;
+
+      const playNext = async () => {
+        if (ttsSeqRef.current !== seq) return; // cancelled by a newer request
+        if (idx >= chunks.length) {
+          setPlayingKey((k) => (k === key ? null : k));
+          return;
+        }
+        const ck = `${key}#${idx}`;
+        let url = audioCache.current.get(ck);
+        if (!url) {
+          url = await ttsSynthesize(chunks[idx], {});
+          audioCache.current.set(ck, url);
+        }
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => {
+          if (ttsSeqRef.current !== seq) return;
+          idx += 1;
+          playNext();
+        };
+        audio.onerror = () => {
+          if (ttsSeqRef.current !== seq) return;
+          idx += 1;
+          playNext();
+        };
+        await audio.play().catch(() => {
+          setPlayingKey((k) => (k === key ? null : k));
+        });
+      };
+
+      playNext();
+    } catch {
+      setPlayingKey(null);
+    }
+  }
+
+  // Stop audio on unmount or route change
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      setPlayingKey(null);
+      ttsSeqRef.current += 1;
+    };
+  }, []);
+
   // ----- textarea auto-grow -----
   const autoGrow = () => {
     const el = textareaRef.current;
@@ -177,9 +269,9 @@ function tokenizeWordsWithSpaces(s: string) {
   // ----- Quick Prompts (load once per user) -----
   useEffect(() => {
     let ignore = false;
-    if (!email) return;
 
-    fetchCoachChatPrompts(email)
+    setPromptsLoading(true);
+    fetchCoachChatPrompts()
       .then((r) => {
         if (!ignore) setPrompts(r.prompts || []);
       })
@@ -190,17 +282,18 @@ function tokenizeWordsWithSpaces(s: string) {
             "Suggest 5 niche hashtags for my audience",
             "What are my best times to post this week?",
           ]);
-      });
+      })
+      .finally(() => { if (!ignore) setPromptsLoading(false); });
 
     return () => {
       ignore = true;
     };
-  }, [email]); // FIX: don't refetch on every new message
+  }, []); // FIX: don't refetch on every new message
 
   const sendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const text = input.trim();
-    if (!text || !email || isSending || isLimited) return;
+    if (!text || isSending || isLimited) return;
 
     setShowPrompts(false);
     setIsSending(true);
@@ -217,7 +310,6 @@ function tokenizeWordsWithSpaces(s: string) {
 
     try {
       const res: CoachChatResult = await coachChat({
-        email,
         question: text,
         latestContentInfo,
         conversationId: conversation?._id,
@@ -374,6 +466,7 @@ function tokenizeWordsWithSpaces(s: string) {
     "flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 md:px-4",
     isEmpty ? "flex items-center justify-center py-0" : "py-6",
     isPageLayout ? "pb-40" : "",
+    isPageLayout && isEmpty ? "min-h-[60vh]" : "",
   ].join(" ")}
   style={{ scrollbarGutter: "stable" }}
 >
@@ -407,7 +500,24 @@ function tokenizeWordsWithSpaces(s: string) {
 
           {/* Toolbar under the answer */}
           <div className="mt-2 flex items-center gap-3">
-            <CopyButton text={msg.content} />
+            {/* Show tools only when this assistant message is not currently streaming */}
+            {!((streamRef.current && conversation && streamRef.current.convId === conversation._id && streamRef.current.msgIndex === idx)) && (
+              <>
+                <CopyButton text={msg.content} />
+                <button
+              type="button"
+              onClick={() => playTTS(`${conversation!._id}:${idx}`, msg.content)}
+              className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded border ${
+                playingKey === `${conversation!._id}:${idx}`
+                  ? "border-cyan-500 text-cyan-400"
+                  : "border-gray-600 text-gray-300 hover:text-white"
+              }`}
+            >
+              <Volume2 size={14} />
+              {playingKey === `${conversation!._id}:${idx}` ? "Stop" : "Play"}
+            </button>
+              </>
+            )}
             {msg.meta && <AssistantFooter meta={msg.meta} />}
           </div>
         </div>
@@ -442,15 +552,24 @@ function tokenizeWordsWithSpaces(s: string) {
         ].join(" ")}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        {showPrompts && prompts.length > 0 && (
+        {showPrompts && (
           <div className="w-full max-w-2xl mx-auto px-0 mb-3">
-            <QuickPromptsBar
-              prompts={prompts}
-              onPick={(text) => {
-                setInput(text);
-                setShowPrompts(false);
-              }}
-            />
+            {promptsLoading ? (
+              <div className="flex flex-wrap gap-2">
+                <Skeleton className="h-8 w-40" />
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-8 w-56" />
+                <Skeleton className="h-8 w-36" />
+              </div>
+            ) : prompts.length > 0 ? (
+              <QuickPromptsBar
+                prompts={prompts}
+                onPick={(text) => {
+                  setInput(text);
+                  setShowPrompts(false);
+                }}
+              />
+            ) : null}
           </div>
         )}
 

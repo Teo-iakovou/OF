@@ -1,9 +1,11 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const connectDB = require("./utils/db");
-require("dotenv").config({
-  path: process.env.NODE_ENV === "production" ? ".env" : ".env.local"
-});
+// Load environment variables: base .env, then optional .env.local overlays
+const dotenv = require("dotenv");
+dotenv.config({ path: ".env" });
+dotenv.config({ path: ".env.local", override: true });
 connectDB();
 const coachChatRoutes = require("./routes/coach-chat");
 const conversationRoutes = require("./routes/conversations");
@@ -11,8 +13,12 @@ const analyzeRoutes = require("./routes/analyze");
 const userRoutes = require("./routes/userRoutes");
 const checkoutRoutes = require("./routes/checkout");
 const feedbackRoutes = require("./routes/feedbackRoutes");
+const ttsRoutes = require("./routes/tts");
+const authRoutes = require("./routes/auth");
 const webhookController = require("./controllers/checkoutController");
 const { requestId } = require("./middleware/requestId");
+const { authMiddleware } = require("./middleware/auth");
+const { requireAuth } = require("./middleware/requireAuth");
 
 
 const app = express();
@@ -37,14 +43,20 @@ app.post(
 
 // ✅ JSON parser (after webhook)
 app.use(express.json());
+app.use(cookieParser());
+app.use(authMiddleware);
 
-// ✅ Main API routes
-app.use("/api/analyze", analyzeRoutes);
-app.use("/api/user", userRoutes);
-app.use("/api/checkout", checkoutRoutes);
-app.use("/api/coach-chat", coachChatRoutes);
-app.use("/api/feedback", feedbackRoutes);
-app.use("/api/conversations", conversationRoutes);
+// ✅ Auth routes (public)
+app.use("/api/auth", authRoutes);
+
+// ✅ Main API routes (protected)
+app.use("/api/analyze", requireAuth, analyzeRoutes);
+app.use("/api/user", requireAuth, userRoutes);
+app.use("/api/checkout", checkoutRoutes); // login not required for webhook/create
+app.use("/api/coach-chat", requireAuth, coachChatRoutes);
+app.use("/api/feedback", requireAuth, feedbackRoutes);
+app.use("/api/tts", requireAuth, ttsRoutes);
+app.use("/api/conversations", requireAuth, conversationRoutes);
 
 const PORT = process.env.PORT || 5001;
 
