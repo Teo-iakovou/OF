@@ -30,12 +30,18 @@ const allowedOrigins = String(process.env.ALLOWED_ORIGINS || "http://localhost:3
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
+const allowAllCors = String(process.env.CORS_ALLOW_ALL || "").toLowerCase() === "true";
+if (process.env.NODE_ENV !== "test") {
+  console.log("[cors] allowAll=", allowAllCors, "allowedOrigins=", allowedOrigins);
+}
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow no-origin requests (curl, mobile apps) and allowed origins
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error("Not allowed by CORS"));
-  },
+  origin: allowAllCors
+    ? true // reflect request origin (needed when credentials are used)
+    : function (origin, callback) {
+        // Allow no-origin requests (curl, mobile apps) and allowed origins
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error("Not allowed by CORS"));
+      },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
