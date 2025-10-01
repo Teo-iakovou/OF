@@ -1,0 +1,39 @@
+# Minimal worker image (CPU) with ffmpeg
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+       ffmpeg ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python deps
+COPY backend/scripts/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Copy worker
+COPY backend/scripts/worker.py /app/worker.py
+
+# Optional helper scripts
+COPY backend/scripts/health_check.py /app/health_check.py
+
+# Default envs (override in runtime)
+ENV BACKEND_URL="http://localhost:5001" \
+    WORKER_TOKEN="" \
+    ELEVENLABS_API_KEY="" \
+    S3_BUCKET="" \
+    S3_REGION="us-east-1" \
+    AWS_ACCESS_KEY_ID="" \
+    AWS_SECRET_ACCESS_KEY="" \
+    SADTALKER_CMD="sadtalker" \
+    FFMPEG_CMD="ffmpeg" \
+    MAX_AUDIO_SECONDS="20"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD python /app/health_check.py || exit 1
+
+CMD ["python", "/app/worker.py"]

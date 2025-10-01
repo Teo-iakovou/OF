@@ -6,6 +6,9 @@ import Image from "next/image";
 import { useState } from "react";
 import CartDrawer from "@/app/components/cart/CartDrawer";
 import { startCheckout } from "@/app/utils/api";
+import { useUser } from "@/app/hooks/useUser";
+import EmailModal from "@/app/components/email/EmailModal";
+import { BASE_URL } from "@/app/utils/fetcher";
 
 export default function PackageDetailPage() {
   const params = useParams();
@@ -15,6 +18,9 @@ export default function PackageDetailPage() {
   // Use global cart state!
   const { cartItems, addToCart } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
+  const { user, refresh } = useUser({ required: false });
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [pendingPkgId, setPendingPkgId] = useState<string | null>(null);
 
   function handleAddToCart(id: string) {
     addToCart(id);
@@ -29,11 +35,35 @@ export default function PackageDetailPage() {
     if (!pkg) return;
 
     try {
+      if (!user) {
+        setPendingPkgId(pkg.id);
+        setLoginOpen(true);
+        return;
+      }
       await startCheckout(pkg.id);
     } catch (e) {
       alert("Please sign in to continue.");
     }
   };
+
+  async function handleEmailLogin(email: string) {
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/login`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      await refresh();
+      setLoginOpen(false);
+      const target = pendingPkgId || cartItems[0]?.id || selectedPackage?.id;
+      if (target) await startCheckout(target);
+    } catch (err) {
+      // surface minimal error; modal shows it via parent if needed
+      alert("Login failed. Please try again.");
+    }
+  }
 
   if (!selectedPackage) {
     return (
@@ -52,7 +82,7 @@ export default function PackageDetailPage() {
         {/* Image/Logo Side */}
         <div className="flex-1 w-full flex items-center justify-center md:justify-start mb-8 md:mb-0">
           <Image
-            src="/5805591578897663447.jpg"
+            src="/echofy-removebg-preview.png"
             alt={selectedPackage.title}
             width={320}
             height={320}
@@ -134,6 +164,12 @@ export default function PackageDetailPage() {
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         onCheckout={handleCheckout}
+      />
+
+      <EmailModal
+        isOpen={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        onSubmit={handleEmailLogin}
       />
 
       {/* Auth is required for checkout; handled server-side */}

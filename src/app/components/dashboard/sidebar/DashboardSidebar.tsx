@@ -8,6 +8,7 @@ import {
   User,
   MessageCircle,
   PanelRightOpen,
+  Video,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -17,6 +18,7 @@ const navItems = [
   { href: "/dashboard/upload", label: "Upload Content", icon: Upload },
   { href: "/dashboard/history", label: "Upload History", icon: History },
   { href: "/dashboard/ai-chat", label: "AI Chat", icon: MessageCircle },
+  { href: "/dashboard/talking-head", label: "Talking Head", icon: Video },
   { href: "/dashboard/account", label: "Account & Billing", icon: User },
 ];
 
@@ -114,7 +116,7 @@ export default function DashboardSidebar({
       <div className="flex flex-col items-center text-white">
         <Link href="/" className="flex flex-col items-center group transition">
           <Image
-            src="/5805591578897663447.jpg"
+            src="/echofy-removebg-preview.png"
             alt="Platform Logo"
             width={56}
             height={56}

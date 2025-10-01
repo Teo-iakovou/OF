@@ -5,6 +5,10 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "worker:stub": "node scripts/worker-stub.js",
+    "worker:setup": "bash scripts/setup_worker.sh",
+    "worker:run": "bash scripts/run_worker.sh",
+    "worker:health": "bash scripts/health.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,6 +16,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.664.0",
+    "@aws-sdk/s3-request-presigner": "^3.664.0",
     "@tensorflow-models/body-pix": "^2.2.1",
     "@tensorflow/tfjs": "^4.22.0",
     "axios": "^1.7.9",

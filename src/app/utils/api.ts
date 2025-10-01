@@ -104,6 +104,34 @@ export async function checkUserPackage(): Promise<UserPackageResponse> {
 }
 
 // -------------------------------
+// Talking Head (render) stubs
+// -------------------------------
+export async function renderGenerate(input: {
+  text: string;
+  voiceId?: string;
+  consent: boolean;
+}): Promise<{ jobId: string }> {
+  const r = await fetchJson(`${BASE_URL}/api/render/generate`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!r.ok) throw new Error("Failed to create render job");
+  return r.data as any;
+}
+
+export async function getRenderJob(jobId: string): Promise<{
+  status: "queued" | "running" | "succeeded" | "failed";
+  videoUrl?: string;
+  error?: string;
+}> {
+  const r = await fetchJson(`${BASE_URL}/api/render/jobs/${encodeURIComponent(jobId)}`, {
+    method: "GET",
+  });
+  if (!r.ok) throw new Error("Failed to fetch job status");
+  return r.data as any;
+}
+
+// -------------------------------
 // Chat types (inline)
 // -------------------------------
 export interface ChatMeta {

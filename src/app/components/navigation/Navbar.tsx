@@ -40,10 +40,10 @@ export default function Navbar({ onCartClick }: NavbarProps) {
             className="absolute left-1/2 transform -translate-x-1/2 md:static md:transform-none flex items-center space-x-2"
           >
             <Image
-              src="/5805591578897663447.jpg"
+              src="/echofy-removebg-preview.png"
               alt="Logo"
-              width={40}
-              height={40}
+              width={70}
+              height={70}
               className="rounded-full object-contain"
             />
           </Link>

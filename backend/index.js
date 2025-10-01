@@ -10,6 +10,8 @@ connectDB();
 const coachChatRoutes = require("./routes/coach-chat");
 const conversationRoutes = require("./routes/conversations");
 const analyzeRoutes = require("./routes/analyze");
+const renderRoutes = require("./routes/render");
+const renderInternalRoutes = require("./routes/render-internal");
 const userRoutes = require("./routes/userRoutes");
 const checkoutRoutes = require("./routes/checkout");
 const feedbackRoutes = require("./routes/feedbackRoutes");
@@ -51,12 +53,15 @@ app.use("/api/auth", authRoutes);
 
 // ✅ Main API routes (protected)
 app.use("/api/analyze", requireAuth, analyzeRoutes);
+app.use("/api/render", requireAuth, renderRoutes); // stubbed v0 endpoints
 app.use("/api/user", requireAuth, userRoutes);
 app.use("/api/checkout", checkoutRoutes); // login not required for webhook/create
 app.use("/api/coach-chat", requireAuth, coachChatRoutes);
 app.use("/api/feedback", requireAuth, feedbackRoutes);
 app.use("/api/tts", requireAuth, ttsRoutes);
 app.use("/api/conversations", requireAuth, conversationRoutes);
+app.use("/api/render", requireAuth, renderRoutes);
+app.use("/api/render-internal", renderInternalRoutes);
 
 const PORT = process.env.PORT || 5001;
 
