@@ -95,6 +95,7 @@ const Checkout = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-900 text-white">
       <h1 className="text-4xl font-bold mb-6">Complete Your Purchase</h1>
 
@@ -137,6 +138,7 @@ const Checkout = () => {
       onClose={() => setLoginOpen(false)}
       onSubmit={handleEmailLogin}
     />
+    </>
   );
 };
 
