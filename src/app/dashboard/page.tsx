@@ -1,38 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useUser } from "@/app/hooks/useUser";
 import Link from "next/link";
 import UserPlanCard from "@/app/components/dashboard/overview/UserPlanCard";
 import QuickStartPanel from "@/app/components/dashboard/overview/QuickStartPanel";
 import TipsCard from "@/app/components/dashboard/overview/TipsCard";
 import { Skeleton } from "@/app/components/ui/Skeleton";
-import EmailModal from "@/app/components/email/EmailModal";
-import { BASE_URL } from "@/app/utils/fetcher";
 
 export default function DashboardPage() {
-  const { user, loading, refresh } = useUser({ required: false });
-  const [loginOpen, setLoginOpen] = useState(false);
+  const { user, loading } = useUser({ required: false });
   const displayName = useMemo(() => {
     const email = user?.email || "";
     if (!email) return ""; // avoid placeholder flicker
     const base = email.split("@")[0] || "";
     return base ? base.charAt(0).toUpperCase() + base.slice(1) : "";
   }, [user]);
-
-  async function handleEmailLogin(email: string) {
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/login`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      await refresh();
-      setLoginOpen(false);
-    } catch {}
-  }
 
 
   return (
@@ -89,13 +72,6 @@ export default function DashboardPage() {
           <TipsCard />
         </div>
       </main>
-      {!loading && !user && (
-        <EmailModal
-          isOpen={true}
-          onClose={() => setLoginOpen(false)}
-          onSubmit={handleEmailLogin}
-        />
-      )}
     </div>
   );
 }

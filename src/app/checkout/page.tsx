@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { purchasePackage, startCheckout } from "@/app/utils/api";
 import { useUser } from "@/app/hooks/useUser";
-import EmailModal from "@/app/components/email/EmailModal";
-import { BASE_URL } from "@/app/utils/fetcher";
 import { packages } from "@/app/components/packages/Packages";
 
 const Checkout = () => {
@@ -17,8 +15,7 @@ const Checkout = () => {
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const { user, loading: userLoading, refresh } = useUser({ required: false });
-  const [loginOpen, setLoginOpen] = useState(false);
+  const { user, loading: userLoading } = useUser({ required: true });
 
   useEffect(() => {
     // useUser enforces auth; nothing to do here
@@ -28,11 +25,6 @@ const Checkout = () => {
     if (!packageId) return;
     setLoading(true);
     try {
-      if (!user) {
-        setLoginOpen(true);
-        setLoading(false);
-        return;
-      }
       const response = await purchasePackage(packageId);
       if (response.message) {
         setSuccess(true);
@@ -49,34 +41,12 @@ const Checkout = () => {
     if (!packageId) return;
     setLoading(true);
     try {
-      if (!user) {
-        setLoginOpen(true);
-        setLoading(false);
-        return;
-      }
       await startCheckout(packageId); // redirects to Stripe
     } catch (error) {
       console.error("Stripe checkout error:", error);
       setLoading(false);
     }
   };
-
-  async function handleEmailLogin(email: string) {
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/login`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      await refresh();
-      setLoginOpen(false);
-      if (packageId) await startCheckout(packageId);
-    } catch (e) {
-      // Remain on page; user can retry
-    }
-  }
 
   if (!packageId) {
     return (
@@ -95,7 +65,6 @@ const Checkout = () => {
   }
 
   return (
-    <>
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-900 text-white">
       <h1 className="text-4xl font-bold mb-6">Complete Your Purchase</h1>
 
@@ -133,12 +102,6 @@ const Checkout = () => {
         </p>
       )}
     </div>
-    <EmailModal
-      isOpen={loginOpen}
-      onClose={() => setLoginOpen(false)}
-      onSubmit={handleEmailLogin}
-    />
-    </>
   );
 };
 

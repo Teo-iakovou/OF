@@ -6,9 +6,6 @@ import { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
 import { useCart } from "./CartContext";
 import { startCheckout } from "@/app/utils/api";
-import { useUser } from "@/app/hooks/useUser";
-import EmailModal from "@/app/components/email/EmailModal";
-import { BASE_URL } from "@/app/utils/fetcher";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -19,8 +16,6 @@ interface CartDrawerProps {
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { cartItems, removeFromCart, changeQty } = useCart();
   const [isMounted, setIsMounted] = useState(false);
-  const { user, refresh } = useUser({ required: false });
-  const [loginOpen, setLoginOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -48,33 +43,12 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const handleStripePayment = async () => {
     if (!cartItems.length) return;
     try {
-      if (!user) {
-        setLoginOpen(true);
-        return;
-      }
       await startCheckout(cartItems[0].id);
     } catch (error) {
       console.error("Stripe checkout error:", error);
       alert("Please sign in before checkout.");
     }
   };
-
-  async function handleEmailLogin(email: string) {
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/login`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      await refresh();
-      setLoginOpen(false);
-      if (cartItems[0]) await startCheckout(cartItems[0].id);
-    } catch (e) {
-      alert("Login failed. Please try again.");
-    }
-  }
 
   return (
     <div
@@ -180,11 +154,6 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
         </button>
       </div>
 
-      <EmailModal
-        isOpen={loginOpen}
-        onClose={() => setLoginOpen(false)}
-        onSubmit={handleEmailLogin}
-      />
     </div>
   );
 }
