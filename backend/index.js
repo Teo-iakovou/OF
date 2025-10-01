@@ -25,16 +25,31 @@ const { requireAuth } = require("./middleware/requireAuth");
 
 const app = express();
 app.use(requestId);
-// ✅ CORS for all routes (array of allowed origins)
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "https://airecomadations.netlify.app"
-    ],
-    credentials: true,
-  })
-);
+// ✅ CORS for all routes (env-driven allowlist + credentials)
+const allowedOrigins = String(process.env.ALLOWED_ORIGINS || "http://localhost:3000")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow no-origin requests (curl, mobile apps) and allowed origins
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "Origin",
+    "User-Agent",
+    "Cache-Control",
+    "Pragma",
+  ],
+};
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // ✅ Stripe webhook - must come before express.json
 app.post(

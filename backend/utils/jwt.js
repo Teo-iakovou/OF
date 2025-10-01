@@ -33,19 +33,29 @@ function verifyToken(token) {
 
 function getCookieOptions() {
   const isProd = process.env.NODE_ENV === "production";
-  const sameSite = "lax";
-  // Important: only set secure/domain in production. In local dev (http://localhost)
-  // a Secure or mismatched Domain cookie will be rejected by the browser.
+  // Allow overriding SameSite via env for cross-site XHR (e.g., UI hosted on a different domain)
+  // If CROSS_SITE_COOKIES=true or COOKIE_SAMESITE=none, use SameSite=None + Secure in prod
+  const crossSite = String(process.env.CROSS_SITE_COOKIES || "").toLowerCase() === "true";
+  const envSameSite = (process.env.COOKIE_SAMESITE || "").toLowerCase();
+  const sameSite = envSameSite
+    ? envSameSite
+    : crossSite
+      ? "none"
+      : "lax";
+
   const base = {
     httpOnly: true,
     sameSite,
     path: "/",
     maxAge: TOKEN_TTL_MIN * 60 * 1000,
   };
+
   if (isProd) {
+    // SameSite=None requires Secure
+    const secure = sameSite === "none" ? true : true; // always secure in prod
     return {
       ...base,
-      secure: true,
+      secure,
       domain: process.env.COOKIE_DOMAIN || undefined,
     };
   }
