@@ -11,33 +11,26 @@ interface HistoryCardProps {
       }>;
     };
   };
-  selectedItems: string[];
-  setSelectedItems: React.Dispatch<React.SetStateAction<string[]>>;
+  selectedItems: string[]; // unused (selection removed)
+  setSelectedItems: React.Dispatch<React.SetStateAction<string[]>>; // unused
   onDeleteClick: (id: string) => void;
   onOpenClick: (id: string) => void; // required for navigation
 }
 
 const HistoryCard = ({
   item,
-  selectedItems,
-  setSelectedItems,
+  selectedItems: _selectedItems,
+  setSelectedItems: _setSelectedItems,
   onDeleteClick,
   onOpenClick,
 }: HistoryCardProps) => {
-  const checked = selectedItems.includes(item._id);
+  // selection removed
 
   // Tiny summary (kept *minimal*): top platform and best time
   const top = item.promotion?.recommendedPlatforms?.[0];
   const topPlatform = top?.platform || "—";
   const topTime = top?.bestTimesLocal?.[0] || "—";
   const when = new Date(item.createdAt).toLocaleString();
-
-  const toggleSelection = (e: React.MouseEvent | React.ChangeEvent) => {
-    e.stopPropagation();
-    setSelectedItems((prev) =>
-      checked ? prev.filter((id) => id !== item._id) : [...prev, item._id]
-    );
-  };
 
   return (
     <div
@@ -48,15 +41,7 @@ const HistoryCard = ({
       className="flex items-center justify-between gap-4 bg-gray-800 border border-gray-700 p-4 sm:p-5 rounded-xl shadow-button hover:shadow-lg hover:bg-gray-800/80 transition cursor-pointer"
     >
       {/* Left */}
-      <div className="flex items-center gap-4 min-w-0">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={toggleSelection}
-          onClick={(e) => e.stopPropagation()}
-          className="h-4 w-4 accent-pink-500 shrink-0"
-          aria-label="Select item"
-        />
+      <div className="flex items-center gap-3 min-w-0">
         <div className="min-w-0">
           <div className="text-white font-semibold truncate">
             Analysis • {when}

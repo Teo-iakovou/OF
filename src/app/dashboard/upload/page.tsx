@@ -7,6 +7,7 @@ import Insights from "@/app/components/analytics/Insights";
 import { checkUserPackage } from "@/app/utils/api";
 
 import Spinner from "@/app/components/dashboard/loading spinner/page";
+import Reveal from "@/app/components/common/Reveal";
 import Link from "next/link";
 import type { ResultDoc } from "@/app/types/analysis";
 import { Skeleton } from "@/app/components/ui/Skeleton";
@@ -79,7 +80,7 @@ export default function UploadPage() {
         <div className="px-6 md:px-12 lg:px-20 max-w-6xl mx-auto pb-8">
           {/* Eligibility & Upload section */}
           {isLoading ? (
-            <section className="mt-8 mx-auto w-full max-w-3xl bg-gray-800 rounded-lg p-6 sm:p-8 shadow-lg">
+            <Reveal as="section" className="mt-8 mx-auto w-full max-w-3xl bg-gray-800 rounded-lg p-6 sm:p-8 shadow-lg">
               <Skeleton className="h-7 w-64 mb-4 mx-auto" />
               <Skeleton className="h-4 w-40 mb-6 mx-auto" />
               <div className="space-y-3">
@@ -87,7 +88,7 @@ export default function UploadPage() {
                 <Skeleton className="h-40 w-full" />
                 <Skeleton className="h-10 w-32 mx-auto" />
               </div>
-            </section>
+            </Reveal>
           ) : !userPackage ? (
             <div className="mt-10 text-center text-red-400 text-xl">
               You don&apos;t have a package yet. Please purchase a plan to start uploading.
@@ -97,7 +98,7 @@ export default function UploadPage() {
               You&apos;ve used all your uploads. Upgrade your plan to continue.
             </div>
           ) : (
-            <section className="mt-8 mx-auto w-full max-w-3xl bg-gray-800 rounded-lg p-6 sm:p-8 shadow-lg">
+            <Reveal as="section" className="mt-8 mx-auto w-full max-w-3xl bg-gray-800 rounded-lg p-6 sm:p-8 shadow-lg">
               <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center">
                 Upload Your Content
               </h2>
@@ -105,12 +106,12 @@ export default function UploadPage() {
                 Uploads remaining: <span className="text-pink-400">{uploadsLeft}</span>
               </p>
               <FileUpload onUploadSuccess={handleUploadSuccess} />
-            </section>
+            </Reveal>
           )}
 
           {/* Fresh insights appear immediately after upload ONLY (not restored on reload) */}
           {result && (
-            <section className="mt-8 mx-auto w-full max-w-4xl bg-gray-800 rounded-lg p-6 sm:p-8 shadow-xl">
+            <Reveal as="section" className="mt-8 mx-auto w-full max-w-4xl bg-gray-800 rounded-lg p-6 sm:p-8 shadow-xl">
               <Insights result={result} />
               <div className="text-center mt-4">
                 <Link
@@ -120,7 +121,7 @@ export default function UploadPage() {
                   View this in Upload History →
                 </Link>
               </div>
-            </section>
+            </Reveal>
           )}
         </div>
       </main>

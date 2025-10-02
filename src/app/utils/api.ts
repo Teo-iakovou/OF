@@ -32,7 +32,7 @@ export async function fetchAnalysisHistory(page = 1, limit = 10): Promise<{ resu
   const url = `${BASE_URL}/api/analyze?page=${page}&limit=${limit}&ts=${Date.now()}`;
   const r = await fetchJson(url, { method: "GET", cache: "no-store" });
   if (!r.ok) throw new Error("Fetch analysis history failed");
-  return r.data as any;
+  return r.data as { results: ResultDoc[]; total: number };
 }
 
 export async function deleteAnalysisResult(id: string) {
@@ -97,10 +97,58 @@ export interface UserPackageResponse {
   expiresAt?: string;
 }
 
+function isUnauthorizedError(e: unknown): e is { status?: number; message?: string } {
+  if (typeof e !== "object" || e === null) return false;
+  const maybe = e as { status?: unknown; message?: unknown };
+  return (
+    (typeof maybe.status === "number" && maybe.status === 401) ||
+    (typeof maybe.message === "string" && maybe.message === "Unauthorized")
+  );
+}
+
 export async function checkUserPackage(): Promise<UserPackageResponse> {
-  const r = await fetchJson(`${BASE_URL}/api/user/check-package`, { method: "GET" });
-  if (!r.ok) throw new Error("Check user package failed");
-  return r.data as any;
+  // Simple in-memory cache to avoid duplicate calls from StrictMode double effects
+  // and from multiple components on the same view. Stale after 5 seconds.
+  const now = Date.now();
+  const TTL = 5000;
+  if (pkgCache.value !== undefined && now - pkgCache.ts < TTL) {
+    return pkgCache.value;
+  }
+  if (pkgCache.inFlight) return pkgCache.inFlight;
+
+  pkgCache.inFlight = (async () => {
+    try {
+      const r = await fetchJson(`${BASE_URL}/api/user/check-package`, { method: "GET", cache: "no-store" });
+      if (!r.ok) throw new Error("Check user package failed");
+      const val = r.data as UserPackageResponse;
+      pkgCache.value = val;
+      pkgCache.ts = Date.now();
+      return val;
+    } catch (e: unknown) {
+      // Do NOT cache unauthorized; let callers retry after auth settles
+      if (isUnauthorizedError(e)) {
+        return { hasAccess: false } as UserPackageResponse;
+      }
+      throw e;
+    } finally {
+      pkgCache.inFlight = null;
+    }
+  })();
+  return pkgCache.inFlight;
+}
+
+// Package cache (module scope)
+const pkgCache: {
+  value: UserPackageResponse | undefined; // undefined = unknown
+  ts: number;
+  inFlight: Promise<UserPackageResponse> | null;
+} = { value: undefined, ts: 0, inFlight: null };
+
+// Public helper to clear API client caches (call on logout)
+export function clearApiCaches() {
+  pkgCache.value = undefined;
+  pkgCache.ts = 0;
+  pkgCache.inFlight = null;
 }
 
 // -------------------------------
@@ -116,7 +164,7 @@ export async function renderGenerate(input: {
     body: JSON.stringify(input),
   });
   if (!r.ok) throw new Error("Failed to create render job");
-  return r.data as any;
+  return r.data as { jobId: string };
 }
 
 export async function getRenderJob(jobId: string): Promise<{
@@ -128,7 +176,11 @@ export async function getRenderJob(jobId: string): Promise<{
     method: "GET",
   });
   if (!r.ok) throw new Error("Failed to fetch job status");
-  return r.data as any;
+  return r.data as {
+    status: "queued" | "running" | "succeeded" | "failed";
+    videoUrl?: string;
+    error?: string;
+  };
 }
 
 // -------------------------------
@@ -306,7 +358,7 @@ export async function fetchConversations(): Promise<ConversationSummary[]> {
   const url = `${BASE_URL}/api/conversations?ts=${Date.now()}`;
   const r = await fetchJson(url, { method: "GET", cache: "no-store" });
   if (!r.ok) throw new Error("Fetch conversations failed");
-  return r.data as any;
+  return r.data as ConversationSummary[];
 }
 
 // -------------------------------
@@ -454,7 +506,7 @@ export async function fetchCoachChatPrompts(): Promise<SuggestPromptsResponse> {
   const url = `${BASE_URL}/api/coach-chat/prompts?ts=${Date.now()}`;
   const r = await fetchJson(url, { method: "GET", cache: "no-store" });
   if (!r.ok) throw new Error("Fetch coach prompts failed");
-  return r.data as any;
+  return r.data as SuggestPromptsResponse;
 }
 
 // -------------------------------

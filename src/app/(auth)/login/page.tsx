@@ -1,14 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BASE_URL } from "@/app/utils/fetcher";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useUser } from "@/app/hooks/useUser";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { user, loading: userLoading } = useUser({ required: false });
+  const [alreadySignedIn, setAlreadySignedIn] = useState(false);
+  const search = useSearchParams();
+  const redirectDest = search?.get("redirect") || "/dashboard";
+
+  // If a signed-in user opens the login page, notify and redirect to destination
+  useEffect(() => {
+    if (!userLoading && user) {
+      setAlreadySignedIn(true);
+      const t = setTimeout(() => router.replace(redirectDest), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [user, userLoading, router, redirectDest]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,7 +39,8 @@ export default function LoginPage() {
         const msg = await res.text();
         throw new Error(msg || "Login failed");
       }
-      router.replace("/dashboard");
+      try { sessionStorage.setItem("justLoggedIn", "1"); } catch {}
+      router.replace(redirectDest);
     } catch (e: any) {
       setError(e?.message || "Login failed");
     } finally {
@@ -39,7 +54,12 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-sm bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow"
       >
-        <h1 className="text-2xl font-bold mb-4">Sign in</h1>
+        <h1 className="text-2xl font-bold mb-2">Sign in</h1>
+        {alreadySignedIn && (
+          <div className="mb-3 text-sm text-cyan-300 bg-cyan-900/30 border border-cyan-700 rounded p-2">
+            You are already signed in. Redirecting {redirectDest === "/" ? "home" : "to your dashboard"}…
+          </div>
+        )}
         <label className="block text-sm text-gray-300 mb-1">Email</label>
         <input
           type="email"
@@ -48,11 +68,11 @@ export default function LoginPage() {
           className="w-full px-3 py-2 rounded bg-gray-900 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-600 mb-3"
           placeholder="you@example.com"
           required
-        />
+          />
         {error && <div className="text-red-400 text-sm mb-3">{error}</div>}
         <button
           type="submit"
-          disabled={loading || !email}
+          disabled={loading || !email || alreadySignedIn}
           className="w-full py-2 rounded bg-cyan-600 hover:bg-cyan-700 disabled:opacity-60"
         >
           {loading ? "Signing in…" : "Sign in"}
@@ -61,4 +81,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

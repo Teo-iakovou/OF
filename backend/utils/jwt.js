@@ -37,11 +37,21 @@ function getCookieOptions() {
   // If CROSS_SITE_COOKIES=true or COOKIE_SAMESITE=none, use SameSite=None + Secure in prod
   const crossSite = String(process.env.CROSS_SITE_COOKIES || "").toLowerCase() === "true";
   const envSameSite = (process.env.COOKIE_SAMESITE || "").toLowerCase();
-  const sameSite = envSameSite
+  let sameSite = envSameSite
     ? envSameSite
     : crossSite
       ? "none"
       : "lax";
+
+  // In development over http:// (non-secure), browsers reject SameSite=None
+  // unless the cookie is also Secure. Since we do not use Secure in dev,
+  // force Lax to ensure the session cookie is stored and sent.
+  if (process.env.NODE_ENV !== "production" && sameSite === "none") {
+    sameSite = "lax";
+    try {
+      console.warn("[cookies] Forcing SameSite=Lax in dev (None requires Secure).");
+    } catch {}
+  }
 
   const base = {
     httpOnly: true,

@@ -17,18 +17,38 @@ import Link from "next/link";
 import Scrollspy from "react-scrollspy";
 import Image from "next/image";
 import { useCart } from "../cart/CartContext"; // Make sure the path is correct!
+import { useUser } from "@/app/hooks/useUser";
+import { useRouter } from "next/navigation";
 
 type NavbarProps = {
   onCartClick: () => void;
 };
 
+function hasPrefetch(r: unknown): r is { prefetch: (href: string) => void } {
+  const candidate = r as Record<string, unknown>;
+  return typeof candidate?.prefetch === "function";
+}
+
 export default function Navbar({ onCartClick }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { cartCount } = useCart();
+  const { user } = useUser({ required: false });
+  const router = useRouter();
 
   // Avoid hydration mismatch for client-only cart count badge
   useEffect(() => setMounted(true), []);
+
+  // Prefetch dashboard route for instant navigation when authenticated
+  useEffect(() => {
+    if (user) {
+      try {
+        if (hasPrefetch(router)) {
+          router.prefetch("/dashboard");
+        }
+      } catch {}
+    }
+  }, [user, router]);
 
   return (
     <>
@@ -155,7 +175,11 @@ export default function Navbar({ onCartClick }: NavbarProps) {
               {/* Dashboard */}
               <Link
                 href="/dashboard"
-                onClick={() => setIsMenuOpen(false)}
+                prefetch
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  try { window.dispatchEvent(new Event("route-transition-start")); } catch {}
+                }}
                 className="hover:text-cyan-400 transition flex items-center gap-2"
               >
                 <LayoutDashboard size={18} />
@@ -165,15 +189,24 @@ export default function Navbar({ onCartClick }: NavbarProps) {
 
             <div className="border-t border-gray-700 my-6" />
 
-            {/* Login */}
-            <Link
-              href="/login"
+            {/* Auth action (dynamic) */}
+            {/* Always show a Log in icon */}
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                if (user) {
+                  try { sessionStorage.setItem("justLoggedIn", "1"); } catch {}
+                  router.replace("/");
+                } else {
+                  router.push("/login?redirect=/");
+                }
+              }}
               className="flex items-center gap-2 text-gray-400 hover:text-white transition mb-4"
-              onClick={() => setIsMenuOpen(false)}
+              aria-label="Log in"
             >
               <FiUser size={20} />
               <span>Log in</span>
-            </Link>
+            </button>
 
             {/* Social */}
             <div className="flex gap-6 text-gray-400">

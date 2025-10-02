@@ -49,7 +49,7 @@ export default function PackageDetailPage() {
   return (
     <div className="min-h-screen bg-[#181F28] text-white">
       {/* Hero/Product Section */}
-      <section className="flex flex-col md:flex-row items-center justify-center max-w-5xl mx-auto pt-20 pb-14 px-4 gap-10">
+      <Reveal as="section" className="flex flex-col md:flex-row items-center justify-center max-w-5xl mx-auto pt-20 pb-14 px-4 gap-10">
         {/* Image/Logo Side */}
         <div className="flex-1 w-full flex items-center justify-center md:justify-start mb-8 md:mb-0">
           <Image
@@ -106,13 +106,13 @@ export default function PackageDetailPage() {
             </button>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* Divider */}
       <div className="max-w-4xl mx-auto border-t border-[#2e3643] my-12" />
 
       {/* Marketing/Info Section */}
-      <section className="max-w-4xl mx-auto text-center px-4 py-10">
+      <Reveal as="section" className="max-w-4xl mx-auto text-center px-4 py-10">
         <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
           Why Choose Us?
         </h2>
@@ -128,7 +128,7 @@ export default function PackageDetailPage() {
             Testimonials
           </button>
         </div>
-      </section>
+      </Reveal>
 
       {/* Slide-in Cart Drawer (context manages items) */}
       <CartDrawer
@@ -141,3 +141,4 @@ export default function PackageDetailPage() {
     </div>
   );
 }
+import Reveal from "@/app/components/common/Reveal";

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { checkUserPackage } from "@/app/utils/api";
 import Spinner from "@/app/components/dashboard/loading spinner/page";
+import Reveal from "@/app/components/common/Reveal";
 
 export default function BillingPage() {
   const [userPackage, setUserPackage] = useState<null | {
@@ -62,7 +63,7 @@ export default function BillingPage() {
               <Spinner />
             </div>
           ) : userPackage ? (
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md space-y-4">
+            <Reveal as="div" className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md space-y-4">
               <p>
                 <strong>Current Plan:</strong> {userPackage.name}
               </p>
@@ -81,9 +82,9 @@ export default function BillingPage() {
               >
                 Upgrade Plan
               </button>
-            </div>
+            </Reveal>
           ) : (
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md">
+            <Reveal as="div" className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md">
               <p className="text-red-400 text-lg">No active plan found.</p>
               <button
                 onClick={() => router.push("/#packages")}
@@ -91,7 +92,7 @@ export default function BillingPage() {
               >
                 View Plans
               </button>
-            </div>
+            </Reveal>
           )}
         </div>
       </main>

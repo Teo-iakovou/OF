@@ -7,6 +7,7 @@ import UserPlanCard from "@/app/components/dashboard/overview/UserPlanCard";
 import QuickStartPanel from "@/app/components/dashboard/overview/QuickStartPanel";
 import TipsCard from "@/app/components/dashboard/overview/TipsCard";
 import { Skeleton } from "@/app/components/ui/Skeleton";
+import Reveal from "@/app/components/common/Reveal";
 
 export default function DashboardPage() {
   const { user, loading } = useUser({ required: false });
@@ -32,7 +33,7 @@ export default function DashboardPage() {
       <main>
         <div className="px-4 md:px-12 lg:px-20 max-w-6xl mx-auto space-y-6 md:space-y-10 pb-6">
           {/* Welcome hero */}
-          <section className="rounded-2xl bg-gray-900 border border-gray-700 p-4 md:p-6">
+          <Reveal as="section" className="rounded-2xl bg-gray-900 border border-gray-700 p-4 md:p-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <p className="text-sm text-gray-400">Welcome back</p>
@@ -64,12 +65,18 @@ export default function DashboardPage() {
                 </Link>
               </div>
             </div>
-          </section>
+          </Reveal>
 
           {/* Sections */}
-          <UserPlanCard />
-          <QuickStartPanel />
-          <TipsCard />
+          <Reveal as="div">
+            <UserPlanCard />
+          </Reveal>
+          <Reveal as="div" delay={100}>
+            <QuickStartPanel />
+          </Reveal>
+          <Reveal as="div" delay={200}>
+            <TipsCard />
+          </Reveal>
         </div>
       </main>
     </div>

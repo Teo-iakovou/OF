@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Reveal from "@/app/components/common/Reveal";
 
 export const packages = [
   {
@@ -40,9 +41,11 @@ export default function Packages() {
     <section id="packages" className="py-16 scroll-mt-32">
       <h2 className="text-4xl font-bold text-center mb-8">Choose Your Plan</h2>
       <div className="flex flex-wrap justify-center gap-8">
-        {packages.map((pkg) => (
-          <div
+        {packages.map((pkg, i) => (
+          <Reveal
+            as="div"
             key={pkg.id}
+            delay={i * 120}
             className={`relative bg-black bg-opacity-20 p-10 rounded-xl shadow-lg w-80 h-[28rem] transform transition-all`}
             style={{
               transition:
@@ -54,20 +57,22 @@ export default function Packages() {
                   ? "rgba(236, 72, 153, 0.5)" // Pink border
                   : "rgba(168, 85, 247, 0.5)" // Purple border
               }`,
-              cursor: "default", // Ensures the package itself is NOT clickable
+              cursor: "default",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow =
+            onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
+              const el = e.currentTarget as HTMLDivElement;
+              el.style.boxShadow =
                 pkg.id === "lite"
-                  ? "0 0 20px rgba(59, 130, 246, 0.8)" // Blue glow
+                  ? "0 0 20px rgba(59, 130, 246, 0.8)"
                   : pkg.id === "pro"
-                  ? "0 0 20px rgba(236, 72, 153, 0.8)" // Pink glow
-                  : "0 0 20px rgba(168, 85, 247, 0.8)"; // Purple glow
-              e.currentTarget.style.transform = "scale(1.03)";
+                  ? "0 0 20px rgba(236, 72, 153, 0.8)"
+                  : "0 0 20px rgba(168, 85, 247, 0.8)";
+              el.style.transform = "scale(1.03)";
             }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = "none";
-              e.currentTarget.style.transform = "scale(1)";
+            onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
+              const el = e.currentTarget as HTMLDivElement;
+              el.style.boxShadow = "none";
+              el.style.transform = "scale(1)";
             }}
           >
             {/* Ribbon for Most Popular */}
@@ -133,7 +138,7 @@ export default function Packages() {
                 Select {pkg.title}
               </button>
             </Link>
-          </div>
+          </Reveal>
         ))}
       </div>
     </section>

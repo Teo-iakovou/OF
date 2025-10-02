@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { checkUserPackage } from "@/app/utils/api";
 import { Skeleton } from "@/app/components/ui/Skeleton";
+import { useUser } from "@/app/hooks/useUser";
 
 export default function UserPlanCard() {
   const [plan, setPlan] = useState<null | {
@@ -10,9 +11,17 @@ export default function UserPlanCard() {
     expiresAt?: string;
   }>(null);
   const [loading, setLoading] = useState(true);
+  const { user, loading: userLoading } = useUser({ required: false });
 
   useEffect(() => {
     let cancelled = false;
+    // Wait until auth state is resolved; skip if unauthenticated
+    if (userLoading) return;
+    if (!user) {
+      setPlan(null);
+      setLoading(false);
+      return;
+    }
     (async () => {
       try {
         const res = await checkUserPackage();
@@ -31,7 +40,7 @@ export default function UserPlanCard() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [user, userLoading]);
 
   if (loading) {
     return (

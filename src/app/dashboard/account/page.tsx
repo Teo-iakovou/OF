@@ -3,11 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/hooks/useUser";
+import { useCart } from "@/app/components/cart/CartContext";
 import { BASE_URL } from "@/app/utils/fetcher";
 import { Skeleton } from "@/app/components/ui/Skeleton";
- 
+
 import { checkUserPackage } from "@/app/utils/api";
 import Spinner from "@/app/components/dashboard/loading spinner/page";
+import { clearUserCache } from "@/app/hooks/useUser";
+import { clearApiCaches } from "@/app/utils/api";
+import Reveal from "@/app/components/common/Reveal";
 
 type UserPkg = {
   name: string;
@@ -17,6 +21,7 @@ type UserPkg = {
 
 export default function AccountAndBillingPage() {
   const { user, loading: userLoading } = useUser({ required: false });
+  const { setCartItems } = useCart();
   const [userPackage, setUserPackage] = useState<UserPkg>(null);
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +57,14 @@ export default function AccountAndBillingPage() {
     try {
       await fetch(`${BASE_URL}/api/auth/logout`, { method: "POST", credentials: "include" });
     } catch {}
-    router.replace("/login");
+    // Clear any client-side caches and flags so the app behaves like a fresh visit
+    try { clearUserCache(); } catch {}
+    try { clearApiCaches(); } catch {}
+    // Also clear the shopping cart so the badge shows 0 for logged-out users
+    try { setCartItems([]); } catch {}
+    try { sessionStorage.removeItem("justLoggedIn"); } catch {}
+    // Navigate to home immediately after logout
+    router.replace("/");
   };
 
   return (
@@ -79,7 +91,7 @@ export default function AccountAndBillingPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Account card */}
-              <section className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md space-y-4">
+              <Reveal as="section" className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md space-y-4">
                 <h2 className="text-xl font-semibold">Account</h2>
                 {userLoading ? (
                   <>
@@ -105,10 +117,10 @@ export default function AccountAndBillingPage() {
                 ) : (
                   <p className="text-gray-400">Not signed in.</p>
                 )}
-              </section>
+              </Reveal>
 
               {/* Plan card */}
-              <section className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md space-y-4">
+              <Reveal as="section" className="bg-gray-900 border border-gray-700 rounded-2xl p-6 md:p-8 shadow-md space-y-4">
                 <h2 className="text-xl font-semibold">Plan</h2>
                 {userPackage ? (
                   <>
@@ -147,7 +159,7 @@ export default function AccountAndBillingPage() {
                     </button>
                   </>
                 )}
-              </section>
+              </Reveal>
             </div>
           )}
         </div>

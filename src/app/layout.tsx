@@ -2,6 +2,8 @@
 
 import "./styles/globals.css";
 import ToastNotification from "./components/notifications/ToastNotification";
+import LoginToastTrigger from "./components/notifications/LoginToastTrigger";
+import RouteTransitionOverlay from "./components/navigation/RouteTransitionOverlay";
 import Navbar from "../app/components/navigation/Navbar";
 import Footer from "../app/components/navigation/Footer";
 import { ConsentProvider } from "./components/consent/ConsentContext";
@@ -36,6 +38,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="flex-grow">{children}</main>
 
           <ToastNotification />
+          <RouteTransitionOverlay />
+          <LoginToastTrigger />
           {!pathname.startsWith("/dashboard/ai") && <Footer />}
 
           {/* Consent UI (always mounted) */}

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import Spinner from "@/app/components/dashboard/loading spinner/page";
 import DashboardSidebar from "@/app/components/dashboard/sidebar/DashboardSidebar";
 import { FloatingChatProvider } from "@/app/components/AIchat/FloatingChatContext";
 import FloatingChatWidget from "@/app/components/AIchat/FloatingChatWidget";
@@ -32,7 +33,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // 👇 also hide the floating widget on the dedicated chat routes
   const showFloating = showBottomSpacer;
 
-  if (!hasMounted || userLoading) return null;
+  if (!hasMounted || userLoading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <Spinner />
+      </div>
+    );
 
   return (
     <>

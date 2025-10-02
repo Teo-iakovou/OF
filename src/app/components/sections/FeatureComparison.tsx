@@ -1,8 +1,9 @@
 "use client";
+import Reveal from "@/app/components/common/Reveal";
 
 export default function FeatureComparison() {
   return (
-    <section id="features" className="py-20 bg-gray-900 text-white">
+    <Reveal as="section" id="features" className="py-20 bg-gray-900 text-white">
       <div className="container mx-auto px-6">
         <h2 className="text-4xl font-bold text-center mb-12">
           Feature Comparison
@@ -42,6 +43,6 @@ export default function FeatureComparison() {
           </table>
         </div>
       </div>
-    </section>
+    </Reveal>
   );
 }
