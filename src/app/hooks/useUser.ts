@@ -41,15 +41,26 @@ export function useUser(opts: { redirectTo?: string; required?: boolean; initial
     let cancelled = false;
     (async () => {
       try {
-        // If the server already provided the user, trust it for the first paint
-        // and skip the initial /me fetch to avoid layout jank.
+        // If the server already provided the user, use it immediately when truthy.
+        // If it's explicitly null but a client token exists (testing header auth),
+        // allow a client-side revalidation before redirecting.
         if (typeof initialUser !== "undefined") {
-          cachedUser = initialUser;
-          lastFetched = Date.now();
-          setUser(initialUser);
-          if (!initialUser && required) router.replace(redirectTo);
-          setLoading(false);
-          return;
+          const hasClientToken =
+            typeof window !== "undefined" && !!window.localStorage?.getItem?.("ai_token");
+          if (initialUser) {
+            cachedUser = initialUser;
+            lastFetched = Date.now();
+            setUser(initialUser);
+            setLoading(false);
+            return;
+          } else if (!initialUser && required && !hasClientToken) {
+            // No server user and no client token → redirect now.
+            router.replace(redirectTo);
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+          // else: initialUser is null but we have a client token; fall through to fetch
         }
 
         // Serve instantly from cache if fresh; revalidate in background if stale

@@ -24,7 +24,7 @@ export default function LayoutClient({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { open: openConsent } = useConsent();
   // Hydrate auth client-side using server-provided user to avoid first-paint 401
-  const { loading: userLoading } = useUser({ required: true, initialUser });
+  const { user, loading: userLoading } = useUser({ required: true, initialUser });
 
   const pathname = usePathname();
 
@@ -47,7 +47,7 @@ export default function LayoutClient({
   // also hide the floating widget on the dedicated chat routes
   const showFloating = showBottomSpacer;
 
-  if (!hasMounted || userLoading)
+  if (!hasMounted || userLoading || !user)
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
         <Spinner />
@@ -111,4 +111,3 @@ export default function LayoutClient({
     </>
   );
 }
-

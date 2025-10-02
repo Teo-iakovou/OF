@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BASE_URL } from "@/app/utils/fetcher";
+import { BASE_URL, fetchJson } from "@/app/utils/fetcher";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@/app/hooks/useUser";
 
@@ -29,6 +29,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
+      const HEADER_AUTH_ENABLED = process.env.NEXT_PUBLIC_HEADER_AUTH === 'true';
       const res = await fetch(`${BASE_URL}/api/auth/login`, {
         method: "POST",
         credentials: "include",
@@ -39,8 +40,34 @@ export default function LoginPage() {
         const msg = await res.text();
         throw new Error(msg || "Login failed");
       }
-      try { sessionStorage.setItem("justLoggedIn", "1"); } catch {}
-      router.replace(redirectDest);
+      // Try to read a JWT token for header-based auth (testing)
+      try {
+        const data = await res.clone().json();
+        if (data?.token) {
+          try { localStorage.setItem('ai_token', data.token); } catch {}
+        }
+      } catch {}
+
+      // Verify cookie actually stuck (cross-site cookies can be blocked by the browser)
+      try {
+        const me = await fetchJson(`${BASE_URL}/api/auth/me`, { method: "GET", cache: "no-store" });
+        if (me.ok) {
+          try { sessionStorage.setItem("justLoggedIn", "1"); } catch {}
+          router.replace(redirectDest);
+          return;
+        }
+      } catch {}
+      // If cookies are blocked, but we have a token and header auth is enabled, proceed
+      try {
+        if (HEADER_AUTH_ENABLED && localStorage.getItem('ai_token')) {
+          try { sessionStorage.setItem("justLoggedIn", "1"); } catch {}
+          router.replace(redirectDest);
+          return;
+        }
+      } catch {}
+
+      // Final fallback: perform top-level redirect login to set cookie first-party
+      window.location.href = `${BASE_URL}/api/auth/login?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(redirectDest)}`;
     } catch (e: any) {
       setError(e?.message || "Login failed");
     } finally {

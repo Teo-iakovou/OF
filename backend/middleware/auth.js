@@ -6,7 +6,13 @@ async function authMiddleware(req, _res, next) {
   try {
     const header = req.headers["cookie"] || "";
     const cookies = header ? cookie.parse(header) : {};
-    const token = cookies[SESSION_COOKIE_NAME];
+    // Optional header-based auth is disabled by default; enable with HEADER_AUTH_ENABLED=true
+    const HEADER_AUTH_ENABLED = String(process.env.HEADER_AUTH_ENABLED || "").toLowerCase() === "true";
+    const auth = req.headers["authorization"] || req.headers["Authorization"]; // some proxies
+    const bearer = HEADER_AUTH_ENABLED && typeof auth === "string" && auth.toLowerCase().startsWith("bearer ")
+      ? auth.slice(7).trim()
+      : null;
+    const token = bearer || cookies[SESSION_COOKIE_NAME];
     if (!token) {
       req.user = null;
       return next();
@@ -35,4 +41,3 @@ async function authMiddleware(req, _res, next) {
 }
 
 module.exports = { authMiddleware };
-

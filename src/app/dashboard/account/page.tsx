@@ -62,6 +62,8 @@ export default function AccountAndBillingPage() {
     try { clearApiCaches(); } catch {}
     // Also clear the shopping cart so the badge shows 0 for logged-out users
     try { setCartItems([]); } catch {}
+    // Clear header-based auth token used in testing/dev
+    try { localStorage.removeItem('ai_token'); } catch {}
     try { sessionStorage.removeItem("justLoggedIn"); } catch {}
     // Navigate to home after logout
     router.replace("/");
