@@ -195,9 +195,11 @@ export default function Navbar({ onCartClick }: NavbarProps) {
               onClick={() => {
                 setIsMenuOpen(false);
                 if (user) {
+                  // Already authenticated: go home and show logged-in banner
                   try { sessionStorage.setItem("justLoggedIn", "1"); } catch {}
                   router.replace("/");
                 } else {
+                  // After successful login, land on the homepage
                   router.push("/login?redirect=/");
                 }
               }}

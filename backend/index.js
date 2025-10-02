@@ -44,15 +44,8 @@ const corsOptions = {
       },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "Accept",
-    "Origin",
-    "User-Agent",
-    "Cache-Control",
-    "Pragma",
-  ],
+  // Let cors package reflect Access-Control-Request-Headers automatically.
+  // Avoid hard-coding to prevent preflight failures on modern UA headers.
 };
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));

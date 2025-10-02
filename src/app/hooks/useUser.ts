@@ -30,8 +30,8 @@ async function fetchUserOnce(): Promise<User> {
   return inFlight;
 }
 
-export function useUser(opts: { redirectTo?: string; required?: boolean } = {}) {
-  const { redirectTo = "/login", required = true } = opts;
+export function useUser(opts: { redirectTo?: string; required?: boolean; initialUser?: User } = {}) {
+  const { redirectTo = "/login", required = true, initialUser } = opts;
   const [user, setUser] = useState<User>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -41,6 +41,17 @@ export function useUser(opts: { redirectTo?: string; required?: boolean } = {}) 
     let cancelled = false;
     (async () => {
       try {
+        // If the server already provided the user, trust it for the first paint
+        // and skip the initial /me fetch to avoid layout jank.
+        if (typeof initialUser !== "undefined") {
+          cachedUser = initialUser;
+          lastFetched = Date.now();
+          setUser(initialUser);
+          if (!initialUser && required) router.replace(redirectTo);
+          setLoading(false);
+          return;
+        }
+
         // Serve instantly from cache if fresh; revalidate in background if stale
         const now = Date.now();
         const fresh = cachedUser !== undefined && now - lastFetched < STALE_TTL_MS;
@@ -66,7 +77,7 @@ export function useUser(opts: { redirectTo?: string; required?: boolean } = {}) 
       }
     })();
     return () => { cancelled = true; };
-  }, [redirectTo, required, router]);
+  }, [redirectTo, required, router, initialUser]);
 
   return { user, loading, error, refresh: async () => {
     setLoading(true);

@@ -48,7 +48,9 @@ const createCheckoutSession = async (req, res) => {
       metadata: { email, packageId },
       client_reference_id: email,
       success_url: `${safeOrigin}/dashboard?status=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${safeOrigin}/dashboard?status=cancel`,
+      // If the user cancels or clicks "go back" in Stripe Checkout,
+      // return them to the public homepage instead of dashboard.
+      cancel_url: `${safeOrigin}/`,
     });
 
     return res.json({ url: session.url });

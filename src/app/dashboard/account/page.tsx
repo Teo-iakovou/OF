@@ -63,7 +63,7 @@ export default function AccountAndBillingPage() {
     // Also clear the shopping cart so the badge shows 0 for logged-out users
     try { setCartItems([]); } catch {}
     try { sessionStorage.removeItem("justLoggedIn"); } catch {}
-    // Navigate to home immediately after logout
+    // Navigate to home after logout
     router.replace("/");
   };
 

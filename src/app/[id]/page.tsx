@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useState } from "react";
 import CartDrawer from "@/app/components/cart/CartDrawer";
 import { startCheckout } from "@/app/utils/api";
+import Reveal from "@/app/components/common/Reveal";
 // old flow: no inline email modal gating here
 
 export default function PackageDetailPage() {
@@ -22,15 +23,13 @@ export default function PackageDetailPage() {
     setCartOpen(true);
   }
 
-  // Checkout using your utility
+  // Checkout: navigate exactly like the cart's checkout button
   const handleCheckout = async () => {
-    const firstCartItem = cartItems[0];
-    if (!firstCartItem) return;
-    const pkg = packages.find((p) => p.id === firstCartItem.id);
-    if (!pkg) return;
-
     try {
-      await startCheckout(pkg.id);
+      // Prefer the package on this page; fallback to first cart item
+      const pkgId = selectedPackage?.id || cartItems[0]?.id;
+      if (!pkgId) return;
+      await startCheckout(pkgId);
     } catch (e) {
       alert("Please sign in to continue.");
     }
@@ -141,4 +140,3 @@ export default function PackageDetailPage() {
     </div>
   );
 }
-import Reveal from "@/app/components/common/Reveal";
