@@ -157,20 +157,20 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
   return (
     <div className="w-full">
       {/* Card frame */}
-      <div className="rounded-2xl bg-[#0B1222]/80 ring-1 ring-white/10 shadow-xl p-5 sm:p-6 backdrop-blur">
+      <div className="rounded-2xl bg-[#0B1222]/80 ring-1 ring-white/10 shadow-xl p-4 sm:p-6 backdrop-blur">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div>
-            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div className="min-w-0">
+            <h3 className="text-lg sm:text-2xl font-bold tracking-tight text-white">
               Upload an image
             </h3>
-            <p className="text-xs sm:text-sm text-gray-300/80">
+            <p className="text-xs sm:text-sm text-gray-300/80 truncate">
               We’ll analyze it and suggest captions, hashtags & best posting times.
             </p>
           </div>
 
           {/* Enhancements */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
             {/* Captions switch */}
             <Switch
               label="Captions"
@@ -193,8 +193,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
                   value={dubLang}
                   onChange={(e) => setDubLang(e.target.value)}
                   disabled={!autoDub}
-                  className="pl-8 pr-3 py-1.5 rounded-md bg-white/5 text-white border border-white/10 text-xs
-                             disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="pl-8 pr-3 py-1.5 rounded-md bg-white/5 text-white border border-white/10 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <option value="EN">EN</option>
                   <option value="ES">ES</option>
@@ -224,7 +223,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
             role="button"
             tabIndex={0}
             onKeyDown={(e) => (e.key === "Enter" ? onSelectClick() : null)}
-            className={`relative rounded-xl border-2 border-dashed p-6 sm:p-8 text-center cursor-pointer transition
+            className={`relative rounded-xl border-2 border-dashed p-4 sm:p-8 text-center cursor-pointer transition
               ${dragActive ? "border-indigo-400 bg-indigo-400/10" : "border-white/15 bg-white/5 hover:border-white/25"}`}
           >
             <input
@@ -259,7 +258,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
           {/* Preview & actions */}
           <div className="rounded-xl bg-white/5 border border-white/10 p-4 sm:p-5">
             {!file ? (
-              <div className="h-full min-h-[220px] grid place-items-center text-gray-400">
+              <div className="h-full min-h-[200px] grid place-items-center text-gray-400">
                 <div className="flex flex-col items-center gap-2">
                   <ImageIcon className="w-8 h-8 opacity-60" />
                   <div className="text-sm">No file selected yet</div>

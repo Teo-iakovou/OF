@@ -18,6 +18,16 @@ function cookieOptions() {
 }
 
 export async function POST(req: NextRequest) {
+  const SHOULD_LOG = process.env.AUTH_DEBUG === 'true' || process.env.NODE_ENV !== 'production';
+  try {
+    if (SHOULD_LOG) {
+      console.log('[auth-bff] POST /api/auth/login start', {
+        ua: req.headers.get('user-agent') || undefined,
+        origin: req.headers.get('origin') || undefined,
+        referer: req.headers.get('referer') || undefined,
+      });
+    }
+  } catch {}
   const body = await req.json().catch(() => ({}));
   const res = await fetch(`${SERVER_BASE_URL}/api/auth/login`, {
     method: "POST",
@@ -32,16 +42,34 @@ export async function POST(req: NextRequest) {
   if (res.ok && data && typeof data === "object" && typeof data.token === "string") {
     nextRes.cookies.set(SESSION_COOKIE_NAME, data.token, cookieOptions());
   }
+  try {
+    if (SHOULD_LOG) {
+      console.log('[auth-bff] POST /api/auth/login done', {
+        status: res.status,
+        setCookie: res.ok && !!(data && typeof data === 'object' && data.token),
+      });
+    }
+  } catch {}
   return nextRes;
 }
 
 export async function GET(req: NextRequest) {
+  const SHOULD_LOG = process.env.AUTH_DEBUG === 'true' || process.env.NODE_ENV !== 'production';
   // Support GET /api/auth/login?email=...&redirect=/... as a top-level flow
   const email = req.nextUrl.searchParams.get("email");
   const redirect = req.nextUrl.searchParams.get("redirect") || "/";
   if (!email) {
     return NextResponse.json({ error: "email is required" }, { status: 400 });
   }
+  try {
+    if (SHOULD_LOG) {
+      console.log('[auth-bff] GET /api/auth/login start', {
+        email,
+        redirect,
+        ua: req.headers.get('user-agent') || undefined,
+      });
+    }
+  } catch {}
   const res = await fetch(`${SERVER_BASE_URL}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -56,5 +84,10 @@ export async function GET(req: NextRequest) {
   if (data && typeof data === "object" && typeof data.token === "string") {
     nextRes.cookies.set(SESSION_COOKIE_NAME, data.token, cookieOptions());
   }
+  try {
+    if (SHOULD_LOG) {
+      console.log('[auth-bff] GET /api/auth/login done', { status: res.status, to });
+    }
+  } catch {}
   return nextRes;
 }

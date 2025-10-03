@@ -66,8 +66,8 @@ export default function UploadPage() {
     <div className="min-h-screen flex flex-col text-white">
       {/* Header */}
       <header className="shrink-0 pt-12 md:pt-20 px-6 md:px-12 lg:px-20 max-w-6xl mx-auto w-full">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+        <div className="flex items-center justify-center md:justify-between">
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-center md:text-left">
             AI Content Analyzer
           </h1>
         </div>
