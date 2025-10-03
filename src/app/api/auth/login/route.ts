@@ -6,9 +6,9 @@ const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "ai_session";
 function cookieOptions() {
   const isProd = process.env.NODE_ENV === "production";
   return {
-    httpOnly: true as const,
+    httpOnly: true,
     secure: isProd,
-    sameSite: (isProd ? "lax" : "lax") as const,
+    sameSite: "lax" as "lax" | "strict" | "none",
     path: "/",
   };
 }
@@ -54,4 +54,3 @@ export async function GET(req: NextRequest) {
   }
   return nextRes;
 }
-
