@@ -30,7 +30,9 @@ export default function LoginPage() {
     setError(null);
     try {
       const HEADER_AUTH_ENABLED = process.env.NEXT_PUBLIC_HEADER_AUTH === 'true';
-      const res = await fetch(`${BASE_URL}/api/auth/login`, {
+      const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === 'true';
+      const target = USE_BFF ? `/api/auth/login` : `${BASE_URL}/api/auth/login`;
+      const res = await fetch(target, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -50,7 +52,7 @@ export default function LoginPage() {
 
       // Verify cookie actually stuck (cross-site cookies can be blocked by the browser)
       try {
-        const me = await fetchJson(`${BASE_URL}/api/auth/me`, { method: "GET", cache: "no-store" });
+        const me = await fetchJson(`${USE_BFF ? '/api/auth/me' : BASE_URL + '/api/auth/me'}`, { method: "GET", cache: "no-store" });
         if (me.ok) {
           try { sessionStorage.setItem("justLoggedIn", "1"); } catch {}
           router.replace(redirectDest);
@@ -67,7 +69,7 @@ export default function LoginPage() {
       } catch {}
 
       // Final fallback: perform top-level redirect login to set cookie first-party
-      window.location.href = `${BASE_URL}/api/auth/login?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(redirectDest)}`;
+      window.location.href = `${USE_BFF ? '' : BASE_URL}/api/auth/login?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(redirectDest)}`;
     } catch (e: any) {
       setError(e?.message || "Login failed");
     } finally {

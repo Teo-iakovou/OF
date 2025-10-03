@@ -55,7 +55,9 @@ export default function AccountAndBillingPage() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${BASE_URL}/api/auth/logout`, { method: "POST", credentials: "include" });
+      const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === 'true';
+      const url = USE_BFF ? `/api/auth/logout` : `${BASE_URL}/api/auth/logout`;
+      await fetch(url, { method: "POST", credentials: "include" });
     } catch {}
     // Clear any client-side caches and flags so the app behaves like a fresh visit
     try { clearUserCache(); } catch {}

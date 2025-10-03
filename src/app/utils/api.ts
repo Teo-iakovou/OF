@@ -47,7 +47,9 @@ export async function deleteAnalysisResult(id: string) {
 // -------------------------------
 /** Stripe (unchanged) */
 export async function startCheckout(packageId: string) {
-  const res = await fetch(`${BASE_URL}/api/checkout/create-checkout-session`, {
+  const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === 'true';
+  const url = USE_BFF ? `/api/checkout/create-checkout-session` : `${BASE_URL}/api/checkout/create-checkout-session`;
+  const res = await fetch(url, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -63,10 +65,10 @@ export async function startCheckout(packageId: string) {
 }
 
 export async function verifySession(sessionId: string) {
+  const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === 'true';
+  const base = USE_BFF ? '' : BASE_URL;
   const res = await fetch(
-    `${BASE_URL}/api/checkout/verify-session?session_id=${encodeURIComponent(
-      sessionId
-    )}`
+    `${base}/api/checkout/verify-session?session_id=${encodeURIComponent(sessionId)}`
   );
   const parsed = await readJsonOrText(res);
   return ensureOk<{ status: string; email?: string; packageId?: string }>(
@@ -78,7 +80,9 @@ export async function verifySession(sessionId: string) {
 export type PurchaseResponse = { message: string };
 
 export async function purchasePackage(packageId: string) {
-  const res = await fetch(`${BASE_URL}/api/user/purchase`, {
+  const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === 'true';
+  const url = USE_BFF ? `/api/user/purchase` : `${BASE_URL}/api/user/purchase`;
+  const res = await fetch(url, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
