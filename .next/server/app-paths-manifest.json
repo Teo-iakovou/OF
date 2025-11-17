@@ -1,5 +1,7 @@
 {
-  "/page": "app/page.js",
   "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/api/sadtalker/create/route": "app/api/sadtalker/create/route.js",
+  "/api/sadtalker/status/route": "app/api/sadtalker/status/route.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/dashboard/talking-head/page": "app/dashboard/talking-head/page.js"
 }

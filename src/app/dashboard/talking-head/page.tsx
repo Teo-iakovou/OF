@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-// Temporarily hide upload UI while we fix issues
+import UploadTalkingHead from "@/app/components/render/UploadTalkingHead";
 
 export default function TalkingHeadPage() {
   return (
@@ -18,15 +17,12 @@ export default function TalkingHeadPage() {
       {/* Content */}
       <main>
         <div className="px-6 md:px-12 lg:px-20 max-w-6xl mx-auto pb-8">
-          <section className="mt-12 mx-auto w-full max-w-3xl bg-gray-800 rounded-lg p-8 shadow-lg text-center">
-            <h2 className="text-3xl font-extrabold mb-3">Coming Soon</h2>
-            <p className="text-gray-300 mb-4">We’re polishing the Talking Head experience. Check back shortly.</p>
-            <p className="text-gray-400">In the meantime, explore other features from your dashboard.</p>
-            <div className="mt-6">
-              <Link href="/dashboard" className="inline-block px-4 py-2 rounded-md bg-cyan-600 hover:bg-cyan-700 text-white font-semibold">
-                Back to Dashboard
-              </Link>
-            </div>
+          <section className="mt-12 mx-auto w-full max-w-3xl bg-gray-800 rounded-lg p-8 shadow-lg">
+            <h2 className="text-2xl font-bold mb-2">Generate a Talking Head</h2>
+            <p className="text-gray-300 mb-6">
+              Upload a face photo, enter a script, choose a voice, and we’ll render a video.
+            </p>
+            <UploadTalkingHead />
           </section>
         </div>
       </main>

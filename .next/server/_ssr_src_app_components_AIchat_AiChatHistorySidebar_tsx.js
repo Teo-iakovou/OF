@@ -21,6 +21,16 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 
 /***/ }),
 
+/***/ "(ssr)/./src/app/components/ui/Skeleton.tsx":
+/*!********************************************!*\
+  !*** ./src/app/components/ui/Skeleton.tsx ***!
+  \********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   Skeleton: () => (/* binding */ Skeleton)\n/* harmony export */ });\n/* harmony import */ var react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-dev-runtime */ \"(ssr)/./node_modules/next/dist/server/future/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.js\");\n/* harmony import */ var react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ \"(ssr)/./node_modules/next/dist/server/future/route-modules/app-page/vendored/ssr/react.js\");\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_1__);\n/* __next_internal_client_entry_do_not_use__ Skeleton auto */ \n\nfunction Skeleton({ className = \"\" }) {\n    return /*#__PURE__*/ (0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxDEV)(\"div\", {\n        className: [\n            \"animate-pulse rounded-md bg-gray-200/20 dark:bg-gray-700/40\",\n            className\n        ].join(\" \"),\n        \"aria-hidden\": true\n    }, void 0, false, {\n        fileName: \"/Users/theodorosiakovou/Projects/ai-platform/src/app/components/ui/Skeleton.tsx\",\n        lineNumber: 11,\n        columnNumber: 5\n    }, this);\n}\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHNzcikvLi9zcmMvYXBwL2NvbXBvbmVudHMvdWkvU2tlbGV0b24udHN4IiwibWFwcGluZ3MiOiI7Ozs7Ozs7OztBQUUwQjtBQU1uQixTQUFTQyxTQUFTLEVBQUVDLFlBQVksRUFBRSxFQUFTO0lBQ2hELHFCQUNFLDhEQUFDQztRQUNDRCxXQUFXO1lBQ1Q7WUFDQUE7U0FDRCxDQUFDRSxJQUFJLENBQUM7UUFDUEMsYUFBVzs7Ozs7O0FBR2pCIiwic291cmNlcyI6WyJ3ZWJwYWNrOi8vb25seWZhbnMtcGxhdGZvcm0vLi9zcmMvYXBwL2NvbXBvbmVudHMvdWkvU2tlbGV0b24udHN4PzQ3NDAiXSwic291cmNlc0NvbnRlbnQiOlsiXCJ1c2UgY2xpZW50XCI7XG5cbmltcG9ydCBSZWFjdCBmcm9tIFwicmVhY3RcIjtcblxudHlwZSBQcm9wcyA9IHtcbiAgY2xhc3NOYW1lPzogc3RyaW5nO1xufTtcblxuZXhwb3J0IGZ1bmN0aW9uIFNrZWxldG9uKHsgY2xhc3NOYW1lID0gXCJcIiB9OiBQcm9wcykge1xuICByZXR1cm4gKFxuICAgIDxkaXZcbiAgICAgIGNsYXNzTmFtZT17W1xuICAgICAgICBcImFuaW1hdGUtcHVsc2Ugcm91bmRlZC1tZCBiZy1ncmF5LTIwMC8yMCBkYXJrOmJnLWdyYXktNzAwLzQwXCIsXG4gICAgICAgIGNsYXNzTmFtZSxcbiAgICAgIF0uam9pbihcIiBcIil9XG4gICAgICBhcmlhLWhpZGRlblxuICAgIC8+XG4gICk7XG59XG5cbiJdLCJuYW1lcyI6WyJSZWFjdCIsIlNrZWxldG9uIiwiY2xhc3NOYW1lIiwiZGl2Iiwiam9pbiIsImFyaWEtaGlkZGVuIl0sInNvdXJjZVJvb3QiOiIifQ==\n//# sourceURL=webpack-internal:///(ssr)/./src/app/components/ui/Skeleton.tsx\n");
+
+/***/ }),
+
 /***/ "(ssr)/./src/app/utils/debug.ts":
 /*!********************************!*\
   !*** ./src/app/utils/debug.ts ***!
