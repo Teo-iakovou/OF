@@ -29,6 +29,7 @@ const ENDPOINT_REFRESH_MS = Number(process.env.SADTALKER_RUNPOD_REFRESH_MS || 60
 const REMOTE_CREATE_PATH = process.env.SADTALKER_REMOTE_CREATE_PATH || "/v1/jobs";
 const REMOTE_STATUS_PATH = process.env.SADTALKER_REMOTE_STATUS_PATH || "/v1/jobs";
 const TOKEN_QUERY_ENABLED = String(process.env.SADTALKER_TOKEN_QUERY || "false").toLowerCase() === "true";
+const HISTORY_LIMIT = Number(process.env.SADTALKER_HISTORY_LIMIT || 50);
 
 const redis = new Redis(REDIS_URL, { maxRetriesPerRequest: null });
 
@@ -242,12 +243,14 @@ async function handleJob(job) {
 
   if (!createResult.remoteJobId && createResult.immediateResult) {
     await job.updateProgress({ value: 100, remoteJobId: null, remoteState: "succeeded" });
-    return {
+    const finalResult = {
       videoUrl: createResult.immediateResult.videoUrl,
       remoteJobId: null,
       durationMs: Date.now() - startedAt,
       storage: createResult.immediateResult.storage,
     };
+    await recordJobHistory(job, finalResult);
+    return finalResult;
   }
 
   await job.updateProgress({ value: 25, remoteJobId: createResult.remoteJobId });
@@ -306,12 +309,40 @@ async function handleJob(job) {
     throw new Error(error?.message || error || "Remote job failed");
   }
 
-  return {
+  const finalResult = {
     videoUrl,
     remoteJobId: createResult.remoteJobId,
     durationMs,
     storage,
   };
+  await recordJobHistory(job, finalResult);
+  return finalResult;
+}
+
+async function recordJobHistory(job, payload) {
+  try {
+    if (!payload?.videoUrl) return;
+    const rawUserId = job.data?.userId;
+    const userId = typeof rawUserId === "string" && rawUserId.trim() ? rawUserId.trim() : "anonymous";
+    const record = {
+      jobId: job.id,
+      remoteJobId: payload.remoteJobId || null,
+      videoUrl: payload.videoUrl,
+      durationMs: payload.durationMs || null,
+      createdAt: new Date().toISOString(),
+      options: job.data?.options || null,
+    };
+    const key = `sadtalker:history:${userId}`;
+    await redis.lpush(key, JSON.stringify(record));
+    if (HISTORY_LIMIT > 0) {
+      await redis.ltrim(key, 0, HISTORY_LIMIT - 1);
+    }
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[sadtalker-worker] stored history", { userId, jobId: job.id });
+    }
+  } catch (err) {
+    console.warn("[sadtalker-worker] history append failed", err?.message || err);
+  }
 }
 
 function parseRunPodEndpoints(raw) {

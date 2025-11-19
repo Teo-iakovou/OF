@@ -5,6 +5,7 @@ export const navItems = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/upload", label: "Upload Content" },
   { href: "/dashboard/history", label: "Upload History" },
+  { href: "/dashboard/talking-head", label: "Talking Heads" },
   { href: "/dashboard/ai-chat", label: "AI Chat" },
   { href: "/dashboard/account", label: "Account Info" },
 ];

@@ -178,7 +178,9 @@ export default function Navbar({ onCartClick }: NavbarProps) {
                 prefetch
                 onClick={() => {
                   setIsMenuOpen(false);
-                  try { window.dispatchEvent(new Event("route-transition-start")); } catch {}
+                  try {
+                    window.dispatchEvent(new Event("route-transition-start"));
+                  } catch {}
                 }}
                 className="hover:text-cyan-400 transition flex items-center gap-2"
               >

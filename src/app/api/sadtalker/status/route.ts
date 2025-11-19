@@ -15,6 +15,16 @@ function toProgress(progress: unknown): number | undefined {
   return undefined;
 }
 
+function extractRemoteState(progress: unknown): string | undefined {
+  if (progress && typeof progress === "object" && "remoteState" in progress) {
+    const remoteState = (progress as { remoteState?: unknown }).remoteState;
+    if (typeof remoteState === "string" && remoteState.trim()) {
+      return remoteState;
+    }
+  }
+  return undefined;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const search = req.nextUrl.searchParams;
@@ -30,7 +40,9 @@ export async function GET(req: NextRequest) {
     }
 
     const state = await job.getState();
-    const progress = toProgress(job.progress);
+    const rawProgress = job.progress;
+    const progress = toProgress(rawProgress);
+    const remoteState = extractRemoteState(rawProgress);
     const result = job.returnvalue as SadTalkerJobResult | undefined;
     const failedReason = job.failedReason;
     const error = (job as any).stacktrace?.[0] || failedReason;
@@ -42,6 +54,7 @@ export async function GET(req: NextRequest) {
       progress,
       attempts: job.attemptsMade,
       result,
+      remoteState,
       error: errorPayload || (error ? { message: String(error) } : undefined),
     });
   } catch (err) {

@@ -32,7 +32,7 @@ function parseRunPodEndpoints(raw: string | undefined): RunPodEndpoint[] {
           if (!url || !token) return null;
           return { url, token, apiKey };
         })
-        .filter((item): item is RunPodEndpoint => !!item);
+        .filter((item): item is RunPodEndpoint => item !== null);
     }
   } catch (err) {
     // fall through to delimiter parsing below
@@ -50,7 +50,7 @@ function parseRunPodEndpoints(raw: string | undefined): RunPodEndpoint[] {
       if (!url || !token) return null;
       return { url, token, apiKey: apiKey || undefined };
     })
-    .filter((item): item is RunPodEndpoint => !!item);
+    .filter((item): item is RunPodEndpoint => item !== null);
 }
 
 export const sadTalkerConfig = {
