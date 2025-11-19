@@ -4,9 +4,9 @@ type RunPodEndpoint = {
   apiKey?: string;
 };
 
-const REQUIRED_ENV = ["SADTALKER_REDIS_URL"] as const;
+type RequiredEnv = "SADTALKER_REDIS_URL";
 
-function requireEnv(name: (typeof REQUIRED_ENV)[number]): string {
+function requireEnv(name: RequiredEnv): string {
   const value = process.env[name];
   if (!value) {
     throw new Error(`[sadtalker-config] Missing required env var ${name}`);
@@ -14,25 +14,27 @@ function requireEnv(name: (typeof REQUIRED_ENV)[number]): string {
   return value;
 }
 
+const isRunPodEndpoint = (value: RunPodEndpoint | null): value is RunPodEndpoint =>
+  value !== null;
+
+const toEndpoint = (value: unknown): RunPodEndpoint | null => {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const url = typeof record.url === "string" ? record.url.trim() : "";
+  const token = typeof record.token === "string" ? record.token.trim() : "";
+  const apiKey =
+    typeof record.apiKey === "string" && record.apiKey.trim() ? record.apiKey.trim() : undefined;
+  if (!url || !token) return null;
+  return { url, token, apiKey };
+};
+
 function parseRunPodEndpoints(raw: string | undefined): RunPodEndpoint[] {
   if (!raw) return [];
 
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      return parsed
-        .map((item) => {
-          if (!item || typeof item !== "object") return null;
-          const url = typeof (item as any).url === "string" ? (item as any).url.trim() : "";
-          const token = typeof (item as any).token === "string" ? (item as any).token.trim() : "";
-          const apiKey =
-            typeof (item as any).apiKey === "string" && (item as any).apiKey.trim()
-              ? (item as any).apiKey.trim()
-              : undefined;
-          if (!url || !token) return null;
-          return { url, token, apiKey };
-        })
-        .filter((item): item is RunPodEndpoint => item !== null);
+      return parsed.map(toEndpoint).filter(isRunPodEndpoint);
     }
   } catch (err) {
     // fall through to delimiter parsing below
@@ -47,10 +49,9 @@ function parseRunPodEndpoints(raw: string | undefined): RunPodEndpoint[] {
     .filter(Boolean)
     .map((entry) => {
       const [url, token, apiKey] = entry.split("|").map((part) => part.trim());
-      if (!url || !token) return null;
-      return { url, token, apiKey: apiKey || undefined };
+      return toEndpoint({ url, token, apiKey });
     })
-    .filter((item): item is RunPodEndpoint => item !== null);
+    .filter(isRunPodEndpoint);
 }
 
 export const sadTalkerConfig = {
