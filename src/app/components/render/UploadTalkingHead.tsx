@@ -263,8 +263,9 @@ export default function UploadTalkingHead() {
 
       setJobId(data.jobId);
       setJobState("queued");
-    } catch (err: any) {
-      setError(err?.message || "Failed to start SadTalker job");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to start SadTalker job";
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
