@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/no-require-imports */
 require("dotenv").config({ path: process.env.ENV_FILE || ".env" });
 require("dotenv").config({ path: ".env.local", override: true });
 
@@ -7,6 +7,8 @@ const Redis = require("ioredis");
 const axios = require("axios");
 const FormData = require("form-data");
 const { randomUUID } = require("crypto");
+
+const runPodManager = require("./runpodManager");
 
 const QUEUE_NAME = "sadtalker-jobs";
 const REDIS_URL = process.env.SADTALKER_REDIS_URL || process.env.REDIS_URL;
@@ -19,63 +21,12 @@ const GENERATION_TIMEOUT_MS = Number(process.env.SADTALKER_JOB_TIMEOUT_MS || 8 *
 const MAX_IMAGE_BYTES = Number(process.env.SADTALKER_MAX_IMAGE_BYTES || 10 * 1024 * 1024);
 const MAX_AUDIO_BYTES = Number(process.env.SADTALKER_MAX_AUDIO_BYTES || 15 * 1024 * 1024);
 const API_KEY_HEADER = process.env.SADTALKER_REMOTE_API_KEY || undefined;
-const RUNPOD_STATIC_ENDPOINTS = parseRunPodEndpoints(process.env.SADTALKER_RUNPOD_ENDPOINTS);
-const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY || process.env.SADTALKER_RUNPOD_API_KEY;
-const RUNPOD_ENDPOINT_IDS = String(process.env.RUNPOD_ENDPOINT_IDS || "")
-  .split(",")
-  .map((id) => id.trim())
-  .filter(Boolean);
-const ENDPOINT_REFRESH_MS = Number(process.env.SADTALKER_RUNPOD_REFRESH_MS || 60_000);
 const REMOTE_CREATE_PATH = process.env.SADTALKER_REMOTE_CREATE_PATH || "/v1/jobs";
 const REMOTE_STATUS_PATH = process.env.SADTALKER_REMOTE_STATUS_PATH || "/v1/jobs";
 const TOKEN_QUERY_ENABLED = String(process.env.SADTALKER_TOKEN_QUERY || "false").toLowerCase() === "true";
 const HISTORY_LIMIT = Number(process.env.SADTALKER_HISTORY_LIMIT || 50);
 
 const redis = new Redis(REDIS_URL, { maxRetriesPerRequest: null });
-
-let roundRobinIndex = 0;
-let cachedDynamicEndpoints = [];
-let lastEndpointFetch = 0;
-
-async function loadRunPodEndpoints() {
-  const now = Date.now();
-  const shouldFetch =
-    RUNPOD_API_KEY &&
-    RUNPOD_ENDPOINT_IDS.length > 0 &&
-    (now - lastEndpointFetch > ENDPOINT_REFRESH_MS || !cachedDynamicEndpoints.length);
-
-  if (!shouldFetch) {
-    return cachedDynamicEndpoints.length ? cachedDynamicEndpoints : RUNPOD_STATIC_ENDPOINTS;
-  }
-
-  try {
-    const refreshed = [];
-    for (const endpointId of RUNPOD_ENDPOINT_IDS) {
-      const details = await fetchRunPodEndpoints(endpointId);
-      if (details.length) {
-        refreshed.push(...details);
-      }
-    }
-    if (refreshed.length) {
-      cachedDynamicEndpoints = refreshed;
-      lastEndpointFetch = now;
-      return cachedDynamicEndpoints;
-    }
-    console.warn("[sadtalker-worker] Dynamic RunPod fetch returned no endpoints. Falling back to static list.");
-  } catch (err) {
-    console.warn("[sadtalker-worker] Failed to refresh RunPod endpoints:", err?.message || err);
-  }
-
-  return cachedDynamicEndpoints.length ? cachedDynamicEndpoints : RUNPOD_STATIC_ENDPOINTS;
-}
-
-async function nextEndpoint() {
-  const endpoints = await loadRunPodEndpoints();
-  if (!endpoints.length) return null;
-  const idx = roundRobinIndex % endpoints.length;
-  roundRobinIndex += 1;
-  return endpoints[idx];
-}
 
 async function downloadAsset(url, kind) {
   const resp = await axios.get(url, {
@@ -216,10 +167,11 @@ async function callRunPod(job, endpoint) {
     resp.data?.videoPath;
 
   if (directUrl) {
+    const rewritten = rewriteVideoUrl(directUrl, endpoint.url);
     return {
       remoteJobId: null,
       immediateResult: {
-        videoUrl: directUrl,
+        videoUrl: rewritten,
         storage: resp.data?.storage,
       },
     };
@@ -229,94 +181,103 @@ async function callRunPod(job, endpoint) {
 }
 
 async function handleJob(job) {
-  const endpoint = await nextEndpoint();
-  if (!endpoint) {
-    throw new Error("No RunPod endpoints available");
-  }
+  runPodManager.markJobStart(job.id);
+  try {
+    const endpoint = await runPodManager.getEndpoint();
+    if (!endpoint) {
+      throw new Error("No RunPod endpoints available");
+    }
 
-  const requestId = job.data?.requestId || randomUUID();
-  const startedAt = Date.now();
+    const requestId = job.data?.requestId || randomUUID();
+    const startedAt = Date.now();
 
-  console.log(`[sadtalker-worker] job=${job.id} request=${requestId} -> ${endpoint.url}`);
+    const podSuffix = endpoint.podId ? ` (pod ${endpoint.podId})` : "";
+    console.log(`[sadtalker-worker] job=${job.id} request=${requestId} -> ${endpoint.url}${podSuffix}`);
 
-  const createResult = await callRunPod(job, endpoint);
+    const createResult = await callRunPod(job, endpoint);
 
-  if (!createResult.remoteJobId && createResult.immediateResult) {
-    await job.updateProgress({ value: 100, remoteJobId: null, remoteState: "succeeded" });
+    if (!createResult.remoteJobId && createResult.immediateResult) {
+      await job.updateProgress({ value: 100, remoteJobId: null, remoteState: "succeeded" });
+      const finalResult = {
+        videoUrl: createResult.immediateResult.videoUrl,
+        remoteJobId: null,
+        durationMs: Date.now() - startedAt,
+        storage: createResult.immediateResult.storage,
+      };
+      await recordJobHistory(job, finalResult);
+      return finalResult;
+    }
+
+    await job.updateProgress({ value: 25, remoteJobId: createResult.remoteJobId });
+
+    let remoteState = "running";
+    let videoUrl = null;
+    let storage = null;
+    let error = null;
+
+    while (remoteState === "running" || remoteState === "queued") {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      if (Date.now() - startedAt > GENERATION_TIMEOUT_MS) {
+        throw new Error("SadTalker job timed out");
+      }
+      const statusUrl = buildRemoteUrl(
+        endpoint.url,
+        `${REMOTE_STATUS_PATH.replace(/\/$/, "")}/${createResult.remoteJobId}`,
+        endpoint.token,
+      );
+      try {
+        const resp = await axios.get(statusUrl, {
+          headers: {
+            ...(API_KEY_HEADER ? { "X-API-Key": API_KEY_HEADER } : {}),
+            ...(endpoint.apiKey ? { "X-API-Key": endpoint.apiKey } : {}),
+            ...(endpoint.token ? { Authorization: `Bearer ${endpoint.token}` } : {}),
+          },
+          timeout: 20_000,
+        });
+        remoteState = resp.data?.status || resp.data?.state || "unknown";
+        if (resp.data?.download_url || resp.data?.downloadUrl) {
+          videoUrl = resp.data.download_url || resp.data.downloadUrl;
+        } else if (resp.data?.storage?.url) {
+          videoUrl = resp.data.storage.url;
+          storage = resp.data.storage;
+        }
+        if (resp.data?.error) {
+          error = resp.data.error;
+        }
+        if (videoUrl) {
+          videoUrl = rewriteVideoUrl(videoUrl, endpoint.url);
+        }
+        const pct = remoteState === "succeeded" ? 100 : remoteState === "failed" ? 100 : 25;
+        await job.updateProgress({ value: pct, remoteJobId: createResult.remoteJobId, remoteState });
+      } catch (err) {
+        console.warn(`[sadtalker-worker] poll failed job=${job.id}`, err?.message || err);
+      }
+    }
+
+    if (!videoUrl && remoteState === "succeeded") {
+      throw new Error("Remote job succeeded but no video URL returned");
+    }
+
+    const durationMs = Date.now() - startedAt;
+    console.log(
+      `[sadtalker-worker] done job=${job.id} remote=${createResult.remoteJobId} state=${remoteState} duration=${durationMs}ms`,
+    );
+
+    if (remoteState === "failed") {
+      throw new Error(error?.message || error || "Remote job failed");
+    }
+
     const finalResult = {
-      videoUrl: createResult.immediateResult.videoUrl,
-      remoteJobId: null,
-      durationMs: Date.now() - startedAt,
-      storage: createResult.immediateResult.storage,
+      videoUrl,
+      remoteJobId: createResult.remoteJobId,
+      durationMs,
+      storage,
     };
     await recordJobHistory(job, finalResult);
     return finalResult;
+  } finally {
+    runPodManager.markJobEnd(job.id);
   }
-
-  await job.updateProgress({ value: 25, remoteJobId: createResult.remoteJobId });
-
-  let remoteState = "running";
-  let videoUrl = null;
-  let storage = null;
-  let error = null;
-
-  while (remoteState === "running" || remoteState === "queued") {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-    if (Date.now() - startedAt > GENERATION_TIMEOUT_MS) {
-      throw new Error("SadTalker job timed out");
-    }
-    const statusUrl = buildRemoteUrl(
-      endpoint.url,
-      `${REMOTE_STATUS_PATH.replace(/\/$/, "")}/${createResult.remoteJobId}`,
-      endpoint.token,
-    );
-    try {
-      const resp = await axios.get(statusUrl, {
-        headers: {
-          ...(API_KEY_HEADER ? { "X-API-Key": API_KEY_HEADER } : {}),
-          ...(endpoint.apiKey ? { "X-API-Key": endpoint.apiKey } : {}),
-          ...(endpoint.token ? { Authorization: `Bearer ${endpoint.token}` } : {}),
-        },
-        timeout: 20_000,
-      });
-      remoteState = resp.data?.status || resp.data?.state || "unknown";
-      if (resp.data?.download_url || resp.data?.downloadUrl) {
-        videoUrl = resp.data.download_url || resp.data.downloadUrl;
-      } else if (resp.data?.storage?.url) {
-        videoUrl = resp.data.storage.url;
-        storage = resp.data.storage;
-      }
-      if (resp.data?.error) {
-        error = resp.data.error;
-      }
-      const pct = remoteState === "succeeded" ? 100 : remoteState === "failed" ? 100 : 25;
-      await job.updateProgress({ value: pct, remoteJobId: createResult.remoteJobId, remoteState });
-    } catch (err) {
-      console.warn(`[sadtalker-worker] poll failed job=${job.id}`, err?.message || err);
-    }
-  }
-
-  if (!videoUrl && remoteState === "succeeded") {
-    throw new Error("Remote job succeeded but no video URL returned");
-  }
-
-  const durationMs = Date.now() - startedAt;
-  console.log(
-    `[sadtalker-worker] done job=${job.id} remote=${createResult.remoteJobId} state=${remoteState} duration=${durationMs}ms`,
-  );
-
-  if (remoteState === "failed") {
-    throw new Error(error?.message || error || "Remote job failed");
-  }
-
-  const finalResult = {
-    videoUrl,
-    remoteJobId: createResult.remoteJobId,
-    durationMs,
-    storage,
-  };
-  await recordJobHistory(job, finalResult);
-  return finalResult;
 }
 
 async function recordJobHistory(job, payload) {
@@ -345,99 +306,6 @@ async function recordJobHistory(job, payload) {
   }
 }
 
-function parseRunPodEndpoints(raw) {
-  if (!raw) return [];
-  try {
-    const arr = JSON.parse(raw);
-    if (Array.isArray(arr)) {
-      return arr
-        .map((item) => {
-          if (!item || typeof item !== "object") return null;
-          const url = String(item.url || "").trim();
-          const token = String(item.token || "").trim();
-          const apiKey = item.apiKey ? String(item.apiKey).trim() : undefined;
-          if (!url || !token) return null;
-          return { url, token, apiKey };
-        })
-        .filter(Boolean);
-    }
-  } catch (err) {
-    console.warn("[sadtalker-worker] Failed to parse SADTALKER_RUNPOD_ENDPOINTS as JSON:", err);
-  }
-  return raw
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-    .map((entry) => {
-      const [url, token, apiKey] = entry.split("|").map((part) => part.trim());
-      if (!url || !token) return null;
-      return { url, token, apiKey: apiKey || undefined };
-    })
-    .filter(Boolean);
-}
-
-function extractRunPodEndpoints(source) {
-  const entries = [];
-  const seen = new Set();
-
-  const maybeAdd = (url, token, apiKey) => {
-    if (!url || !token) return;
-    const normalizedUrl = String(url).trim();
-    const normalizedToken = String(token).trim();
-    if (!normalizedUrl || !normalizedToken) return;
-    const key = `${normalizedUrl}|${normalizedToken}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    entries.push({ url: normalizedUrl, token: normalizedToken, apiKey: apiKey ? String(apiKey).trim() : undefined });
-  };
-
-  const candidates = [
-    source?.proxyUrls,
-    source?.proxy_urls,
-    source?.proxy,
-    source?.httpProxy,
-    source?.restProxy,
-    source?.restProxyUrls,
-  ];
-
-  candidates.forEach((candidate) => {
-    if (!candidate || typeof candidate !== "object") return;
-    maybeAdd(candidate.http || candidate.https || candidate.url, candidate.token || candidate.authToken, candidate.apiKey);
-  });
-
-  const pods =
-    source?.pods ||
-    source?.podList ||
-    source?.workers ||
-    source?.workerNodes ||
-    source?.instances ||
-    source?.runningPods ||
-    source?.data ||
-    [];
-
-  if (Array.isArray(pods)) {
-    pods.forEach((pod) => {
-      const nested = [
-        pod?.proxyUrls,
-        pod?.proxy_urls,
-        pod?.proxy,
-        pod?.httpProxy,
-        pod?.restProxy,
-        pod?.restProxyUrls,
-      ];
-      nested.forEach((candidate) => {
-        if (!candidate || typeof candidate !== "object") return;
-        maybeAdd(candidate.http || candidate.https || candidate.url, candidate.token || candidate.authToken, candidate.apiKey);
-      });
-      if (pod?.url && pod?.token) {
-        maybeAdd(pod.url, pod.token, pod.apiKey);
-      }
-    });
-  }
-
-  return entries;
-}
-
 function buildRemoteUrl(base, path, token) {
   const url = new URL(path, base);
   if (TOKEN_QUERY_ENABLED && token) {
@@ -449,39 +317,24 @@ function buildRemoteUrl(base, path, token) {
   return url.toString();
 }
 
-async function fetchRunPodEndpoints(endpointId) {
-  const headers = { Authorization: `Bearer ${RUNPOD_API_KEY}` };
-  const urlsToTry = [
-    `https://api.runpod.io/v2/endpoint/${endpointId}/status`,
-    `https://api.runpod.io/v2/endpoint/${endpointId}`,
-    `https://api.runpod.io/v2/pods/${endpointId}/status`,
-    `https://api.runpod.io/v2/pods/${endpointId}`,
-  ];
-
-  for (const url of urlsToTry) {
-    try {
-      const resp = await axios.get(url, { headers, timeout: 15_000 });
-      const data = resp.data?.data || resp.data;
-      const extracted = extractRunPodEndpoints(data);
-      if (extracted.length) {
-        return extracted;
-      }
-    } catch (err) {
-      if (err?.response?.status && urlsToTry.indexOf(url) < urlsToTry.length - 1) {
-        continue;
-      }
-      console.warn("[sadtalker-worker] RunPod API error", url, err?.message || err);
-    }
+function rewriteVideoUrl(rawUrl, endpointBase) {
+  if (!rawUrl || !endpointBase) return rawUrl;
+  try {
+    const original = new URL(String(rawUrl));
+    const base = new URL(String(endpointBase));
+    // Preserve path + search, but always use the external proxy host.
+    return new URL(original.pathname + original.search, base).toString();
+  } catch {
+    return rawUrl;
   }
-  return [];
 }
 
 const concurrency = Number(process.env.SADTALKER_WORKER_CONCURRENCY || "1");
 
 console.log("[sadtalker-worker] starting", {
   queue: QUEUE_NAME,
-  dynamic: RUNPOD_ENDPOINT_IDS.length > 0,
-  staticEndpoints: RUNPOD_STATIC_ENDPOINTS.map((e) => e.url),
+  dynamicRunPod: runPodManager.isDynamicEnabled(),
+  staticEndpoints: runPodManager.getStaticEndpoints().map((e) => e.url),
   concurrency,
 });
 

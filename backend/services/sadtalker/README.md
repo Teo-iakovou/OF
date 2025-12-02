@@ -74,14 +74,18 @@ Configure the queue with:
 | Variable | Description |
 | --- | --- |
 | `SADTALKER_REDIS_URL` | Redis connection string used by the queue and workers. |
-| `SADTALKER_RUNPOD_ENDPOINTS` | JSON or comma list of RunPod proxies (`url|token|apiKey`). |
 | `SADTALKER_WORKER_CONCURRENCY` | Optional, number of concurrent jobs per worker process. |
 | `SADTALKER_JOB_TIMEOUT_MS` | Optional, hard timeout for a single generation (default 8 minutes). |
 | `SADTALKER_MAX_IMAGE_BYTES` / `SADTALKER_MAX_AUDIO_BYTES` | Size guardrails for downloaded inputs. |
 | `SADTALKER_REMOTE_API_KEY` | Optional API key forwarded to the SadTalker pods (defaults to endpoint-specific `apiKey`). |
-| `RUNPOD_API_KEY` / `SADTALKER_RUNPOD_API_KEY` | RunPod personal access token used to pull live proxy URLs (optional but recommended). |
-| `RUNPOD_ENDPOINT_IDS` | Comma-separated RunPod endpoint IDs to poll dynamically. |
-| `SADTALKER_RUNPOD_REFRESH_MS` | Optional interval (ms) to refresh endpoint list (default 60000). |
+| `RUNPOD_API_KEY` | RunPod API key used by the worker to list, start, and stop pods. |
+| `RUNPOD_TEMPLATE_ID` | RunPod template that boots the SadTalker FastAPI container. |
+| `RUNPOD_VOLUME_ID` | Optional Network Volume ID attached when launching pods. |
+| `RUNPOD_GPU_TYPE` / `RUNPOD_GPU_TYPES` | Optional preferred GPU type (single string or comma list ordered by priority). |
+| `RUNPOD_IDLE_TIMEOUT_MS` | Idle duration before the worker auto-stops the pod (default 15 minutes). |
+| `RUNPOD_POLL_INTERVAL_MS` | Interval between RunPod status polls while waiting for boot (default 10 seconds). |
+| `RUNPOD_ENDPOINT_CACHE_MS` | How long to cache the proxy URL before re-validating (default 30 seconds). |
+| `SADTALKER_RUNPOD_ENDPOINTS` | Optional static fallback (`url|token|apiKey`) used only if the RunPod API is unavailable. |
 | `SADTALKER_REMOTE_CREATE_PATH` | Override the remote create path (default `/v1/jobs`; use `/generate_talking_video` for legacy pods). |
 | `SADTALKER_REMOTE_STATUS_PATH` | Override the remote status base path (default `/v1/jobs`). |
 | `SADTALKER_TOKEN_QUERY` | Set to `true` to send the RunPod token as a `?token=` query parameter instead of an Authorization header. |
@@ -95,13 +99,20 @@ Redis must be reachable from both the Next.js server (for enqueueing) and the wo
 Run `node backend/services/sadtalker/worker.js` on a background dyno/pod to process the queue. The worker:
 
 1. Downloads the image/audio inputs (enforcing size limits).
-2. Chooses a RunPod proxy in round-robin fashion.
+2. Requests a live RunPod proxy from the lifecycle manager (starting a pod if necessary).
 3. Uploads the files to the SadTalker pod (`POST /v1/jobs`).
 4. Polls `/v1/jobs/{id}` until it resolves, updating BullMQ progress.
 5. Returns the remote `videoUrl`, which surfaces through the status endpoint.
 
 Retry/backoff is handled by BullMQ (3 attempts, exponential backoff) and can be tuned in `src/app/api/sadtalker/_lib/queue.ts`. Ensure the worker has the same environment variables listed above plus access to your storage credentials if you plan to post-process the outputs.
 
-### Dynamic RunPod discovery
+### RunPod lifecycle manager
 
-If `RUNPOD_API_KEY` and `RUNPOD_ENDPOINT_IDS` are provided, the worker fetches the proxy list directly from RunPod every minute (configurable via `SADTALKER_RUNPOD_REFRESH_MS`). This keeps the pool current as pods come and go. You can still provide a static fallback via `SADTALKER_RUNPOD_ENDPOINTS` (comma-separated `url|token|apiKey` or JSON array) in case the API lookup fails.
+When `RUNPOD_API_KEY` + `RUNPOD_TEMPLATE_ID` are set the worker manages the GPU pod lifecycle automatically:
+
+1. On the first job it calls `GET /v2/pods?templateId=...` to find a running pod.
+2. If none exist, it `POST`s to `/v2/pods` (using the template + optional volume) and polls `/v2/pods/{id}` until the proxy is live.
+3. Each job reuses the cached proxy URL/token; the cache is revalidated every `RUNPOD_ENDPOINT_CACHE_MS`.
+4. An idle watchdog stops the pod via `POST /v2/pods/{id}/stop` once the queue has been quiet for `RUNPOD_IDLE_TIMEOUT_MS`.
+
+If the API call fails (or you are working offline), you can still provide `SADTALKER_RUNPOD_ENDPOINTS` as a static fallback so development can continue without the lifecycle manager.

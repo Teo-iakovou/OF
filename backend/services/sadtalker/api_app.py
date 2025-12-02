@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import mimetypes
 import os
 import shutil
 import tempfile
@@ -27,6 +28,9 @@ from src.test_audio2coeff import Audio2Coeff
 from src.utils.init_path import init_path
 from src.utils.preprocess import CropAndExtract
 
+
+# Ensure .mp4 files are always served as video, not audio-only.
+mimetypes.add_type("video/mp4", ".mp4")
 
 logger = logging.getLogger("sadtalker_api")
 logging.basicConfig(level=os.getenv("API_LOG_LEVEL", "INFO").upper())
@@ -88,13 +92,27 @@ def _safe_filename(filename: Optional[str], default_name: str) -> str:
 
 
 def _build_local_download_url(job_id: str, request_base_url: Optional[str]) -> str:
+    """
+    Build a stable download URL for a job's video.
+
+    Instead of going through /v1/jobs/{id}/download (which relies on in-memory
+    job state and breaks across pod restarts), we point directly at the static
+    file served from the shared output directory mounted at /files.
+    """
     public_base = os.getenv("API_PUBLIC_BASE_URL")
-    relative = f"/v1/jobs/{job_id}/download"
+
+    # OUTPUT_ROOT is something like /workspace/SadTalker/outputs/api
+    # STATIC_ROOT is OUTPUT_ROOT.parent (e.g. /workspace/SadTalker/outputs)
+    # The video files are stored as OUTPUT_ROOT / f"{job_id}.mp4", so the
+    # relative path from STATIC_ROOT is "api/{job_id}.mp4".
+    rel_dir = OUTPUT_ROOT.relative_to(STATIC_ROOT)
+    relative_path = f"/files/{rel_dir.as_posix()}/{job_id}.mp4"
+
     if public_base:
-        return f"{public_base.rstrip('/')}{relative}"
+        return f"{public_base.rstrip('/')}{relative_path}"
     if request_base_url:
-        return f"{request_base_url.rstrip('/')}{relative}"
-    return relative
+        return f"{request_base_url.rstrip('/')}{relative_path}"
+    return relative_path
 
 
 def _allowed_api_keys() -> Optional[set]:

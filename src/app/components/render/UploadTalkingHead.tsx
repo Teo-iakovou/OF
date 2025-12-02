@@ -206,6 +206,25 @@ export default function UploadTalkingHead() {
                   >
                     Download
                   </a>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/api/sadtalker/history", {
+                          method: "DELETE",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ userId: HISTORY_USER_ID, jobId: item.jobId }),
+                        });
+                        if (!res.ok) return;
+                        setHistory((prev) => prev.filter((row) => row.jobId !== item.jobId));
+                      } catch {
+                        // best-effort delete; ignore errors
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-500"
+                  >
+                    Delete
+                  </button>
                 </div>
               </article>
             );

@@ -36,3 +36,37 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Failed to load SadTalker history" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json().catch(() => null);
+    const userId = typeof body?.userId === "string" ? body.userId.trim() : "";
+    const jobId = typeof body?.jobId === "string" ? body.jobId.trim() : "";
+    if (!userId || !jobId) {
+      return NextResponse.json({ error: "userId and jobId are required" }, { status: 400 });
+    }
+
+    const redis = getRedis();
+    const key = `sadtalker:history:${userId}`;
+    const rows = await redis.lrange(key, 0, -1);
+
+    let removed = false;
+    for (const row of rows) {
+      try {
+        const parsed = JSON.parse(row) as { jobId?: string } | null;
+        if (parsed?.jobId === jobId) {
+          await redis.lrem(key, 1, row);
+          removed = true;
+          break;
+        }
+      } catch {
+        // ignore malformed rows
+      }
+    }
+
+    return NextResponse.json({ removed });
+  } catch (err) {
+    console.error("[sadtalker:history:delete] error", err);
+    return NextResponse.json({ error: "Failed to delete history item" }, { status: 500 });
+  }
+}
