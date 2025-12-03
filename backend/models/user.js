@@ -21,8 +21,14 @@ const userSchema = new mongoose.Schema({
     default: false,
   },
   chatUsedThisCycle: { type: Number, default: 0 },
-chatMonthlyLimit:  { type: Number, default: 20 }, // will be overwritten per plan
-chatCycleEndsAt:   { type: Date },
+  chatMonthlyLimit: { type: Number, default: 20 }, // will be overwritten per plan
+  chatCycleEndsAt: { type: Date },
+  // SadTalker / talking-head quotas
+  sadtalkerVideosUsed: { type: Number, default: 0 },
+  // 0 or null = unlimited for the current plan
+  sadtalkerVideoLimit: { type: Number, default: 0 },
+  // Optional: remember the first face image hash for non-ultimate plans
+  sadtalkerPrimaryImageHash: { type: String, default: null },
 });
 
 module.exports = mongoose.model("User", userSchema);

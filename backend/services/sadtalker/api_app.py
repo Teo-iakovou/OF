@@ -16,6 +16,7 @@ import torch
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.security import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
@@ -411,7 +412,9 @@ async def _dispatch_webhook(job: JobRecord) -> None:
         )
         return
 
-    payload = _job_to_response(job, job.request_base_url).dict()
+    model = _job_to_response(job, job.request_base_url)
+    # Ensure datetimes/paths/etc. are JSON-serializable before sending.
+    payload = jsonable_encoder(model)
     payload["job_id"] = payload.pop("id")
     try:
         async with httpx.AsyncClient(timeout=10) as client:

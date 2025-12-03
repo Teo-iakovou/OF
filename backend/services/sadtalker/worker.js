@@ -320,10 +320,24 @@ function buildRemoteUrl(base, path, token) {
 function rewriteVideoUrl(rawUrl, endpointBase) {
   if (!rawUrl || !endpointBase) return rawUrl;
   try {
-    const original = new URL(String(rawUrl));
+    const value = String(rawUrl);
+    const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value);
+
+    // Absolute URL
+    if (hasScheme) {
+      const original = new URL(value);
+      // If it's already pointing at an external host (e.g. R2), leave it alone.
+      if (!original.hostname.startsWith("100.")) {
+        return rawUrl;
+      }
+      // Internal 100.x IP: rewrite to the proxy host while preserving path/query.
+      const base = new URL(String(endpointBase));
+      return new URL(original.pathname + original.search, base).toString();
+    }
+
+    // Relative URL: join with the proxy base.
     const base = new URL(String(endpointBase));
-    // Preserve path + search, but always use the external proxy host.
-    return new URL(original.pathname + original.search, base).toString();
+    return new URL(value, base).toString();
   } catch {
     return rawUrl;
   }
