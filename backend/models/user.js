@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // models/user.js
 const mongoose = require("mongoose");
 

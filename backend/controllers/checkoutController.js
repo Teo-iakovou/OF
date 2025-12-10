@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // backend/controllers/checkoutController.js
 const Stripe = require("stripe");
 const User = require("../models/user");
-
+const { getSadTalkerPlanLimit } = require("./userController");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Comma-separated allowlist of UI origins (local + prod)
@@ -92,12 +93,24 @@ const handleStripeWebhook = async (req, res) => {
 
       user.purchasedPackage = packageId;
       switch (packageId) {
-        case "lite": user.uploadLimit = 5; break;
-        case "pro": user.uploadLimit = 20; break;
-        case "ultimate": user.uploadLimit = 100; break;
-        default: user.uploadLimit = 5;
+        case "lite":
+          user.uploadLimit = 5;
+          break;
+        case "pro":
+          user.uploadLimit = 20;
+          break;
+        case "ultimate":
+          user.uploadLimit = 100;
+          break;
+        default:
+          user.uploadLimit = 5;
       }
       user.uploadsUsed = 0;
+
+      // Align SadTalker video limits with the purchased plan
+      const sadtalkerLimit = getSadTalkerPlanLimit(packageId);
+      user.sadtalkerVideoLimit = sadtalkerLimit;
+      user.sadtalkerVideosUsed = 0;
 
       await user.save();
       console.log("✅ Package and uploads updated for:", email);
