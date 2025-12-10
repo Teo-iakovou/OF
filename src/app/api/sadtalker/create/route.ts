@@ -1,4 +1,5 @@
 import { Buffer } from "buffer";
+import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSadTalkerQueue } from "../_lib/queue";
@@ -6,6 +7,9 @@ import { SadTalkerJobOptions, SadTalkerJobPayload } from "../types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const SERVER_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "ai_session";
 
 type CreateBody = SadTalkerJobPayload & {
   priority?: number;
@@ -102,6 +106,17 @@ async function fileToPayload(file: File | null | undefined) {
   };
 }
 
+function hashBufferSha256(buffer: Buffer): string {
+  return createHash("sha256").update(buffer).digest("hex");
+}
+
+async function hashFile(file: File | null | undefined): Promise<string | undefined> {
+  if (!file) return undefined;
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  return hashBufferSha256(buffer);
+}
+
 function validateUrl(value: unknown): string {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error("must be a non-empty string");
@@ -190,6 +205,7 @@ async function handleFormPayload(req: NextRequest) {
 
   const userIdField = sanitizeString(form.get("userId"));
   const userId = userIdField || "web-client";
+  const imageHash = await hashFile(sourceImage as File);
 
   const imagePayload = await fileToPayload(sourceImage);
   const audioPayload = await fileToPayload(drivenAudio);
@@ -226,7 +242,94 @@ async function handleFormPayload(req: NextRequest) {
     payload,
     priority: parseInteger(form.get("priority")),
     requestId: sanitizeString(form.get("requestId")),
+    imageHash,
   };
+}
+
+async function ensureSadTalkerQuota(req: NextRequest, imageHash?: string) {
+  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (!token) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    cookie: `${SESSION_COOKIE_NAME}=${token}`,
+  };
+
+  try {
+    const resp = await fetch(`${SERVER_BASE_URL}/api/user/sadtalker/consume`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(imageHash ? { imageHash } : {}),
+      cache: "no-store",
+    });
+
+    const text = await resp.text();
+    let data: any;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+
+    if (resp.status === 401) {
+      return {
+        ok: false as const,
+        response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      };
+    }
+
+    if (resp.status === 402) {
+      return {
+        ok: false as const,
+        response: NextResponse.json(
+          {
+            error: data?.error || "Video limit reached for your plan",
+            action: data?.action || "upgrade",
+          },
+          { status: 402 },
+        ),
+      };
+    }
+
+    if (resp.status === 403) {
+      return {
+        ok: false as const,
+        response: NextResponse.json(
+          {
+            error:
+              data?.error ||
+              "Your current plan only allows videos for a single face. Please reuse your original photo or upgrade your plan.",
+            code: data?.code || "face_mismatch",
+          },
+          { status: 403 },
+        ),
+      };
+    }
+
+    if (!resp.ok || !data?.ok || typeof data.userId !== "string") {
+      console.error("[sadtalker:create] quota response unexpected", {
+        status: resp.status,
+        body: data,
+      });
+      return {
+        ok: false as const,
+        response: NextResponse.json({ error: "Failed to verify video quota" }, { status: 500 }),
+      };
+    }
+
+    return { ok: true as const, userId: data.userId as string };
+  } catch (err) {
+    console.error("[sadtalker:create] quota request failed", err);
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: "Failed to verify video quota" }, { status: 500 }),
+    };
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -254,6 +357,16 @@ export async function POST(req: NextRequest) {
     if (!parsed.payload) {
       return NextResponse.json({ error: "Payload missing" }, { status: 400 });
     }
+
+    // Enforce per-plan SadTalker limits and single-face restriction (for non-ultimate plans).
+    const imageHash = (parsed as any).imageHash as string | undefined;
+    const quota = await ensureSadTalkerQuota(req, imageHash);
+    if (!quota.ok) {
+      return quota.response;
+    }
+
+    // Always use the authenticated user id for job/user bookkeeping, ignoring any client-provided userId.
+    parsed.payload.userId = quota.userId;
 
     const queue = getSadTalkerQueue();
     const job = await queue.add(

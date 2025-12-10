@@ -1,7 +1,10 @@
 {
-  "/not-found": "app/not-found.js",
-  "/(auth)/login/page": "app/(auth)/login/page.js",
   "/page": "app/page.js",
-  "/dashboard/talking-head/page": "app/dashboard/talking-head/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/[id]/page": "app/[id]/page.js",
+  "/(legal)/cookies/page": "app/(legal)/cookies/page.js",
+  "/(legal)/privacy/page": "app/(legal)/privacy/page.js",
+  "/api/sadtalker/history/route": "app/api/sadtalker/history/route.js",
+  "/dashboard/account/page": "app/dashboard/account/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/dashboard/talking-head/page": "app/dashboard/talking-head/page.js"
 }

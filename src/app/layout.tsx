@@ -2,7 +2,6 @@
 
 import "./styles/globals.css";
 import ToastNotification from "./components/notifications/ToastNotification";
-import LoginToastTrigger from "./components/notifications/LoginToastTrigger";
 import RouteTransitionOverlay from "./components/navigation/RouteTransitionOverlay";
 import Navbar from "../app/components/navigation/Navbar";
 import Footer from "../app/components/navigation/Footer";
@@ -13,6 +12,7 @@ import { usePathname } from "next/navigation";
 import CartDrawer from "./components/cart/CartDrawer";
 import { CartProvider } from "./components/cart/CartContext";
 import { useState } from "react";
+import { AuthModalProvider } from "./components/auth/AuthModalContext";
 
 export const viewport = {
   width: "device-width",
@@ -31,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-of-background font-sans min-h-[100svh] flex flex-col">
         <ConsentProvider>
         <CartProvider>
+        <AuthModalProvider>
           {!pathname.startsWith("/dashboard") && (
             <Navbar onCartClick={handleCartClick} />
           )}
@@ -39,10 +40,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           <ToastNotification />
           <RouteTransitionOverlay />
-          <LoginToastTrigger />
           {!pathname.startsWith("/dashboard/ai") && <Footer />}
 
-          {/* Consent UI (always mounted) */}
           <ConsentBanner />
           <ConsentModal />
 
@@ -51,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             onClose={() => setCartDrawerOpen(false)}
             onCheckout={() => {}}
           />
+        </AuthModalProvider>
         </CartProvider>
         </ConsentProvider>
       </body>

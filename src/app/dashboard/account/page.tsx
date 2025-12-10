@@ -4,13 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/hooks/useUser";
 import { useCart } from "@/app/components/cart/CartContext";
-import { BASE_URL } from "@/app/utils/fetcher";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 
 import { checkUserPackage } from "@/app/utils/api";
 import Spinner from "@/app/components/dashboard/loading spinner/page";
-import { clearUserCache } from "@/app/hooks/useUser";
-import { clearApiCaches } from "@/app/utils/api";
+import { logoutClient } from "@/app/utils/authClient";
 import Reveal from "@/app/components/common/Reveal";
 
 type UserPkg = {
@@ -20,7 +18,7 @@ type UserPkg = {
 } | null;
 
 export default function AccountAndBillingPage() {
-  const { user, loading: userLoading } = useUser({ required: false });
+  const { user, loading: userLoading } = useUser({ required: true, redirectTo: "/" });
   const { setCartItems } = useCart();
   const [userPackage, setUserPackage] = useState<UserPkg>(null);
   const [loading, setLoading] = useState(true);
@@ -54,20 +52,10 @@ export default function AccountAndBillingPage() {
   
 
   const handleLogout = async () => {
+    await logoutClient();
     try {
-      const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === 'true';
-      const url = USE_BFF ? `/api/auth/logout` : `${BASE_URL}/api/auth/logout`;
-      await fetch(url, { method: "POST", credentials: "include" });
+      setCartItems([]);
     } catch {}
-    // Clear any client-side caches and flags so the app behaves like a fresh visit
-    try { clearUserCache(); } catch {}
-    try { clearApiCaches(); } catch {}
-    // Also clear the shopping cart so the badge shows 0 for logged-out users
-    try { setCartItems([]); } catch {}
-    // Clear header-based auth token used in testing/dev
-    try { localStorage.removeItem('ai_token'); } catch {}
-    try { sessionStorage.removeItem("justLoggedIn"); } catch {}
-    // Navigate to home after logout
     router.replace("/");
   };
 

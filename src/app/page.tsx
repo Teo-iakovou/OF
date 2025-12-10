@@ -94,8 +94,6 @@ export default function Page() {
         <Section
           id="packages"
           variant="dark"
-          topDivider
-          topDividerColor="#050819"
           className="text-white"
         >
           <Packages />
@@ -104,11 +102,6 @@ export default function Page() {
         <Section
           id="features"
           variant="gradient"
-          topDivider
-          topDividerColor="#050819"
-          topDividerFlip
-          bottomDivider
-          bottomDividerColor="#01030a"
           className="text-white"
         >
           <FeatureComparison />

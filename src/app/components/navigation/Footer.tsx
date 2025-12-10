@@ -3,7 +3,7 @@ import Link from "next/link";
 import { FaTwitter, FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
 import { useConsent } from "@/app/components/consent/ConsentContext";
 const Footer = () => (
-  <footer className="bg-gradient-to-r from-blue-900 to-blue-700 text-gray-300 py-6 text-center">
+  <footer className="bg-gradient-to-r from-[#050819] via-[#030411] to-[#010208] text-gray-300 py-8 text-center border-t border-white/10">
     <div className="container mx-auto">
       <p>© 2025 AI Content Helper. All rights reserved.</p>
       <FooterLinks />

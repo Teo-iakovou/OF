@@ -19,6 +19,8 @@ import Image from "next/image";
 import { useCart } from "../cart/CartContext"; // Make sure the path is correct!
 import { useUser } from "@/app/hooks/useUser";
 import { useRouter } from "next/navigation";
+import { useAuthModal } from "@/app/components/auth/AuthModalContext";
+import { logoutClient } from "@/app/utils/authClient";
 
 type NavbarProps = {
   onCartClick: () => void;
@@ -35,6 +37,7 @@ export default function Navbar({ onCartClick }: NavbarProps) {
   const { cartCount } = useCart();
   const { user } = useUser({ required: false });
   const router = useRouter();
+  const { open: openAuthModal } = useAuthModal();
 
   // Avoid hydration mismatch for client-only cart count badge
   useEffect(() => setMounted(true), []);
@@ -52,7 +55,7 @@ export default function Navbar({ onCartClick }: NavbarProps) {
 
   return (
     <>
-      <nav className="bg-gray-900 text-white py-4 px-6 fixed top-0 left-0 w-full z-50 shadow-lg">
+      <nav className="bg-[#060a1b]/95 backdrop-blur text-white py-4 px-6 fixed top-0 left-0 w-full z-50 shadow-[0_10px_40px_rgba(5,8,25,0.45)] border-b border-white/10">
         <div className="relative flex items-center justify-between md:justify-between w-full">
           {/* LOGO */}
           <Link
@@ -69,7 +72,15 @@ export default function Navbar({ onCartClick }: NavbarProps) {
           </Link>
 
           <div className="flex items-center gap-4 ml-auto">
-            {/* CART BUTTON */}
+            {!user && (
+              <button
+                onClick={() => openAuthModal()}
+                aria-label="Sign in"
+                className="p-2 rounded-md border border-gray-700 bg-[#1f2937] hover:bg-[#374151] text-white transition-all shadow-sm"
+              >
+                <FiUser size={20} />
+              </button>
+            )}
             <button
               onClick={onCartClick}
               className="relative p-1 hover:text-cyan-400 transition bg-transparent border-none shadow-none"
@@ -90,7 +101,6 @@ export default function Navbar({ onCartClick }: NavbarProps) {
               )}
             </button>
 
-            {/* MENU BUTTON */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}
@@ -176,7 +186,15 @@ export default function Navbar({ onCartClick }: NavbarProps) {
               <Link
                 href="/dashboard"
                 prefetch
-                onClick={() => {
+                onClick={(e) => {
+                  if (!user) {
+                    e.preventDefault();
+                    setIsMenuOpen(false);
+                    openAuthModal({
+                      onSuccess: () => router.push("/dashboard"),
+                    });
+                    return;
+                  }
                   setIsMenuOpen(false);
                   try {
                     window.dispatchEvent(new Event("route-transition-start"));
@@ -191,26 +209,22 @@ export default function Navbar({ onCartClick }: NavbarProps) {
 
             <div className="border-t border-gray-700 my-6" />
 
-            {/* Auth action (dynamic) */}
-            {/* Always show a Log in icon */}
-            <button
-              onClick={() => {
-                setIsMenuOpen(false);
-                if (user) {
-                  // Already authenticated: go home and show logged-in banner
-                  try { sessionStorage.setItem("justLoggedIn", "1"); } catch {}
-                  router.replace("/");
-                } else {
-                  // After successful login, land on the homepage
-                  router.push("/login?redirect=/");
-                }
-              }}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition mb-4"
-              aria-label="Log in"
-            >
-              <FiUser size={20} />
-              <span>Log in</span>
-            </button>
+            {user && (
+              <div className="mb-4">
+                <button
+                  onClick={async () => {
+                    setIsMenuOpen(false);
+                    await logoutClient();
+                    router.replace("/");
+                  }}
+                  className="flex items-center gap-2 text-gray-400 hover:text-white transition"
+                  aria-label="Log out"
+                >
+                  <FiUser size={20} />
+                  <span>Log out</span>
+                </button>
+              </div>
+            )}
 
             {/* Social */}
             <div className="flex gap-6 text-gray-400">

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { SadTalkerJobOptions } from "@/app/api/sadtalker/types";
+import { useUser } from "@/app/hooks/useUser";
 
 type JobState = "queued" | "running" | "succeeded" | "failed" | "active" | "completed" | "waiting" | null;
 
@@ -15,7 +16,7 @@ type HistoryItem = {
   options?: SadTalkerJobOptions | null;
 };
 
-const HISTORY_USER_ID = "web-client";
+const HISTORY_USER_FALLBACK = "web-client";
 
 const preprocessOptions = [
   { value: "full", label: "Full" },
@@ -42,6 +43,9 @@ const resolutionOptions = [
 ];
 
 export default function UploadTalkingHead() {
+  const { user } = useUser({ required: true });
+  const historyUserId = user?.id || HISTORY_USER_FALLBACK;
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [preprocess, setPreprocess] = useState<string>("full");
@@ -72,8 +76,9 @@ export default function UploadTalkingHead() {
 
   const loadHistory = useCallback(async () => {
     try {
+      if (!historyUserId) return;
       setHistoryLoading(true);
-      const res = await fetch(`/api/sadtalker/history?userId=${encodeURIComponent(HISTORY_USER_ID)}`, {
+      const res = await fetch(`/api/sadtalker/history?userId=${encodeURIComponent(historyUserId)}`, {
         method: "GET",
         cache: "no-store",
       });
@@ -87,7 +92,7 @@ export default function UploadTalkingHead() {
     } finally {
       setHistoryLoading(false);
     }
-  }, []);
+  }, [historyUserId]);
 
   const canSubmit = useMemo(() => {
     return !!imageFile && !!audioFile && !isSubmitting;
@@ -147,7 +152,7 @@ export default function UploadTalkingHead() {
         <div>
           <p className="text-xs uppercase tracking-wide text-gray-500">History</p>
           <h3 className="text-lg font-semibold text-gray-50">Recent talking heads</h3>
-          <p className="text-xs text-gray-500">Stored per user ID ({HISTORY_USER_ID}).</p>
+          <p className="text-xs text-gray-500">Stored per account.</p>
         </div>
         <button
           type="button"
@@ -213,7 +218,7 @@ export default function UploadTalkingHead() {
                         const res = await fetch("/api/sadtalker/history", {
                           method: "DELETE",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ userId: HISTORY_USER_ID, jobId: item.jobId }),
+                          body: JSON.stringify({ userId: historyUserId, jobId: item.jobId }),
                         });
                         if (!res.ok) return;
                         setHistory((prev) => prev.filter((row) => row.jobId !== item.jobId));
@@ -268,7 +273,7 @@ export default function UploadTalkingHead() {
       if (inputYaw.trim()) formData.append("input_yaw", inputYaw.trim());
       if (inputPitch.trim()) formData.append("input_pitch", inputPitch.trim());
       if (inputRoll.trim()) formData.append("input_roll", inputRoll.trim());
-      formData.append("userId", HISTORY_USER_ID);
+      formData.append("userId", historyUserId);
 
       const res = await fetch("/api/sadtalker/create", {
         method: "POST",

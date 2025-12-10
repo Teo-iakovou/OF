@@ -11,6 +11,7 @@ let cachedUser: User | undefined = undefined; // undefined = unknown, null = una
 let inFlight: Promise<User> | null = null;
 let lastFetched = 0;
 const STALE_TTL_MS = 5000;
+const AUTH_EVENT = "ai-auth-changed";
 
 async function fetchUserOnce(): Promise<User> {
   if (inFlight) return inFlight;
@@ -31,7 +32,7 @@ async function fetchUserOnce(): Promise<User> {
 }
 
 export function useUser(opts: { redirectTo?: string; required?: boolean; initialUser?: User } = {}) {
-  const { redirectTo = "/login", required = true, initialUser } = opts;
+  const { redirectTo = "/", required = true, initialUser } = opts;
   const [user, setUser] = useState<User>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -39,21 +40,32 @@ export function useUser(opts: { redirectTo?: string; required?: boolean; initial
 
   useEffect(() => {
     let cancelled = false;
+    function handleAuthChanged() {
+      (async () => {
+        try {
+          const u = await fetchUserOnce();
+          if (!cancelled) setUser(u);
+        } catch {
+          if (!cancelled) setUser(null);
+        }
+      })();
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener(AUTH_EVENT, handleAuthChanged);
+    }
     (async () => {
       try {
         // If the server already provided the user, use it immediately when truthy.
         // If it's explicitly null but a client token exists (testing header auth),
         // allow a client-side revalidation before redirecting.
         if (typeof initialUser !== "undefined") {
-          const hasClientToken =
-            typeof window !== "undefined" && !!window.localStorage?.getItem?.("ai_token");
           if (initialUser) {
             cachedUser = initialUser;
             lastFetched = Date.now();
             setUser(initialUser);
             setLoading(false);
             return;
-          } else if (!initialUser && required && !hasClientToken) {
+          } else if (!initialUser && required) {
             // No server user and no client token → redirect now.
             router.replace(redirectTo);
             setUser(null);
@@ -88,6 +100,12 @@ export function useUser(opts: { redirectTo?: string; required?: boolean; initial
       }
     })();
     return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (typeof window !== "undefined") {
+        window.removeEventListener(AUTH_EVENT, handleAuthChanged);
+      }
+    };
   }, [redirectTo, required, router, initialUser]);
 
   return { user, loading, error, refresh: async () => {
@@ -110,4 +128,12 @@ export function clearUserCache() {
   cachedUser = undefined;
   inFlight = null;
   lastFetched = 0;
+}
+
+export function notifyAuthChange() {
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(AUTH_EVENT));
+    }
+  } catch {}
 }

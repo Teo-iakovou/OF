@@ -6,14 +6,42 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const HISTORY_LIMIT = Number(process.env.SADTALKER_HISTORY_LIMIT || 50);
+const SERVER_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "ai_session";
+
+async function getCurrentUserId(req: NextRequest): Promise<string | null> {
+  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return null;
+
+  const headers: Record<string, string> = { cookie: `${SESSION_COOKIE_NAME}=${token}` };
+
+  try {
+    const resp = await fetch(`${SERVER_BASE_URL}/api/auth/me`, {
+      method: "GET",
+      headers,
+      cache: "no-store",
+    });
+    if (!resp.ok) return null;
+    const text = await resp.text();
+    let data: any;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+    const id = typeof data?.id === "string" ? data.id.trim() : "";
+    return id || null;
+  } catch (err) {
+    console.error("[sadtalker:history] auth lookup failed", err);
+    return null;
+  }
+}
 
 export async function GET(req: NextRequest) {
   try {
-    const search = req.nextUrl.searchParams;
-    const userParam = search.get("userId") || req.headers.get("x-sadtalker-user");
-    const userId = userParam?.trim();
+    const userId = await getCurrentUserId(req);
     if (!userId) {
-      return NextResponse.json({ error: "userId query parameter is required" }, { status: 400 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const redis = getRedis();
@@ -39,11 +67,15 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const userId = await getCurrentUserId(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json().catch(() => null);
-    const userId = typeof body?.userId === "string" ? body.userId.trim() : "";
     const jobId = typeof body?.jobId === "string" ? body.jobId.trim() : "";
-    if (!userId || !jobId) {
-      return NextResponse.json({ error: "userId and jobId are required" }, { status: 400 });
+    if (!jobId) {
+      return NextResponse.json({ error: "jobId is required" }, { status: 400 });
     }
 
     const redis = getRedis();

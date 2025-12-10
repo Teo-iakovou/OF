@@ -10,7 +10,7 @@ import { Skeleton } from "@/app/components/ui/Skeleton";
 import Reveal from "@/app/components/common/Reveal";
 
 export default function DashboardPage() {
-  const { user, loading } = useUser({ required: false });
+  const { user, loading } = useUser({ required: true, redirectTo: "/" });
   const displayName = useMemo(() => {
     const email = user?.email || "";
     if (!email) return ""; // avoid placeholder flicker

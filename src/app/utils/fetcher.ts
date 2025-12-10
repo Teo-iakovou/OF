@@ -22,18 +22,8 @@ export async function fetchJson(input: string, init: RequestInit = {}) {
     }
   } catch {}
   // Optionally attach Authorization header from localStorage token (testing/dev)
-  const HEADER_AUTH_ENABLED = process.env.NEXT_PUBLIC_HEADER_AUTH === 'true';
   const headers = new Headers(init.headers as HeadersInit | undefined);
   if (!headers.has('content-type')) headers.set('Content-Type', 'application/json');
-  try {
-    if (HEADER_AUTH_ENABLED && typeof window !== 'undefined') {
-      const t = window.localStorage?.getItem('ai_token');
-      // Only add Authorization if not already present
-      if (t && !headers.has('authorization')) {
-        headers.set('Authorization', `Bearer ${t}`);
-      }
-    }
-  } catch {}
 
   const res = await fetch(url, {
     ...init,

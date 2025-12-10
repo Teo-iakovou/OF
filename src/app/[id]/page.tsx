@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useState } from "react";
 import CartDrawer from "@/app/components/cart/CartDrawer";
 import { startCheckout } from "@/app/utils/api";
-import Reveal from "@/app/components/common/Reveal";
+import Section from "@/app/components/common/Section";
 // old flow: no inline email modal gating here
 
 export default function PackageDetailPage() {
@@ -46,11 +46,9 @@ export default function PackageDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#181F28] text-white">
-      {/* Hero/Product Section */}
-      <Reveal as="section" className="flex flex-col md:flex-row items-center justify-center max-w-5xl mx-auto pt-20 pb-14 px-4 gap-10">
-        {/* Image/Logo Side */}
-        <div className="flex-1 w-full flex items-center justify-center md:justify-start mb-8 md:mb-0">
+    <div className="min-h-screen bg-[#050819] text-white">
+      <Section variant="dark" className="text-white" contentClassName="flex flex-col md:flex-row items-center justify-center gap-10">
+        <div className="flex-1 w-full flex items-center justify-center md:justify-start">
           <Image
             src="/echofy-removebg-preview.png"
             alt={selectedPackage.title}
@@ -60,15 +58,10 @@ export default function PackageDetailPage() {
             style={{ maxWidth: 320, maxHeight: 320 }}
           />
         </div>
-        {/* Info Side */}
-        <div className="flex-1 w-full max-w-xl p-0 md:p-8 flex flex-col items-center md:items-start text-center md:text-left md:ml-6">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            {selectedPackage.title}
-          </h1>
+        <div className="flex-1 w-full max-w-xl flex flex-col items-center md:items-start text-center md:text-left md:ml-6">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">{selectedPackage.title}</h1>
           <div className="flex items-baseline gap-2 mb-6">
-            <span className="text-2xl md:text-3xl font-semibold text-cyan-400">
-              {selectedPackage.price}
-            </span>
+            <span className="text-2xl md:text-3xl font-semibold text-cyan-400">{selectedPackage.price}</span>
             <span className="ml-2 text-base text-gray-400">/one-time</span>
           </div>
           <ul className="mb-10">
@@ -105,19 +98,13 @@ export default function PackageDetailPage() {
             </button>
           </div>
         </div>
-      </Reveal>
+      </Section>
 
-      {/* Divider */}
-      <div className="max-w-4xl mx-auto border-t border-[#2e3643] my-12" />
-
-      {/* Marketing/Info Section */}
-      <Reveal as="section" className="max-w-4xl mx-auto text-center px-4 py-10">
-        <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-          Why Choose Us?
-        </h2>
+      <Section variant="darker" className="text-white" contentClassName="text-center max-w-4xl mx-auto">
+        <h2 className="text-3xl md:text-4xl font-bold mb-6">Why Choose Us?</h2>
         <p className="text-lg md:text-xl text-gray-300 mb-8">
-          Unlock the power of AI analytics with our advanced packages. Choose a
-          plan that fits your needs and take your content to the next level!
+          Unlock the power of AI analytics with our advanced packages. Choose a plan that fits your needs and take your
+          content to the next level!
         </p>
         <div className="flex justify-center gap-4">
           <button className="bg-gradient-to-r from-pink-600 to-fuchsia-600 hover:from-pink-700 hover:to-fuchsia-700 transition text-white px-6 py-3 rounded-full shadow-md font-semibold">
@@ -127,16 +114,9 @@ export default function PackageDetailPage() {
             Testimonials
           </button>
         </div>
-      </Reveal>
+      </Section>
 
-      {/* Slide-in Cart Drawer (context manages items) */}
-      <CartDrawer
-        isOpen={cartOpen}
-        onClose={() => setCartOpen(false)}
-        onCheckout={handleCheckout}
-      />
-
-      {/* Auth is required for checkout; handled server-side */}
+      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} onCheckout={handleCheckout} />
     </div>
   );
 }
