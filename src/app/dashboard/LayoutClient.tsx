@@ -69,7 +69,7 @@ export default function LayoutClient({
 
           {/* Content column */}
           <div className={`flex-1 flex flex-col transition-all duration-200 ${expanded ? "md:ml-64" : "md:ml-16"}`}>
-            <main className="px-6 pt-2">{children}</main>
+            <main className="px-3 sm:px-6 pt-2">{children}</main>
 
             {showBottomSpacer ? <div className="h-4 shrink-0" /> : null}
           </div>

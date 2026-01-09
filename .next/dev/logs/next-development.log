@@ -1,0 +1,36 @@
+[00:00:00.668] Server  LOG      ✓ Ready in 480ms
+[00:21:36.821] Browser WARN    Image with src "/echofy-removebg-preview.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:21:38.485] Server  WARN    Error: Route "/signup" used `searchParams.next`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:21:38.493] Server  ERROR    ⨯ TypeError: fetch failed
+[00:21:38.611] Browser ERROR   uncaughtError: TypeError: fetch failed
+[00:21:50.203] Browser WARN    Image with src "/echofy-removebg-preview.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:21:51.293] Server  WARN    Error: Route "/login" used `searchParams.next`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:21:51.300] Server  ERROR    ⨯ TypeError: fetch failed
+[00:21:51.410] Browser ERROR   uncaughtError: TypeError: fetch failed
+[00:22:30.890] Server  ERROR    ⨯ TypeError: fetch failed
+[00:22:31.151] Browser ERROR   uncaughtError: TypeError: fetch failed
+[00:22:41.108] Server  ERROR    ⨯ TypeError: fetch failed
+[00:22:41.350] Browser ERROR   uncaughtError: TypeError: fetch failed
+[00:22:42.387] Server  ERROR    ⨯ TypeError: fetch failed
+[00:22:42.621] Browser ERROR   uncaughtError: TypeError: fetch failed
+[00:22:51.603] Server  ERROR    ⨯ TypeError: fetch failed
+[00:22:51.723] Browser ERROR   uncaughtError: TypeError: fetch failed
+[00:24:36.659] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[00:25:23.743] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[00:25:38.001] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[00:25:48.784] Browser WARN    Image with src "/echofy-removebg-preview.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:26:10.936] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[00:36:09.031] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[00:50:48.296] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[00:51:32.093] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[00:51:54.181] Browser WARN    Image with src "/echofy-removebg-preview.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:51:56.966] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[00:59:37.232] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[00:59:37.232] Browser ERROR   Failed to fetch package info: {}
+[00:59:37.232] Browser ERROR   Failed to fetch package info: {}
+[01:01:14.344] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[01:11:01.805] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior

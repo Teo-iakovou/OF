@@ -7,21 +7,36 @@ const { z } = require("zod");
 mongoose = require("mongoose");
 const Result = require("../models/result");
 const User = require("../models/user");
+const PackageInstance = require("../models/packageInstance");
 
 const { analyzeImageBufferWithGoogleVision } = require("../utils/analyzeImageWithGoogleVision");
 const { buildPromotionBlueprint } = require("../utils/buildPromotionBlueprint");
 const { generateCaptionWithOpenAI } = require("../utils/generateCaptionWithOpenAI");
 const { isNearDuplicate } = require("../utils/textDiversity");
+const { sendQuotaError } = require("../utils/quotaError");
 // --- helpers ---
 const sendErr = (res, status, msg, detail) => {
   const payload = { error: msg };
   if (process.env.DEBUG_ERRORS === "true" && detail) payload.detail = detail;
   return res.status(status).json(payload);
 };
-
 const makeRequestId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 const log = (requestId, stage, extra = {}) =>
   console.log(JSON.stringify({ requestId, stage, ...extra }));
+
+async function resolveActivePackageInstance(user) {
+  if (!user) return null;
+  if (user.activePackageInstanceId) {
+    const selected = await PackageInstance.findOne({
+      _id: user.activePackageInstanceId,
+      userId: user._id,
+      status: "active",
+    });
+    if (selected) return selected;
+  }
+  const instances = await PackageInstance.getActiveByUserId(user._id);
+  return instances[0] || null;
+}
 
 const analyzeReqSchema = z.object({
   email: z.string().email(),
@@ -35,6 +50,11 @@ const analyzeReqSchema = z.object({
 const analyzeImage = async (req, res) => {
   const requestId = makeRequestId();
   const t0 = Date.now();
+  const respondErr = (status, msg, detail) => {
+    const payload = { error: msg, requestId };
+    if (process.env.DEBUG_ERRORS === "true" && detail) payload.detail = detail;
+    return res.status(status).json(payload);
+  };
 
   const { file } = req;
   const email = req.user?.email;
@@ -50,29 +70,80 @@ const analyzeImage = async (req, res) => {
     captions: captionsParam || undefined,
   });
   if (!parsed.success) {
-    return sendErr(res, 400, "Invalid input.", parsed.error?.flatten?.());
+    return respondErr(400, "Invalid input.", parsed.error?.flatten?.());
   }
 
-  if (!file || !email) return sendErr(res, 400, "Image and email are required.");
+  if (!file || !email) return respondErr(400, "Image and email are required.");
   if (typeof file.size === "number" && file.size > 7 * 1024 * 1024) {
-    return sendErr(res, 400, "File too large (max 7MB).");
+    return respondErr(400, "File too large (max 7MB).");
   }
 
   const filePath = path.resolve(__dirname, "../", file.path);
 
+  let user;
+  let selectedInstance;
+  let quotaReserved = false;
+  let reservedInstanceId = null;
+  const releaseReservedQuota = async () => {
+    if (!quotaReserved || !reservedInstanceId) return;
+    try {
+      await PackageInstance.updateOne(
+        { _id: reservedInstanceId },
+        { $inc: { uploadsUsed: -1 } }
+      );
+    } catch (relErr) {
+      log(requestId, "quota_release_error", { message: relErr?.message });
+    } finally {
+      quotaReserved = false;
+    }
+  };
+
   try {
     // 0) User checks
-    let user;
     try {
-      if (!req.user || !req.user.id) return sendErr(res, 401, "Unauthorized");
+      if (!req.user || !req.user.id) return respondErr(401, "Unauthorized");
       user = await User.findById(req.user.id);
-      if (!user) return sendErr(res, 403, "User not found.");
-      if (!user.isAdmin && user.uploadsUsed >= user.uploadLimit) {
-        return sendErr(res, 403, "Upload limit reached.");
+      if (!user) return respondErr(403, "User not found.");
+      selectedInstance = await resolveActivePackageInstance(user);
+      if (!user.isAdmin) {
+        if (!selectedInstance) {
+          return sendQuotaError(res, 403, {
+            message: "Upload limit reached.",
+            feature: "analyze_upload",
+            plan: null,
+            remaining: 0,
+            limit: null,
+            requestId,
+          });
+        }
+        const reserved = await PackageInstance.findOneAndUpdate(
+          {
+            _id: selectedInstance._id,
+            userId: user._id,
+            $expr: { $lt: ["$uploadsUsed", "$uploadLimit"] },
+          },
+          { $inc: { uploadsUsed: 1 } },
+          { new: true }
+        );
+        if (!reserved) {
+          const limit =
+            typeof selectedInstance.uploadLimit === "number" ? selectedInstance.uploadLimit : null;
+          return sendQuotaError(res, 403, {
+            message: "Upload limit reached.",
+            feature: "analyze_upload",
+            plan: selectedInstance.planKey || null,
+            remaining: 0,
+            limit,
+            requestId,
+          });
+        }
+        quotaReserved = true;
+        reservedInstanceId = reserved._id;
+        selectedInstance = reserved;
       }
     } catch (e) {
       log(requestId, "user_lookup_error", { message: e?.message });
-      return sendErr(res, 500, "Failed to analyze image", { stage: "user_lookup", message: e?.message });
+      return respondErr(500, "Failed to analyze image", { stage: "user_lookup", message: e?.message });
     }
 
     // 1) Read bytes & detect/convert format
@@ -105,8 +176,7 @@ const analyzeImage = async (req, res) => {
       const convertible = new Set(["heic", "heif", "gif", "tiff", "bmp", "avif"]);
 
       if (!allowed.has(ext) && !convertible.has(ext)) {
-        return sendErr(
-          res,
+        return respondErr(
           400,
           "Unsupported file type. Use PNG, JPG/JPEG, WEBP (HEIC/HEIF/AVIF/GIF/TIFF/BMP are auto-converted).",
           { stage: "type_check", detected }
@@ -118,8 +188,7 @@ const analyzeImage = async (req, res) => {
           inputBuffer = await sharp(inputBuffer).jpeg({ quality: 85 }).toBuffer();
         } catch (convErr) {
           log(requestId, "convert_error", { message: convErr?.message });
-          return sendErr(
-            res,
+          return respondErr(
             415,
             "Could not convert image (decoder not available). Please upload JPG/PNG/WEBP.",
             { stage: "convert", detected, message: convErr?.message }
@@ -128,7 +197,7 @@ const analyzeImage = async (req, res) => {
       }
     } catch (e) {
       log(requestId, "read_detect_error", { message: e?.message });
-      return sendErr(res, 500, "Failed to analyze image", { stage: "read_detect", message: e?.message });
+      return respondErr(500, "Failed to analyze image", { stage: "read_detect", message: e?.message });
     }
 
     // 1b) Dedup via SHA-256 (on normalized bytes)
@@ -138,6 +207,7 @@ const analyzeImage = async (req, res) => {
       const existing = await Result.findOne({ email, imageHash }).sort({ createdAt: -1 });
       if (existing) {
         log(requestId, "dedup_hit", { imageHash, resultId: existing._id.toString() });
+        await releaseReservedQuota();
         return res.json({
           message: "Duplicate image detected — returning existing analysis.",
           insights: existing.toObject(),
@@ -156,11 +226,11 @@ const analyzeImage = async (req, res) => {
     try {
       visionData = await analyzeImageBufferWithGoogleVision(inputBuffer, { requestId });
       if (!visionData) {
-        return sendErr(res, 502, "Vision analysis failed.", { stage: "vision_null" });
+        return respondErr(502, "Vision analysis failed.", { stage: "vision_null" });
       }
     } catch (e) {
       log(requestId, "vision_throw", { message: e?.message });
-      return sendErr(res, 502, "Vision analysis failed.", { stage: "vision_throw", message: e?.message });
+      return respondErr(502, "Vision analysis failed.", { stage: "vision_throw", message: e?.message });
     }
     log(requestId, "vision_done", { duration_ms: Date.now() - tVision0 });
 
@@ -184,11 +254,11 @@ const analyzeImage = async (req, res) => {
       promotion = out.promotion;
       meta = out.meta;
       if (!promotion) {
-        return sendErr(res, 500, "Failed to build promotion plan.", { stage: "blueprint", out });
+        return respondErr(500, "Failed to build promotion plan.", { stage: "blueprint", out });
       }
     } catch (e) {
       log(requestId, "blueprint_error", { message: e?.message });
-      return sendErr(res, 500, "Failed to build promotion plan.", { stage: "blueprint_throw", message: e?.message });
+      return respondErr(500, "Failed to build promotion plan.", { stage: "blueprint_throw", message: e?.message });
     }
 
    // 4) Captions (optional)
@@ -248,6 +318,7 @@ log(requestId, "captions_done", { skipped: !!skipCaptions, duration_ms: Date.now
     try {
       newResult = await Result.create({
         email,
+        packageInstanceId: selectedInstance ? selectedInstance._id : null,
         csl: promotion?.contentSafety?.csl ?? 0,
         niche: promotion?.niche || "general",
         hasFace: !!promotion?.hasFace,
@@ -260,20 +331,12 @@ log(requestId, "captions_done", { skipped: !!skipCaptions, duration_ms: Date.now
       });
     } catch (e) {
       log(requestId, "db_save_error", { message: e?.message });
-      return sendErr(res, 500, "Failed to save result.", { stage: "db_save", message: e?.message });
+      return respondErr(500, "Failed to save result.", { stage: "db_save", message: e?.message });
     }
 
-    // 6) Update quota
-    try {
-      if (!user.isAdmin) {
-        user.uploadsUsed += 1;
-        await user.save();
-      }
-    } catch (e) {
-      log(requestId, "quota_update_error", { message: e?.message });
-    }
+    quotaReserved = false;
 
-    // 7) Done
+    // 6) Done
     return res.json({
       message: "Image analyzed successfully!",
       requestId,
@@ -282,9 +345,10 @@ log(requestId, "captions_done", { skipped: !!skipCaptions, duration_ms: Date.now
     });
   } catch (error) {
     log(requestId, "top_level_error", { message: error?.message });
-    return sendErr(res, 500, "Failed to analyze image", { stage: "top_level", message: error?.message });
+    return respondErr(500, "Failed to analyze image", { stage: "top_level", message: error?.message });
   } finally {
     try { await fs.unlink(filePath); } catch {}
+    await releaseReservedQuota();
   }
 };
 

@@ -2,7 +2,13 @@
 import * as entry from '../../../../../../src/app/api/sadtalker/history/route.js'
 import type { NextRequest } from 'next/server.js'
 
+import type { PrefetchForTypeCheckInternal } from 'next/dist/build/segment-config/app/app-segment-config.js'
+
 type TEntry = typeof import('../../../../../../src/app/api/sadtalker/history/route.js')
+
+type SegmentParams<T extends Object = any> = T extends Record<string, any>
+  ? { [K in keyof T]: T[K] extends string ? string | string[] | undefined : never }
+  : T
 
 // Check that the entry is a valid entry
 checkFields<Diff<{
@@ -15,6 +21,7 @@ checkFields<Diff<{
   PATCH?: Function
   config?: {}
   generateStaticParams?: Function
+  unstable_prefetch?: PrefetchForTypeCheckInternal
   revalidate?: RevalidateRange<TEntry> | false
   dynamic?: 'auto' | 'force-dynamic' | 'error' | 'force-static'
   dynamicParams?: boolean
@@ -25,6 +32,7 @@ checkFields<Diff<{
   
 }, TEntry, ''>>()
 
+type RouteContext = { params: Promise<SegmentParams> }
 // Check the prop type of the entry function
 if ('GET' in entry) {
   checkFields<
@@ -40,7 +48,7 @@ if ('GET' in entry) {
   >()
   checkFields<
     Diff<
-      ParamCheck<PageParams>,
+      ParamCheck<RouteContext>,
       {
         __tag__: 'GET'
         __param_position__: 'second'
@@ -79,7 +87,7 @@ if ('HEAD' in entry) {
   >()
   checkFields<
     Diff<
-      ParamCheck<PageParams>,
+      ParamCheck<RouteContext>,
       {
         __tag__: 'HEAD'
         __param_position__: 'second'
@@ -118,7 +126,7 @@ if ('OPTIONS' in entry) {
   >()
   checkFields<
     Diff<
-      ParamCheck<PageParams>,
+      ParamCheck<RouteContext>,
       {
         __tag__: 'OPTIONS'
         __param_position__: 'second'
@@ -157,7 +165,7 @@ if ('POST' in entry) {
   >()
   checkFields<
     Diff<
-      ParamCheck<PageParams>,
+      ParamCheck<RouteContext>,
       {
         __tag__: 'POST'
         __param_position__: 'second'
@@ -196,7 +204,7 @@ if ('PUT' in entry) {
   >()
   checkFields<
     Diff<
-      ParamCheck<PageParams>,
+      ParamCheck<RouteContext>,
       {
         __tag__: 'PUT'
         __param_position__: 'second'
@@ -235,7 +243,7 @@ if ('DELETE' in entry) {
   >()
   checkFields<
     Diff<
-      ParamCheck<PageParams>,
+      ParamCheck<RouteContext>,
       {
         __tag__: 'DELETE'
         __param_position__: 'second'
@@ -274,7 +282,7 @@ if ('PATCH' in entry) {
   >()
   checkFields<
     Diff<
-      ParamCheck<PageParams>,
+      ParamCheck<RouteContext>,
       {
         __tag__: 'PATCH'
         __param_position__: 'second'
@@ -301,19 +309,18 @@ if ('PATCH' in entry) {
 
 // Check the arguments and return type of the generateStaticParams function
 if ('generateStaticParams' in entry) {
-  checkFields<Diff<{ params: PageParams }, FirstArg<MaybeField<TEntry, 'generateStaticParams'>>, 'generateStaticParams'>>()
+  checkFields<Diff<{ params: SegmentParams }, FirstArg<MaybeField<TEntry, 'generateStaticParams'>>, 'generateStaticParams'>>()
   checkFields<Diff<{ __tag__: 'generateStaticParams', __return_type__: any[] | Promise<any[]> }, { __tag__: 'generateStaticParams', __return_type__: ReturnType<MaybeField<TEntry, 'generateStaticParams'>> }>>()
 }
 
-type PageParams = any
 export interface PageProps {
-  params?: any
-  searchParams?: any
+  params?: Promise<SegmentParams>
+  searchParams?: Promise<any>
 }
 export interface LayoutProps {
   children?: React.ReactNode
 
-  params?: any
+  params?: Promise<SegmentParams>
 }
 
 // =============

@@ -18,7 +18,7 @@ function buildUrl(input: string): string {
 
 export async function serverFetchJson(input: string, init: RequestInit = {}): Promise<JsonResult> {
   const url = buildUrl(input);
-  const incoming = headers();
+  const incoming = await headers();
 
   const h = new Headers(init.headers as HeadersInit | undefined);
   // Preserve explicit headers but default content-type for JSON requests
@@ -48,4 +48,3 @@ export async function serverGetUser(): Promise<ServerUser> {
   const r = await serverFetchJson('/api/auth/me', { method: 'GET' });
   return r.ok ? (r.data as ServerUser) : null;
 }
-

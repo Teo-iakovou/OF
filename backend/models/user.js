@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
+  activePackageInstanceId: { type: mongoose.Schema.Types.ObjectId, default: null },
   purchasedPackage: {
     type: String,
     enum: ["lite", "pro", "ultimate", null],

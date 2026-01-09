@@ -13,6 +13,9 @@ const resultSchema = new mongoose.Schema({
   // NEW: dedup by content hash (sha256 of image bytes after normalization)
   imageHash: { type: String, index: true },
 
+  // Package instance used for this analysis (for traceability)
+  packageInstanceId: { type: mongoose.Schema.Types.ObjectId, default: null, index: true },
+
   // NEW: whether captions were generated in this run
   captionsGenerated: { type: Boolean, default: false },
 

@@ -2,7 +2,9 @@
 // backend/controllers/checkoutController.js
 const Stripe = require("stripe");
 const User = require("../models/user");
+const PackageInstance = require("../models/packageInstance");
 const { getSadTalkerPlanLimit } = require("./userController");
+const { planLimit } = require("../middleware/chatLimits");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Comma-separated allowlist of UI origins (local + prod)
@@ -14,6 +16,7 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
 // ALLOWED_ORIGINS=http://localhost:3000,https://yourapp.com
 
 const PACKAGES = { lite: 500, pro: 1500, ultimate: 3000 }; // cents
+const UPLOAD_LIMITS = { lite: 5, pro: 20, ultimate: 100 };
 
 // POST /api/checkout/create-checkout-session
 const createCheckoutSession = async (req, res) => {
@@ -79,7 +82,11 @@ const handleStripeWebhook = async (req, res) => {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    const email = session.metadata?.email;
+    const email =
+      session.metadata?.email ||
+      session.customer_details?.email ||
+      session.client_reference_id ||
+      session.customer_email;
     const packageId = session.metadata?.packageId;
 
     if (!email || !packageId) {
@@ -88,32 +95,45 @@ const handleStripeWebhook = async (req, res) => {
     }
 
     try {
+      console.log("ℹ️  Webhook checkout session resolved:", {
+        sessionId: session.id,
+        email,
+        packageId,
+        dbName: User.db?.name || null,
+      });
       let user = await User.findOne({ email });
       if (!user) user = new User({ email });
 
       user.purchasedPackage = packageId;
-      switch (packageId) {
-        case "lite":
-          user.uploadLimit = 5;
-          break;
-        case "pro":
-          user.uploadLimit = 20;
-          break;
-        case "ultimate":
-          user.uploadLimit = 100;
-          break;
-        default:
-          user.uploadLimit = 5;
-      }
-      user.uploadsUsed = 0;
-
-      // Align SadTalker video limits with the purchased plan
-      const sadtalkerLimit = getSadTalkerPlanLimit(packageId);
-      user.sadtalkerVideoLimit = sadtalkerLimit;
-      user.sadtalkerVideosUsed = 0;
 
       await user.save();
-      console.log("✅ Package and uploads updated for:", email);
+      const uploadLimit = UPLOAD_LIMITS[packageId] || 0;
+      const sadtalkerLimit = getSadTalkerPlanLimit(packageId);
+      const chatMonthlyLimit = planLimit(packageId);
+      const instance = await PackageInstance.create({
+        userId: user._id,
+        planKey: packageId,
+        status: "active",
+        uploadLimit,
+        uploadsUsed: 0,
+        chatMonthlyLimit,
+        chatUsedThisCycle: 0,
+        chatCycleEndsAt: null,
+        sadtalkerVideoLimit: sadtalkerLimit,
+        sadtalkerVideosUsed: 0,
+        sadtalkerPrimaryImageHash: null,
+        personaBound: false,
+        rekognitionFaceId: null,
+      });
+      if (instance.userId && instance.userId.toString() === user._id.toString()) {
+        user.activePackageInstanceId = instance._id;
+        await user.save();
+      }
+      console.log("✅ Package instance created for:", {
+        email,
+        instanceId: instance._id.toString(),
+        dbName: User.db?.name || null,
+      });
     } catch (err) {
       console.error("❌ Failed to update user after checkout:", err);
     }

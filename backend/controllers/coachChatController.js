@@ -2,6 +2,8 @@ const OpenAI = require("openai");
 const User = require("../models/user");
 const Conversation = require("../models/conversation");
 const Result = require("../models/result"); // <-- used in suggestPrompts
+const PackageInstance = require("../models/packageInstance");
+const { sendQuotaError } = require("../utils/quotaError");
 const { buildChatContext } = require("../services/chatContext"); // <-- used directly
 const { log } = require("../utils/logger"); // <-- make sure this file exists (see note below)
 
@@ -23,6 +25,20 @@ function isPremiumRequest(question = "") {
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+async function resolveActivePackageInstance(user) {
+  if (!user) return null;
+  if (user.activePackageInstanceId) {
+    const selected = await PackageInstance.findOne({
+      _id: user.activePackageInstanceId,
+      userId: user._id,
+      status: "active",
+    });
+    if (selected) return selected;
+  }
+  const instances = await PackageInstance.getActiveByUserId(user._id);
+  return instances[0] || null;
+}
+
 const coachChatHandler = async (req, res) => {
   const rid =
     req.requestId ||
@@ -34,7 +50,9 @@ const coachChatHandler = async (req, res) => {
     const email = req.user?.email || "";
     log(rid, "chat_start", { email });
 
-    const user = req._user || (email ? await User.findOne({ email }) : null);
+    const user =
+      req._user ||
+      (req.user?.id ? await User.findById(req.user.id) : email ? await User.findOne({ email }) : null);
     if (!user) {
       log(rid, "chat_user_not_found", { email });
       return res.status(403).json({ error: "User not found." });
@@ -104,9 +122,34 @@ Always be clear and direct about what features are available for each plan.
       openai_id: response.id,
     });
 
-    // --- Increment usage on success ---
-    user.chatsUsed += 1; // If you migrate to monthly fields, update here
-    await user.save();
+    // --- Increment usage on success (per active package instance, atomic) ---
+    try {
+      const instance = await resolveActivePackageInstance(user);
+      if (instance) {
+        const updated = await PackageInstance.findOneAndUpdate(
+          {
+            _id: instance._id,
+            userId: user._id,
+            status: "active",
+            $expr: { $lt: ["$chatUsedThisCycle", "$chatMonthlyLimit"] },
+          },
+          { $inc: { chatUsedThisCycle: 1 } },
+          { new: true }
+        );
+        if (!updated) {
+          return sendQuotaError(res, 402, {
+            message: "Chat limit reached for your plan",
+            feature: "ai_chat",
+            plan: instance.planKey,
+            remaining: 0,
+            limit: instance.chatMonthlyLimit,
+            requestId: rid,
+          });
+        }
+      }
+    } catch (e) {
+      log(rid, "chat_quota_increment_failed", { message: e?.message });
+    }
 
     // --- Conversation persistence ---
     let conversation;

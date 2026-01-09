@@ -14,13 +14,12 @@ import { useEffect, useState } from "react";
 import { FiMenu, FiX, FiUser } from "react-icons/fi";
 import { FaTwitter, FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
 import Link from "next/link";
-import Scrollspy from "react-scrollspy";
 import Image from "next/image";
 import { useCart } from "../cart/CartContext"; // Make sure the path is correct!
 import { useUser } from "@/app/hooks/useUser";
 import { useRouter } from "next/navigation";
-import { useAuthModal } from "@/app/components/auth/AuthModalContext";
 import { logoutClient } from "@/app/utils/authClient";
+import { useSectionObserver } from "@/app/hooks/useSectionObserver";
 
 type NavbarProps = {
   onCartClick: () => void;
@@ -37,7 +36,16 @@ export default function Navbar({ onCartClick }: NavbarProps) {
   const { cartCount } = useCart();
   const { user } = useUser({ required: false });
   const router = useRouter();
-  const { open: openAuthModal } = useAuthModal();
+  const navItems = [
+    { id: "packages", label: "Products", icon: Package },
+    { id: "features", label: "Features", icon: Star },
+    { id: "upgrade", label: "Upgrade", icon: TrendingUp },
+    { id: "faq", label: "FAQ", icon: HelpCircle },
+    { id: "affiliates", label: "Affiliates", icon: Users },
+    { id: "help-center", label: "Help Center", icon: LifeBuoy },
+    { id: "contact", label: "Contact Us", icon: Mail },
+  ];
+  const activeSection = useSectionObserver(navItems.map((item) => item.id));
 
   // Avoid hydration mismatch for client-only cart count badge
   useEffect(() => setMounted(true), []);
@@ -73,13 +81,21 @@ export default function Navbar({ onCartClick }: NavbarProps) {
 
           <div className="flex items-center gap-4 ml-auto">
             {!user && (
-              <button
-                onClick={() => openAuthModal()}
+              <Link
+                href="/login"
                 aria-label="Sign in"
                 className="p-2 rounded-md border border-gray-700 bg-[#1f2937] hover:bg-[#374151] text-white transition-all shadow-sm"
               >
                 <FiUser size={20} />
-              </button>
+              </Link>
+            )}
+            {!user && (
+              <Link
+                href="/signup"
+                className="hidden md:inline-flex items-center rounded-md border border-cyan-600 text-cyan-300 px-3 py-1 text-sm hover:bg-cyan-600/10"
+              >
+                Sign Up
+              </Link>
             )}
             <button
               onClick={onCartClick}
@@ -145,37 +161,16 @@ export default function Navbar({ onCartClick }: NavbarProps) {
               </button>
             </div>
 
-            {/* Scrollspy Links */}
-            <Scrollspy
-              items={[
-                "packages",
-                "features",
-                "upgrade",
-                "faq",
-                "affiliates",
-                "help-center",
-                "contact",
-              ]}
-              currentClassName="scrollspy-active"
-              offset={-100}
-              componentTag="nav"
-              className="flex flex-col gap-5 text-lg font-medium"
-            >
-              {/* Menu Items */}
-              {[
-                { id: "packages", label: "Products", icon: Package },
-                { id: "features", label: "Features", icon: Star },
-                { id: "upgrade", label: "Upgrade", icon: TrendingUp },
-                { id: "faq", label: "FAQ", icon: HelpCircle },
-                { id: "affiliates", label: "Affiliates", icon: Users },
-                { id: "help-center", label: "Help Center", icon: LifeBuoy },
-                { id: "contact", label: "Contact Us", icon: Mail },
-              ].map(({ id, label, icon: Icon }) => (
+            {/* Scroll Links */}
+            <nav className="flex flex-col gap-5 text-lg font-medium">
+              {navItems.map(({ id, label, icon: Icon }) => (
                 <a
                   key={id}
                   href={`#${id}`}
                   onClick={() => setIsMenuOpen(false)}
-                  className="hover:text-cyan-400 transition flex items-center gap-2"
+                  className={`transition flex items-center gap-2 ${
+                    activeSection === id ? "text-cyan-400" : "hover:text-cyan-400"
+                  }`}
                 >
                   <Icon size={18} />
                   {label}
@@ -190,9 +185,7 @@ export default function Navbar({ onCartClick }: NavbarProps) {
                   if (!user) {
                     e.preventDefault();
                     setIsMenuOpen(false);
-                    openAuthModal({
-                      onSuccess: () => router.push("/dashboard"),
-                    });
+                    router.push("/login?next=/dashboard");
                     return;
                   }
                   setIsMenuOpen(false);
@@ -205,7 +198,7 @@ export default function Navbar({ onCartClick }: NavbarProps) {
                 <LayoutDashboard size={18} />
                 Dashboard
               </Link>
-            </Scrollspy>
+            </nav>
 
             <div className="border-t border-gray-700 my-6" />
 
@@ -215,7 +208,7 @@ export default function Navbar({ onCartClick }: NavbarProps) {
                   onClick={async () => {
                     setIsMenuOpen(false);
                     await logoutClient();
-                    router.replace("/");
+                    router.replace("/login");
                   }}
                   className="flex items-center gap-2 text-gray-400 hover:text-white transition"
                   aria-label="Log out"

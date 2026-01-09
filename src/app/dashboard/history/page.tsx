@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import Insights from "@/app/components/analytics/Insights";
 import HistoryList, { HistoryItem as HistoryItemType } from "@/app/components/uploads/HistoryList";
 import { deleteAnalysisResult, fetchAnalysisHistory } from "@/app/utils/api";
- 
 import Spinner from "@/app/components/dashboard/loading spinner/page";
 import type { ResultDoc } from "@/app/types/analysis";
+import PlanStatusPill from "@/app/components/dashboard/PlanStatusPill";
 
 export default function HistoryPage() {
   const [history, setHistory] = useState<ResultDoc[]>([]);
@@ -84,14 +84,17 @@ export default function HistoryPage() {
     <div className="min-h-screen flex flex-col text-white">
       {/* Header */}
       <header className="shrink-0 pt-12 md:pt-20 px-4 md:px-12 lg:px-20 max-w-6xl mx-auto w-full">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Upload History</h1>
-          <button
-            onClick={loadHistory}
-            className="hidden md:inline px-3 py-1.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-white text-sm"
-          >
-            Refresh
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <PlanStatusPill />
+            <button
+              onClick={loadHistory}
+              className="hidden md:inline px-3 py-1.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-white text-sm"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Mobile Project Nav moved to global drawer in layout */}

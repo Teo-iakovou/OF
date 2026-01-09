@@ -1,14 +1,21 @@
 // File: /Users/theodorosiakovou/Projects/ai-platform/src/app/dashboard/talking-head/page.tsx
 import * as entry from '../../../../../src/app/dashboard/talking-head/page.js'
-import type { ResolvingMetadata } from 'next/dist/lib/metadata/types/metadata-interface.js'
+import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
+
+import type { PrefetchForTypeCheckInternal } from 'next/dist/build/segment-config/app/app-segment-config.js'
 
 type TEntry = typeof import('../../../../../src/app/dashboard/talking-head/page.js')
+
+type SegmentParams<T extends Object = any> = T extends Record<string, any>
+  ? { [K in keyof T]: T[K] extends string ? string | string[] | undefined : never }
+  : T
 
 // Check that the entry is a valid entry
 checkFields<Diff<{
   default: Function
   config?: {}
   generateStaticParams?: Function
+  unstable_prefetch?: PrefetchForTypeCheckInternal
   revalidate?: RevalidateRange<TEntry> | false
   dynamic?: 'auto' | 'force-dynamic' | 'error' | 'force-static'
   dynamicParams?: boolean
@@ -19,8 +26,11 @@ checkFields<Diff<{
   
   metadata?: any
   generateMetadata?: Function
+  viewport?: any
+  generateViewport?: Function
   
 }, TEntry, ''>>()
+
 
 // Check the prop type of the entry function
 checkFields<Diff<PageProps, FirstArg<TEntry['default']>, 'default'>>()
@@ -31,21 +41,26 @@ if ('generateMetadata' in entry) {
   checkFields<Diff<ResolvingMetadata, SecondArg<MaybeField<TEntry, 'generateMetadata'>>, 'generateMetadata'>>()
 }
 
+// Check the arguments and return type of the generateViewport function
+if ('generateViewport' in entry) {
+  checkFields<Diff<PageProps, FirstArg<MaybeField<TEntry, 'generateViewport'>>, 'generateViewport'>>()
+  checkFields<Diff<ResolvingViewport, SecondArg<MaybeField<TEntry, 'generateViewport'>>, 'generateViewport'>>()
+}
+
 // Check the arguments and return type of the generateStaticParams function
 if ('generateStaticParams' in entry) {
-  checkFields<Diff<{ params: PageParams }, FirstArg<MaybeField<TEntry, 'generateStaticParams'>>, 'generateStaticParams'>>()
+  checkFields<Diff<{ params: SegmentParams }, FirstArg<MaybeField<TEntry, 'generateStaticParams'>>, 'generateStaticParams'>>()
   checkFields<Diff<{ __tag__: 'generateStaticParams', __return_type__: any[] | Promise<any[]> }, { __tag__: 'generateStaticParams', __return_type__: ReturnType<MaybeField<TEntry, 'generateStaticParams'>> }>>()
 }
 
-type PageParams = any
 export interface PageProps {
-  params?: any
-  searchParams?: any
+  params?: Promise<SegmentParams>
+  searchParams?: Promise<any>
 }
 export interface LayoutProps {
   children?: React.ReactNode
 
-  params?: any
+  params?: Promise<SegmentParams>
 }
 
 // =============

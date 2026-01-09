@@ -56,7 +56,7 @@ export default function AccountAndBillingPage() {
     try {
       setCartItems([]);
     } catch {}
-    router.replace("/");
+    router.replace("/login");
   };
 
   return (

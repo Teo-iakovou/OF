@@ -8,9 +8,13 @@ import QuickStartPanel from "@/app/components/dashboard/overview/QuickStartPanel
 import TipsCard from "@/app/components/dashboard/overview/TipsCard";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import Reveal from "@/app/components/common/Reveal";
+import PlanStatusPill from "@/app/components/dashboard/PlanStatusPill";
+import NoPlanDashboard from "@/app/components/dashboard/NoPlanDashboard";
+import { usePlanInfo } from "@/app/dashboard/PlanContext";
 
 export default function DashboardPage() {
   const { user, loading } = useUser({ required: true, redirectTo: "/" });
+  const { data: planData, loading: planLoading } = usePlanInfo();
   const displayName = useMemo(() => {
     const email = user?.email || "";
     if (!email) return ""; // avoid placeholder flicker
@@ -18,13 +22,15 @@ export default function DashboardPage() {
     return base ? base.charAt(0).toUpperCase() + base.slice(1) : "";
   }, [user]);
 
-
   return (
     // Natural page scroll; sidebar is fixed in layout
     <div className="min-h-screen flex flex-col text-white">
       {/* Header */}
       <header className="shrink-0 pt-12 md:pt-20 px-4 md:px-12 lg:px-20 max-w-6xl mx-auto w-full">
-        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Dashboard</h1>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Dashboard</h1>
+          <PlanStatusPill />
+        </div>
 
         {/* Mobile Project Nav moved to global drawer in layout */}
       </header>
@@ -68,15 +74,23 @@ export default function DashboardPage() {
           </Reveal>
 
           {/* Sections */}
-          <Reveal as="div">
-            <UserPlanCard />
-          </Reveal>
-          <Reveal as="div" delay={100}>
-            <QuickStartPanel />
-          </Reveal>
-          <Reveal as="div" delay={200}>
-            <TipsCard />
-          </Reveal>
+          {!planLoading && planData && !planData.hasAccess ? (
+            <Reveal as="section">
+              <NoPlanDashboard />
+            </Reveal>
+          ) : (
+            <>
+              <Reveal as="div">
+                <UserPlanCard />
+              </Reveal>
+              <Reveal as="div" delay={100}>
+                <QuickStartPanel />
+              </Reveal>
+              <Reveal as="div" delay={200}>
+                <TipsCard />
+              </Reveal>
+            </>
+          )}
         </div>
       </main>
     </div>

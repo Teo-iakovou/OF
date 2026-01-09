@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/components/layout,_N_T_/components/dashboard/layout,_N_T_/components/dashboard/loading spinner/layout,_N_T_/components/dashboard/loading spinner/page,_N_T_/components/dashboard/loading%20spinner"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/components/dashboard/!bG9hZGluZyBzcGlubmVy/__PAGE__",
+    "/components/dashboard/!bG9hZGluZyBzcGlubmVy",
+    "/components/dashboard",
+    "/components",
+    "/_index",
+    "/_head"
+  ]
+}

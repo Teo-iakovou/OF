@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { SadTalkerJobOptions } from "@/app/api/sadtalker/types";
 import { useUser } from "@/app/hooks/useUser";
+import UpgradeRequiredBanner from "@/app/components/common/UpgradeRequiredBanner";
 
 type JobState = "queued" | "running" | "succeeded" | "failed" | "active" | "completed" | "waiting" | null;
 
@@ -15,6 +16,14 @@ type HistoryItem = {
   durationMs?: number;
   options?: SadTalkerJobOptions | null;
 };
+
+type UpgradeInfo = {
+  error?: string;
+  feature?: string;
+  plan?: string | null;
+  remaining?: number | null;
+  limit?: number | null;
+} | null;
 
 const HISTORY_USER_FALLBACK = "web-client";
 
@@ -67,6 +76,7 @@ export default function UploadTalkingHead() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoReadyAt, setVideoReadyAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [upgradeInfo, setUpgradeInfo] = useState<UpgradeInfo>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -242,6 +252,7 @@ export default function UploadTalkingHead() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setUpgradeInfo(null);
     setVideoUrl(null);
     setVideoReadyAt(null);
     setJobState(null);
@@ -250,10 +261,12 @@ export default function UploadTalkingHead() {
 
     if (!imageFile) {
       setError("Please choose a source image (PNG/JPG).");
+      setUpgradeInfo(null);
       return;
     }
     if (!audioFile) {
       setError("Please choose an audio file (MP3/WAV).");
+      setUpgradeInfo(null);
       return;
     }
 
@@ -282,6 +295,18 @@ export default function UploadTalkingHead() {
 
       const data = await res.json();
       if (!res.ok) {
+        if (data?.code === "UPGRADE_REQUIRED") {
+          setError(data?.error || "Upgrade required");
+          setUpgradeInfo({
+            code: data.code,
+            error: data?.error,
+            feature: data?.feature,
+            plan: data?.plan ?? null,
+            remaining: typeof data?.remaining === "number" ? data.remaining : null,
+            limit: typeof data?.limit === "number" ? data.limit : null,
+          });
+          return;
+        }
         throw new Error(data?.error || "Failed to enqueue SadTalker job");
       }
 
@@ -290,6 +315,7 @@ export default function UploadTalkingHead() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to start SadTalker job";
       setError(message);
+      setUpgradeInfo(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -525,8 +551,18 @@ export default function UploadTalkingHead() {
       )}
 
       {error && (
-        <div className="bg-red-900/40 border border-red-700 text-red-200 rounded-lg p-4 text-sm">
-          {error}
+        <div className="bg-red-900/40 border border-red-700 text-red-200 rounded-lg p-4 text-sm space-y-3">
+          <div>{error}</div>
+          {upgradeInfo ? (
+            <UpgradeRequiredBanner
+              code={upgradeInfo.code}
+              error={upgradeInfo.error}
+              feature={upgradeInfo.feature}
+              plan={upgradeInfo.plan}
+              remaining={upgradeInfo.remaining}
+              limit={upgradeInfo.limit}
+            />
+          ) : null}
         </div>
       )}
 

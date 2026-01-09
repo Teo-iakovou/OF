@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import type { ResultDoc, RecommendedPlatform } from "@/app/types/analysis";
 import ClipboardButton from "@/app/components/dashboard/buttons/clipboard";
-import { useEffect, useRef, useState } from "react";
 import { ttsSynthesize } from "@/app/utils/api";
 import { FaRedditAlien, FaInstagram, FaTiktok } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
@@ -189,9 +188,7 @@ export default function Insights({ result }: Props) {
     () => result?.promotion?.recommendedPlatforms || [],
     [result?.promotion?.recommendedPlatforms]
   );
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Top summary: pick best platform/time combo
   const summary = useMemo(() => {
     if (!recs.length) return null;
     const top = recs[0];
@@ -202,7 +199,6 @@ export default function Insights({ result }: Props) {
     };
   }, [recs]);
 
-  // Derived badges (only when advanced is open)
   const advBadges = useMemo(() => {
     const b: string[] = [];
     if (result.niche) b.push(`Niche: ${result.niche}`);
@@ -213,79 +209,125 @@ export default function Insights({ result }: Props) {
     return b;
   }, [result]);
 
+  const hero = recs[0];
+  const backup = recs[1];
+  const heroHashtags = useMemo(() => {
+    if (!hero?.hashtags?.length) return null;
+    return hero.hashtags.slice(0, 5).join(" ");
+  }, [hero]);
+  const heroCTA = result?.promotion?.ctaVariants?.[0];
+
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
-      <div className="text-center max-w-3xl mx-auto">
-        <h3 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-b from-purple-200 via-purple-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-[0_6px_24px_rgba(124,58,237,0.35)]">
-          Your AI Insights
-        </h3>
-        {summary && (
-          <div className="mt-3 leading-snug">
-            <p className="text-base md:text-lg text-gray-200/90">
-              {summary.line1}
-            </p>
-            {summary.line2 ? (
-              <p className="text-base md:text-lg text-gray-200/70">
-                {summary.line2}
-              </p>
-            ) : null}
+      <div className="rounded-2xl border border-white/15 bg-gradient-to-br from-gray-900 via-gray-900/60 to-gray-800 p-5 sm:p-6 shadow-inner shadow-black/40">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-400">Strategy Summary</p>
+            {summary ? (
+              <div className="mt-2 space-y-1">
+                <p className="text-lg text-white">{summary.line1}</p>
+                {summary.line2 ? <p className="text-sm text-gray-300">{summary.line2}</p> : null}
+              </div>
+            ) : (
+              <p className="text-lg text-white">No recommendations yet.</p>
+            )}
           </div>
-        )}
+          {hero?.bestTimesLocal?.[0] ? (
+            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-200">
+              <div className="text-xs uppercase tracking-[0.3em] text-gray-400">Prime window</div>
+              <div className="font-semibold text-white">{hero.bestTimesLocal[0]}</div>
+              <div className="text-xs text-gray-400">{hero.platform}</div>
+            </div>
+          ) : null}
+        </div>
+        <div className="mt-4 grid gap-3 text-sm text-gray-300 sm:grid-cols-2">
+          {heroCTA ? (
+            <div className="rounded-lg border border-white/10 bg-[#101628] px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Call to action</p>
+              <p className="text-white mt-1">{heroCTA}</p>
+            </div>
+          ) : null}
+          {heroHashtags ? (
+            <div className="rounded-lg border border-white/10 bg-[#101628] px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Hashtags to start</p>
+              <p className="font-mono text-xs text-gray-200 mt-1 break-words">{heroHashtags}</p>
+            </div>
+          ) : null}
+          {backup ? (
+            <div className="rounded-lg border border-white/10 bg-[#101628] px-4 py-3 sm:col-span-2">
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Backup move</p>
+              <p className="text-gray-200 mt-1">
+                Shift to {backup.platform} around {backup.bestTimesLocal?.[0] || "your evening block"} if the primary slot is taken.
+              </p>
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      {/* Platform recommendations */}
       <div className="grid md:grid-cols-2 gap-4">
         {recs.map((rec, i) => (
           <PlatformCard key={`${rec.platform}-${i}`} rec={rec} />
         ))}
       </div>
 
-      {/* CTA Variants */}
-      {result?.promotion?.ctaVariants?.length ? (
-        <div className="rounded-xl border border-gray-700 bg-gray-900 p-4">
-          <div className="text-sm font-semibold mb-2 text-white">CTA Ideas</div>
-          <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
-            {result.promotion.ctaVariants.map((c, i) => (
-              <li key={i}>{c}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      <div className="space-y-3">
+        {result?.promotion?.ctaVariants?.length ? (
+          <AccordionItem title="CTA & hook ideas" defaultOpen>
+            <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
+              {result.promotion.ctaVariants.map((c, i) => (
+                <li key={i}>{c}</li>
+              ))}
+            </ul>
+          </AccordionItem>
+        ) : null}
 
-      {/* Advanced details toggle */}
-      <div className="pt-1">
-        <button
-          onClick={() => setShowAdvanced((s) => !s)}
-          className="text-xs text-gray-400 underline hover:text-gray-200"
-        >
-          {showAdvanced ? "Hide advanced details" : "Show advanced details"}
-        </button>
-      </div>
-
-      {showAdvanced && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="rounded-xl border border-gray-700 bg-gray-900 p-4 space-y-2">
+        <AccordionItem title="Safety & context">
+          <div className="space-y-3 text-sm text-gray-300">
             <div className="flex flex-wrap gap-2">
               {advBadges.map((x, i) => (
                 <Pill key={i}>{x}</Pill>
               ))}
             </div>
+            <div>
+              <div className="text-white font-semibold mb-1">Risk flags</div>
+              {result.promotion?.riskFlags?.length ? (
+                <ul className="list-disc pl-5 space-y-1">
+                  {result.promotion.riskFlags.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-gray-500">No major issues detected.</div>
+              )}
+            </div>
           </div>
-          <div className="rounded-xl border border-gray-700 bg-gray-900 p-4">
-            <div className="text-sm font-semibold mb-2 text-white">Safety Notes</div>
-            {result.promotion?.riskFlags?.length ? (
-              <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
-                {result.promotion.riskFlags.map((r, i) => (
-                  <li key={i}>{r}</li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-sm text-gray-400">—</div>
-            )}
-          </div>
-        </div>
-      )}
+        </AccordionItem>
+      </div>
+    </div>
+  );
+}
+
+function AccordionItem({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-xl border border-gray-700 bg-gray-900 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((val) => !val)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-semibold text-white"
+      >
+        {title}
+        <span className="text-xs text-gray-400">{open ? "Hide" : "Show"}</span>
+      </button>
+      {open ? <div className="px-4 pb-4">{children}</div> : null}
     </div>
   );
 }

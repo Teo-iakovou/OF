@@ -1,0 +1,16 @@
+{
+  "[project]/src/app/components/AIchat/AiChatHistorySidebar.tsx [app-client] (ecmascript, next/dynamic entry)": {
+    "id": "[project]/src/app/components/AIchat/AiChatHistorySidebar.tsx [app-client] (ecmascript, next/dynamic entry)",
+    "files": [
+      "static/chunks/_3ae26fa3._.js",
+      "static/chunks/src_app_components_AIchat_AiChatHistorySidebar_tsx_8556fde6._.js"
+    ]
+  },
+  "[project]/src/app/components/AIchat/CoachChat.tsx [app-client] (ecmascript, next/dynamic entry)": {
+    "id": "[project]/src/app/components/AIchat/CoachChat.tsx [app-client] (ecmascript, next/dynamic entry)",
+    "files": [
+      "static/chunks/_54c9c5ec._.js",
+      "static/chunks/src_app_components_AIchat_CoachChat_tsx_8556fde6._.js"
+    ]
+  }
+}

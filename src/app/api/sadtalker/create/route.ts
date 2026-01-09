@@ -290,6 +290,12 @@ async function ensureSadTalkerQuota(req: NextRequest, imageHash?: string) {
           {
             error: data?.error || "Video limit reached for your plan",
             action: data?.action || "upgrade",
+            code: data?.code,
+            feature: data?.feature,
+            plan: data?.plan ?? null,
+            remaining: data?.remaining ?? null,
+            limit: data?.limit ?? null,
+            requestId: data?.requestId ?? null,
           },
           { status: 402 },
         ),
@@ -304,7 +310,12 @@ async function ensureSadTalkerQuota(req: NextRequest, imageHash?: string) {
             error:
               data?.error ||
               "Your current plan only allows videos for a single face. Please reuse your original photo or upgrade your plan.",
-            code: data?.code || "face_mismatch",
+            code: data?.code,
+            feature: data?.feature,
+            plan: data?.plan ?? null,
+            remaining: data?.remaining ?? null,
+            limit: data?.limit ?? null,
+            requestId: data?.requestId ?? null,
           },
           { status: 403 },
         ),

@@ -7,13 +7,7 @@ import FeatureComparison from "./components/sections/FeatureComparison";
 import ScrollToTop from "./components/features/ScrollToTop";
 import FeedbackWidget from "./components/features/FeedbackWidget";
 import Section from "@/app/components/common/Section";
-
-const HERO_PARTICLES = Array.from({ length: 40 }).map((_, idx) => ({
-  id: idx,
-  top: Math.random() * 100,
-  left: Math.random() * 100,
-  opacity: Math.random() * 0.6 + 0.2,
-}));
+import HeroParticles from "@/app/components/features/HeroParticles";
 
 export default function Page() {
   return (
@@ -32,19 +26,7 @@ export default function Page() {
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent opacity-60" />
               <div className="absolute -left-32 top-10 h-96 w-96 rounded-full bg-pink-500/30 blur-[180px]" />
               <div className="absolute right-0 bottom-0 h-[32rem] w-[32rem] rounded-full bg-blue-600/40 blur-[220px]" />
-              <div className="absolute inset-0 opacity-30">
-                {HERO_PARTICLES.map((particle) => (
-                  <span
-                    key={particle.id}
-                    className="absolute h-1 w-1 rounded-full bg-white/80"
-                    style={{
-                      top: `${particle.top}%`,
-                      left: `${particle.left}%`,
-                      opacity: particle.opacity,
-                    }}
-                  />
-                ))}
-              </div>
+              <HeroParticles />
             </>
           }
         >

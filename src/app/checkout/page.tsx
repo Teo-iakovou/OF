@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { purchasePackage, startCheckout } from "@/app/utils/api";
 import { useUser } from "@/app/hooks/useUser";
 import { packages } from "@/app/components/packages/Packages";
 
-const Checkout = () => {
+const CheckoutContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const packageId = searchParams.get("packageId");
@@ -104,5 +104,17 @@ const Checkout = () => {
     </div>
   );
 };
+
+const Checkout = () => (
+  <Suspense
+    fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <h1 className="text-xl text-gray-300 font-bold">Loading checkout...</h1>
+      </div>
+    }
+  >
+    <CheckoutContent />
+  </Suspense>
+);
 
 export default Checkout;

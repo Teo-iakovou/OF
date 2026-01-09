@@ -2,6 +2,24 @@
 // controllers/userController.js
 const User = require("../models/user");
 const Result = require("../models/result");
+const PackageInstance = require("../models/packageInstance");
+const mongoose = require("mongoose");
+const { sendQuotaError } = require("../utils/quotaError");
+const { planLimit } = require("../middleware/chatLimits");
+
+const makeRequestId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+const toInstanceSummary = (instance) => ({
+  id: instance._id.toString(),
+  planKey: instance.planKey,
+  uploadsUsed: instance.uploadsUsed,
+  uploadLimit: instance.uploadLimit,
+  sadtalkerVideosUsed: instance.sadtalkerVideosUsed,
+  sadtalkerVideoLimit: instance.sadtalkerVideoLimit,
+  sadtalkerPrimaryImageHash: instance.sadtalkerPrimaryImageHash,
+  personaBound: instance.personaBound,
+  createdAt: instance.createdAt,
+});
 
 const getUserDashboard = async (req, res) => {
   if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
@@ -59,26 +77,39 @@ const purchasePackage = async (req, res) => {
 
     const uploadLimit = PACKAGE_LIMITS[packageId] || 0;
     const sadtalkerVideoLimit = getSadTalkerPlanLimit(packageId);
+    const chatMonthlyLimit = planLimit(packageId);
 
     if (!user) {
       const email = req.user.email || "";
       user = new User({
         email,
         purchasedPackage: packageId,
-        uploadLimit,
-        uploadsUsed: 0,
-        sadtalkerVideoLimit,
-        sadtalkerVideosUsed: 0,
       });
     } else {
       user.purchasedPackage = packageId;
-      user.uploadLimit = uploadLimit;
-      user.sadtalkerVideoLimit = sadtalkerVideoLimit;
-      user.sadtalkerVideosUsed = 0;
     }
 
     await user.save();
-    res.json({ message: "Package purchased successfully!", user });
+    const instance = await PackageInstance.create({
+      userId: user._id,
+      planKey: packageId,
+      status: "active",
+      uploadLimit,
+      uploadsUsed: 0,
+      chatMonthlyLimit,
+      chatUsedThisCycle: 0,
+      chatCycleEndsAt: null,
+      sadtalkerVideoLimit,
+      sadtalkerVideosUsed: 0,
+      sadtalkerPrimaryImageHash: null,
+      personaBound: false,
+      rekognitionFaceId: null,
+    });
+    if (instance.userId && instance.userId.toString() === user._id.toString()) {
+      user.activePackageInstanceId = instance._id;
+      await user.save();
+    }
+    res.json({ message: "Package purchased successfully!", user, instance });
   } catch (error) {
     console.error("Error purchasing package:", error);
     res.status(500).json({ error: "Purchase failed" });
@@ -92,19 +123,33 @@ const checkUserPackage = async (req, res) => {
 
   try {
     const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (!user || !user.purchasedPackage) {
-      return res.json({ hasAccess: false });
+    let selectedInstance = null;
+    if (user.activePackageInstanceId) {
+      selectedInstance = await PackageInstance.findOne({
+        _id: user.activePackageInstanceId,
+        userId: user._id,
+        status: "active",
+      });
+    }
+    if (!selectedInstance) {
+      const instances = await PackageInstance.getActiveByUserId(user._id);
+      selectedInstance = instances[0] || null;
     }
 
-    const uploadsRemaining = user.uploadLimit - user.uploadsUsed;
+    if (!selectedInstance) {
+      return res.json({ hasAccess: false, package: null });
+    }
 
-    const plan = user.purchasedPackage;
+    const uploadsRemaining = selectedInstance.uploadLimit - selectedInstance.uploadsUsed;
+
+    const plan = selectedInstance.planKey;
     const effectiveVideoLimit =
-      user.sadtalkerVideoLimit && user.sadtalkerVideoLimit > 0
-        ? user.sadtalkerVideoLimit
+      selectedInstance.sadtalkerVideoLimit && selectedInstance.sadtalkerVideoLimit > 0
+        ? selectedInstance.sadtalkerVideoLimit
         : getSadTalkerPlanLimit(plan);
-    const videosUsed = user.sadtalkerVideosUsed || 0;
+    const videosUsed = selectedInstance.sadtalkerVideosUsed || 0;
     const videosRemaining =
       effectiveVideoLimit && effectiveVideoLimit > 0
         ? Math.max(0, effectiveVideoLimit - videosUsed)
@@ -113,17 +158,68 @@ const checkUserPackage = async (req, res) => {
     res.json({
       hasAccess: true,
       package: plan,
-      uploadsUsed: user.uploadsUsed,
-      uploadLimit: user.uploadLimit,
+      uploadsUsed: selectedInstance.uploadsUsed,
+      uploadLimit: selectedInstance.uploadLimit,
       uploadsRemaining: uploadsRemaining < 0 ? 0 : uploadsRemaining,
       // SadTalker-specific counters (optional for callers)
       sadtalkerVideosUsed: videosUsed,
       sadtalkerVideoLimit: effectiveVideoLimit,
       sadtalkerVideosRemaining: videosRemaining,
+      packageInstanceId: selectedInstance._id.toString(),
+      expiresAt: selectedInstance.chatCycleEndsAt || null,
     });
   } catch (error) {
     console.error("Error checking package:", error);
     res.status(500).json({ error: "Failed to check package" });
+  }
+};
+
+const listActivePackageInstances = async (req, res) => {
+  const requestId = makeRequestId();
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ error: "Unauthorized", requestId });
+  }
+
+  try {
+    const instances = await PackageInstance.getActiveByUserId(req.user.id);
+    return res.json({ instances: instances.map(toInstanceSummary) });
+  } catch (error) {
+    console.error("Error listing package instances:", error);
+    return res.status(500).json({ error: "Failed to list package instances", requestId });
+  }
+};
+
+const selectPackageInstance = async (req, res) => {
+  const requestId = makeRequestId();
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ error: "Unauthorized", requestId });
+  }
+
+  const { packageInstanceId } = req.body || {};
+  if (!packageInstanceId || !mongoose.isValidObjectId(packageInstanceId)) {
+    return res.status(400).json({ error: "packageInstanceId required", requestId });
+  }
+
+  try {
+    const instance = await PackageInstance.findOne({
+      _id: packageInstanceId,
+      userId: req.user.id,
+      status: "active",
+    });
+    if (!instance) {
+      return res.status(404).json({ error: "Package instance not found", requestId });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: "User not found", requestId });
+
+    user.activePackageInstanceId = instance._id;
+    await user.save();
+
+    return res.json({ instance: toInstanceSummary(instance) });
+  } catch (error) {
+    console.error("Error selecting package instance:", error);
+    return res.status(500).json({ error: "Failed to select package instance", requestId });
   }
 };
 
@@ -136,79 +232,111 @@ const consumeSadtalkerCredit = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const plan = user.purchasedPackage || "lite";
+    let instance = null;
+    if (user.activePackageInstanceId) {
+      instance = await PackageInstance.findOne({
+        _id: user.activePackageInstanceId,
+        userId: user._id,
+        status: "active",
+      });
+    }
+    if (!instance) {
+      const instances = await PackageInstance.getActiveByUserId(user._id);
+      instance = instances[0] || null;
+    }
+
     const isAdmin = !!user.isAdmin;
+    if (!instance) {
+      return sendQuotaError(res, 403, {
+        message: "Video limit reached for your plan",
+        feature: "talking_head",
+        plan: null,
+        remaining: 0,
+        limit: null,
+      });
+    }
+
+    const plan = instance.planKey || "lite";
+    const planLimit =
+      instance.sadtalkerVideoLimit && instance.sadtalkerVideoLimit > 0
+        ? instance.sadtalkerVideoLimit
+        : getSadTalkerPlanLimit(plan);
+    const used = instance.sadtalkerVideosUsed || 0;
 
     const imageHash =
       req.body && typeof req.body.imageHash === "string" ? req.body.imageHash.trim() : "";
 
     // Single-face restriction for non-ultimate, non-admin users.
     if (!isAdmin && plan !== "ultimate" && imageHash) {
-      if (!user.sadtalkerPrimaryImageHash) {
-        user.sadtalkerPrimaryImageHash = imageHash;
-      } else if (user.sadtalkerPrimaryImageHash !== imageHash) {
-        return res.status(403).json({
-          error:
+      if (!instance.sadtalkerPrimaryImageHash) {
+        instance.sadtalkerPrimaryImageHash = imageHash;
+      } else if (instance.sadtalkerPrimaryImageHash !== imageHash) {
+        return sendQuotaError(res, 403, {
+          message:
             "Your current plan allows videos for one face image only. Please reuse your original photo or upgrade to the Ultimate plan.",
-          code: "face_mismatch",
+          feature: "talking_head",
           plan,
+          remaining: Math.max(0, planLimit ? planLimit - used : 0),
+          limit: planLimit || null,
         });
       }
     }
 
     // Admins bypass limits but we still persist the primary image if present.
     if (isAdmin) {
-      await user.save();
+      if (imageHash && !instance.sadtalkerPrimaryImageHash) {
+        instance.sadtalkerPrimaryImageHash = imageHash;
+      }
+      await instance.save();
       return res.json({
         ok: true,
         userId: user._id.toString(),
         plan,
         videoLimit: null,
-        videosUsed: user.sadtalkerVideosUsed || 0,
+        videosUsed: instance.sadtalkerVideosUsed || 0,
         videosRemaining: null,
         unlimited: true,
         adminBypass: true,
       });
     }
 
-    const planLimit = getSadTalkerPlanLimit(plan);
-    const used = user.sadtalkerVideosUsed || 0;
-
     // Ultimate or explicit 0-limit = unlimited, but we still track usage count.
     if (plan === "ultimate" || planLimit === 0) {
-      user.sadtalkerVideosUsed = used + 1;
-      await user.save();
+      instance.sadtalkerVideosUsed = used + 1;
+      await instance.save();
       return res.json({
         ok: true,
         userId: user._id.toString(),
         plan,
         videoLimit: null,
-        videosUsed: user.sadtalkerVideosUsed,
+        videosUsed: instance.sadtalkerVideosUsed,
         videosRemaining: null,
         unlimited: true,
       });
     }
 
     if (used >= planLimit) {
-      return res.status(402).json({
-        error: "Video limit reached for your plan",
-        action: "upgrade",
+      return sendQuotaError(res, 402, {
+        message: "Video limit reached for your plan",
+        feature: "talking_head",
         plan,
+        remaining: Math.max(0, planLimit - used),
+        limit: planLimit,
       });
     }
 
-    user.sadtalkerVideosUsed = used + 1;
-    user.sadtalkerVideoLimit = planLimit;
-    await user.save();
+    instance.sadtalkerVideosUsed = used + 1;
+    instance.sadtalkerVideoLimit = planLimit;
+    await instance.save();
 
-    const remaining = Math.max(0, planLimit - user.sadtalkerVideosUsed);
+    const remaining = Math.max(0, planLimit - instance.sadtalkerVideosUsed);
 
     return res.json({
       ok: true,
       userId: user._id.toString(),
       plan,
       videoLimit: planLimit,
-      videosUsed: user.sadtalkerVideosUsed,
+      videosUsed: instance.sadtalkerVideosUsed,
       videosRemaining: remaining,
       unlimited: false,
     });
@@ -222,6 +350,8 @@ module.exports = {
   purchasePackage,
   checkUserPackage,
   getUserDashboard,
+  listActivePackageInstances,
+  selectPackageInstance,
   consumeSadtalkerCredit,
   getSadTalkerPlanLimit,
 };

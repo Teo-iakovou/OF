@@ -1,48 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
-import { checkUserPackage } from "@/app/utils/api";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { useUser } from "@/app/hooks/useUser";
+import { usePlanInfo } from "@/app/dashboard/PlanContext";
 
 export default function UserPlanCard() {
-  const [plan, setPlan] = useState<null | {
-    name: string;
-    uploadsRemaining: number;
-    expiresAt?: string;
-  }>(null);
-  const [loading, setLoading] = useState(true);
   const { user, loading: userLoading } = useUser({ required: false });
+  const { data: planData, loading } = usePlanInfo();
 
-  useEffect(() => {
-    let cancelled = false;
-    // Wait until auth state is resolved; skip if unauthenticated
-    if (userLoading) return;
-    if (!user) {
-      setPlan(null);
-      setLoading(false);
-      return;
-    }
-    (async () => {
-      try {
-        const res = await checkUserPackage();
-        if (cancelled) return;
-        if (res?.hasAccess) {
-          setPlan({
-            name: res.package ?? "Unknown",
-            uploadsRemaining: res.uploadsRemaining ?? 0,
-            expiresAt: res.expiresAt,
-          });
-        } else {
-          setPlan(null);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [user, userLoading]);
-
-  if (loading) {
+  if (loading || userLoading) {
     return (
       <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 shadow-md">
         <Skeleton className="h-6 w-40 mb-4" />
@@ -52,23 +17,24 @@ export default function UserPlanCard() {
     );
   }
 
-  if (!plan) return null;
+  if (!planData?.hasAccess) return null;
+  const uploadsRemaining = planData.uploadsRemaining ?? 0;
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 shadow-md">
       <h2 className="text-xl font-bold text-white mb-2">Your Plan</h2>
       <p className="text-gray-300">
-        Plan: <span className="text-cyan-400">{plan.name}</span>
+        Plan: <span className="text-cyan-400">{planData.package ?? "Unknown"}</span>
       </p>
       <p className="text-gray-300">
         Uploads Remaining:{" "}
-        <span className="text-pink-400">{plan.uploadsRemaining}</span>
+        <span className="text-pink-400">{uploadsRemaining}</span>
       </p>
-      {plan.expiresAt && (
+      {planData.expiresAt && (
         <p className="text-gray-300">
           Expires:{" "}
           <span className="text-yellow-300">
-            {new Date(plan.expiresAt).toLocaleDateString()}
+            {new Date(planData.expiresAt).toLocaleDateString()}
           </span>
         </p>
       )}

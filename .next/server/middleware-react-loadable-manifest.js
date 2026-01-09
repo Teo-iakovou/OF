@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST='{"app/components/AIchat/FloatingChatWidget.tsx -> @/app/components/AIchat/AiChatHistorySidebar":{"id":1667,"files":["static/chunks/1667.e99a09e30cf8d60a.js"]},"app/components/AIchat/FloatingChatWidget.tsx -> @/app/components/AIchat/CoachChat":{"id":307,"files":["static/chunks/307-aa574c0cb9da4878.js"]}}';

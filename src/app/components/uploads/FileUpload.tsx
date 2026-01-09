@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { analyzeImageMultipart, ttsSynthesize } from "@/app/utils/api";
 import type { ResultDoc } from "@/app/types/analysis";
@@ -13,21 +13,43 @@ import {
   Languages,
   Volume2,
 } from "lucide-react";
+import UpgradeRequiredBanner from "@/app/components/common/UpgradeRequiredBanner";
 
 type Status = "idle" | "ready" | "uploading" | "success" | "error";
 
 interface FileUploadProps {
-  onUploadSuccess: (result: ResultDoc, info?: { duplicate?: boolean }) => void;
+  onUploadSuccess: (result: ResultDoc, info?: { duplicate?: boolean; requestId?: string }) => void;
+  packageInstanceId?: string | null;
 }
+
+type UpgradeInfo = {
+  code?: string | null;
+  error?: string;
+  feature?: string;
+  plan?: string | null;
+  remaining?: number | null;
+  limit?: number | null;
+} | null;
+
+type AnalyzeRequestError = Error & {
+  requestId?: string;
+  code?: string;
+  feature?: string;
+  plan?: string | null;
+  remaining?: number | null;
+  limit?: number | null;
+};
 
 const MAX_MB = 25;
 const ACCEPT = ["image/png", "image/jpeg", "image/webp", "image/avif"];
 
-export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
+export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileUploadProps) {
   const [status, setStatus] = useState<Status>("idle");
   const [file, setFile] = useState<File | null>(null);
   const [previewURL, setPreviewURL] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorRequestId, setErrorRequestId] = useState<string | null>(null);
+  const [upgradeInfo, setUpgradeInfo] = useState<UpgradeInfo>(null);
 
   const [withCaptions, setWithCaptions] = useState(true);
   const [autoDub, setAutoDub] = useState(false);
@@ -66,11 +88,13 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
     const v = validate(f);
     if (v) {
       setError(v);
+      setUpgradeInfo(null);
       setStatus("error");
       return;
     }
 
     setError(null);
+    setUpgradeInfo(null);
     setFile(f);
     setStatus("ready");
 
@@ -90,19 +114,22 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
     setStatus("uploading");
     setUploadPct(0);
     setError(null);
+    setErrorRequestId(null);
+    setUpgradeInfo(null);
 
     const controller = new AbortController();
     abortRef.current = controller;
 
     try {
-      const { insights, duplicate } = await analyzeImageMultipart({
+      const { insights, duplicate, requestId } = await analyzeImageMultipart({
         file,
+        packageInstanceId,
         captions: withCaptions,
         signal: controller.signal,
         onProgress: (pct: number) => setUploadPct(pct),
       });
 
-      onUploadSuccess(insights as ResultDoc, { duplicate });
+      onUploadSuccess(insights as ResultDoc, { duplicate, requestId });
 
       if (autoDub) {
         try {
@@ -119,11 +146,28 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
       }
 
       setStatus("success");
+      setErrorRequestId(null);
+      setUpgradeInfo(null);
       // keep preview so user sees what was uploaded; call reset() if you want to clear immediately
     } catch (e: unknown) {
       if (controller.signal.aborted) {
         setError("Upload cancelled.");
+        setErrorRequestId(null);
+        setUpgradeInfo(null);
       } else {
+        const errObj = e as AnalyzeRequestError;
+        const maybeRequestId = typeof errObj?.requestId === "string" ? errObj.requestId : null;
+        const maybeUpgrade =
+          errObj?.code === "UPGRADE_REQUIRED"
+            ? {
+                code: errObj.code,
+                error: errObj.message,
+                feature: errObj.feature,
+                plan: errObj.plan ?? null,
+                remaining: typeof errObj.remaining === "number" ? errObj.remaining : null,
+                limit: typeof errObj.limit === "number" ? errObj.limit : null,
+              }
+            : null;
         const msg =
           e instanceof Error
             ? e.message
@@ -131,6 +175,8 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
             ? e
             : "Upload failed. Please try again.";
         setError(msg);
+        setErrorRequestId(maybeRequestId);
+        setUpgradeInfo(maybeUpgrade);
       }
       setStatus("error");
     } finally {
@@ -145,6 +191,8 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
   function reset() {
     setStatus("idle");
     setError(null);
+    setErrorRequestId(null);
+    setUpgradeInfo(null);
     setFile(null);
     setUploadPct(0);
     if (previewURL) URL.revokeObjectURL(previewURL);
@@ -153,9 +201,48 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
   }
 
   /* ───────────────────── UI ───────────────────── */
+  const statusSummary = useMemo(() => {
+    if (!file) {
+      return {
+        title: "Ready for upload",
+        detail: "Use a high-quality portrait or promo shot so the AI can understand wardrobe, mood, and setting.",
+        tone: "text-gray-300",
+      };
+    }
+    if (status === "uploading") {
+      const phase = uploadPct < 60 ? "Uploading securely…" : "Running analysis…";
+      return {
+        title: phase,
+        detail:
+          uploadPct < 60
+            ? "We’re transferring your image with TLS encryption."
+            : "Google Vision + GPT are building captions, hashtags, and posting windows.",
+        tone: "text-indigo-200",
+      };
+    }
+    if (status === "success") {
+      return {
+        title: "Insights ready",
+        detail: "Scroll down to review captions, best times, and platform-specific tips.",
+        tone: "text-emerald-200",
+      };
+    }
+    if (status === "error" && error) {
+      return {
+        title: "Upload failed",
+        detail: error,
+        tone: "text-rose-200",
+      };
+    }
+    return {
+      title: "File selected",
+      detail: "Hit “Analyze with AI” to generate a campaign from this image.",
+      tone: "text-gray-200",
+    };
+  }, [error, file, status, uploadPct]);
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-lg mx-auto">
       {/* Card frame */}
       <div className="rounded-2xl bg-[#0B1222]/80 ring-1 ring-white/10 shadow-xl p-4 sm:p-6 backdrop-blur">
         {/* Header */}
@@ -170,7 +257,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
           </div>
 
           {/* Enhancements */}
-          <div className="flex items-center flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
+          <div className="flex items-center flex-wrap gap-2 sm:gap-4 w-full sm:w-auto justify-center sm:justify-end">
             {/* Captions switch */}
             <Switch
               label="Captions"
@@ -204,9 +291,17 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
             </div>
           </div>
         </div>
+        <div className="mb-5 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-gray-300 leading-relaxed">
+          <p className="uppercase tracking-[0.25em] text-[10px] text-gray-400 mb-2">Before you upload</p>
+          <ul className="space-y-1 list-disc list-inside text-gray-300/90">
+            <li>Use crisp, vertical content so the AI can read outfits and scene details.</li>
+            <li>Keep files under {MAX_MB}MB; PNG or JPG preserves the most detail.</li>
+            <li>Expect ~15–20 seconds while we run safety checks and craft captions.</li>
+          </ul>
+        </div>
 
         {/* Body grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {/* Drop zone */}
           <div
             onDragOver={(e) => {
@@ -299,8 +394,27 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
 
                 {/* Errors */}
                 {error && (
-                  <div className="mt-3 text-xs text-rose-300 bg-rose-900/20 border border-rose-700/40 rounded-md px-3 py-2">
-                    {error}
+                  <div className="mt-3 text-xs text-rose-300 bg-rose-900/20 border border-rose-700/40 rounded-md px-3 py-2 space-y-2">
+                    <div>{error}</div>
+                    {errorRequestId && (
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText(errorRequestId)}
+                        className="inline-flex items-center gap-1 text-[11px] text-gray-300 underline hover:text-white"
+                      >
+                        Copy request ID: {errorRequestId}
+                      </button>
+                    )}
+                    {upgradeInfo ? (
+                      <UpgradeRequiredBanner
+                        code={upgradeInfo.code}
+                        error={upgradeInfo.error}
+                        feature={upgradeInfo.feature}
+                        plan={upgradeInfo.plan}
+                        remaining={upgradeInfo.remaining}
+                        limit={upgradeInfo.limit}
+                      />
+                    ) : null}
                   </div>
                 )}
 
@@ -343,6 +457,10 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
                       Reset
                     </button>
                   )}
+                </div>
+                <div className="mt-4 rounded-lg border border-white/10 bg-[#0d1426] px-3 py-2 text-xs">
+                  <p className={`font-semibold ${statusSummary.tone}`}>{statusSummary.title}</p>
+                  <p className="text-gray-400 mt-0.5">{statusSummary.detail}</p>
                 </div>
               </>
             )}

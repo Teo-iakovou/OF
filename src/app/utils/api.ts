@@ -99,6 +99,7 @@ export interface UserPackageResponse {
   package?: string;
   uploadsRemaining?: number;
   expiresAt?: string;
+  packageInstanceId?: string;
 }
 
 function isUnauthorizedError(e: unknown): e is { status?: number; message?: string } {
@@ -400,20 +401,32 @@ export type AnalyzeResponse = {
   duplicate?: boolean;
 };
 
+type RequestError = Error & {
+  requestId?: string;
+  code?: string;
+  feature?: string;
+  plan?: string | null;
+  remaining?: number | null;
+  limit?: number | null;
+  payload?: unknown;
+};
+
 export function analyzeImageMultipart(opts: {
   file: File;
+  packageInstanceId?: string | null;
   goal?: "subs" | "ppv" | "customs";
   linkBase?: string;
   captions?: boolean; // default true
   onProgress?: (pct: number) => void;
   signal?: AbortSignal;
 }): Promise<AnalyzeResponse> {
-  const { file, goal, linkBase, onProgress, captions = true, signal } = opts;
+  const { file, packageInstanceId, goal, linkBase, onProgress, captions = true, signal } = opts;
 
   const form = new FormData();
   form.append("image", file);
   if (goal) form.append("goal", goal);
   if (linkBase) form.append("linkBase", linkBase);
+  if (packageInstanceId) form.append("packageInstanceId", packageInstanceId);
 
   // Include browser timezone so backend returns local windows
   try {
@@ -441,7 +454,15 @@ export function analyzeImageMultipart(opts: {
       } else {
         try {
           const err = JSON.parse(xhr.responseText);
-          reject(new Error(err?.error || `Upload failed (${xhr.status})`));
+          const errorObj = new Error(err?.error || `Upload failed (${xhr.status})`) as RequestError;
+          if (typeof err?.requestId === "string") errorObj.requestId = err.requestId;
+          if (typeof err?.code === "string") errorObj.code = err.code;
+          if (typeof err?.feature === "string") errorObj.feature = err.feature;
+          if (typeof err?.plan === "string" || err?.plan === null) errorObj.plan = err?.plan ?? null;
+          if (typeof err?.remaining === "number") errorObj.remaining = err.remaining;
+          if (typeof err?.limit === "number") errorObj.limit = err.limit;
+          errorObj.payload = err;
+          reject(errorObj);
         } catch {
           reject(new Error(`Upload failed (${xhr.status})`));
         }
