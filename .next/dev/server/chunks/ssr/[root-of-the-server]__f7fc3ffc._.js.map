@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 10, "column": 0}, "map": {"version":3,"sources":["file:///Users/theodorosiakovou/Projects/ai-platform/src/app/components/notifications/SonnerToaster.tsx"],"sourcesContent":["\"use client\";\n\nimport { Toaster } from \"sonner\";\n\nexport default function SonnerToaster() {\n  return <Toaster richColors position=\"top-center\" />;\n}\n"],"names":[],"mappings":";;;;;AAEA;AAFA;;;AAIe,SAAS;IACtB,qBAAO,8OAAC,mJAAO;QAAC,UAAU;QAAC,UAAS;;;;;;AACtC"}}]
+}

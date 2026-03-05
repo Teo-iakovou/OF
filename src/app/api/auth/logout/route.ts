@@ -16,9 +16,19 @@ export async function POST(req: NextRequest) {
   try {
     const r = await fetch(`${SERVER_BASE_URL}/api/auth/logout`, { method: "POST", headers });
     try { if (SHOULD_LOG) console.log('[auth-bff] POST /api/auth/logout', { hadCookie: !!token, status: r.status }); } catch {}
+    // Pass through backend Set-Cookie so the backend remains the single cookie owner.
+    const setCookieList =
+      (r.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.() ??
+      (r.headers.get("set-cookie") ? [r.headers.get("set-cookie") as string] : []);
+    const success = r.ok && setCookieList.length > 0;
+    const res = NextResponse.json(
+      success ? { ok: true } : { ok: false, error: "LOGOUT_FAILED" },
+      { status: success ? 200 : 502 }
+    );
+    for (const value of setCookieList) {
+      res.headers.append("set-cookie", value);
+    }
+    return res;
   } catch {}
-  const res = NextResponse.json({ ok: true });
-  // Clear our first-party cookie
-  res.cookies.set(SESSION_COOKIE_NAME, "", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production", maxAge: 0 });
-  return res;
+  return NextResponse.json({ ok: false, error: "LOGOUT_FAILED" }, { status: 502 });
 }

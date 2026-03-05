@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import clsx from "clsx";
+import { PACKAGES_URL } from "@/app/utils/urls";
 
 interface Props {
   code?: string | null;
@@ -11,18 +12,6 @@ interface Props {
   remaining?: number | null;
   limit?: number | null;
   className?: string;
-}
-
-const PLAN_TARGETS: Record<string, string> = {
-  lite: "/pro",
-  pro: "/ultimate",
-  ultimate: "/ultimate",
-};
-
-function resolveTarget(plan?: string | null) {
-  if (!plan) return "/lite";
-  const key = plan.toLowerCase();
-  return PLAN_TARGETS[key] || "/lite";
 }
 
 export default function UpgradeRequiredBanner({
@@ -57,7 +46,7 @@ export default function UpgradeRequiredBanner({
       ) : null}
       {plan ? <p className="text-xs text-rose-100/80">Current plan: {plan}</p> : null}
       <Link
-        href={resolveTarget(plan)}
+        href={PACKAGES_URL}
         className="inline-flex items-center gap-2 rounded-full bg-rose-400/20 px-3 py-1 text-xs font-semibold text-white hover:bg-rose-400/30"
       >
         Upgrade plan →

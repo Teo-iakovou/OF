@@ -2,11 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Menu, X } from "lucide-react";
+import { ChevronDown, Globe, Menu, X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 
-const supportedLocales = ["en", "el", "es", "it"] as const;
+const LOCALES = [
+  { key: "en", label: "EN" },
+  { key: "el", label: "ΕΛ" },
+  { key: "es", label: "ES" },
+  { key: "it", label: "IT" },
+] as const;
+
+const supportedLocales = LOCALES.map((item) => item.key);
 
 type SupportedLocale = (typeof supportedLocales)[number];
 
@@ -25,8 +33,10 @@ export default function LandingNavbar() {
   const [desktopLangOpen, setDesktopLangOpen] = useState(false);
   const [mobileLangOpen, setMobileLangOpen] = useState(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const locale = useLocale() as SupportedLocale;
+  const currentLocale = LOCALES.find((item) => item.key === locale) || LOCALES[0];
 
   const links = useMemo(
     () => [
@@ -49,7 +59,10 @@ export default function LandingNavbar() {
   const getLocalePath = () => basePath;
 
   const changeLocale = (nextLocale: SupportedLocale) => {
-    router.replace(getLocalePath(), { locale: nextLocale });
+    const query = searchParams.toString();
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
+    const target = `${getLocalePath()}${query ? `?${query}` : ""}${hash}`;
+    router.replace(target, { locale: nextLocale });
     setDesktopLangOpen(false);
     setMobileLangOpen(false);
     setOpen(false);
@@ -85,25 +98,27 @@ export default function LandingNavbar() {
               <button
                 type="button"
                 onClick={() => setDesktopLangOpen((v) => !v)}
-                className="inline-flex h-10 items-center rounded-full border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 text-xs font-medium tracking-wide text-[var(--hg-muted)] hover:text-[var(--hg-text)]"
+                className="inline-flex h-10 items-center gap-1 rounded-full border border-[var(--hg-border)] bg-[var(--hg-surface)] px-3 text-xs font-medium text-[var(--hg-muted)] hover:text-[var(--hg-text)]"
                 aria-label={t("language")}
               >
-                {t(`languages.${locale}`)}
+                <Globe className="h-3.5 w-3.5" />
+                {currentLocale.label}
+                <ChevronDown className="h-3.5 w-3.5" />
               </button>
               {desktopLangOpen ? (
-                <div className="absolute right-0 top-12 w-20 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-1 shadow-lg shadow-black/20">
-                  {supportedLocales.map((item) => (
+                <div className="absolute right-0 top-11 z-20 w-24 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-1 shadow-lg shadow-black/20">
+                  {LOCALES.map((item) => (
                     <button
-                      key={item}
+                      key={item.key}
                       type="button"
-                      onClick={() => changeLocale(item)}
+                      onClick={() => changeLocale(item.key)}
                       className={`flex w-full items-center justify-center rounded-lg px-2 py-1.5 text-xs font-medium ${
-                        item === locale
+                        item.key === locale
                           ? "bg-[var(--hg-surface-2)] text-[var(--hg-text)]"
                           : "text-[var(--hg-muted)] hover:bg-[var(--hg-surface-2)] hover:text-[var(--hg-text)]"
                       }`}
                     >
-                      {t(`languages.${item}`)}
+                      {item.label}
                     </button>
                   ))}
                 </div>
@@ -146,25 +161,27 @@ export default function LandingNavbar() {
                 <button
                   type="button"
                   onClick={() => setMobileLangOpen((v) => !v)}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 text-xs font-medium tracking-wide text-[var(--hg-muted)]"
+                  className="inline-flex h-10 items-center gap-1 rounded-full border border-[var(--hg-border)] bg-[var(--hg-surface)] px-3 text-xs font-medium text-[var(--hg-muted)]"
                   aria-label={t("language")}
                 >
-                  {t(`languages.${locale}`)}
+                  <Globe className="h-3.5 w-3.5" />
+                  {currentLocale.label}
+                  <ChevronDown className="h-3.5 w-3.5" />
                 </button>
                 {mobileLangOpen ? (
-                  <div className="absolute left-0 top-12 z-10 w-20 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-1 shadow-lg shadow-black/20">
-                    {supportedLocales.map((item) => (
+                  <div className="absolute left-0 top-11 z-10 w-24 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-1 shadow-lg shadow-black/20">
+                    {LOCALES.map((item) => (
                       <button
-                        key={item}
+                        key={item.key}
                         type="button"
-                        onClick={() => changeLocale(item)}
+                        onClick={() => changeLocale(item.key)}
                         className={`flex w-full items-center justify-center rounded-lg px-2 py-1.5 text-xs font-medium ${
-                          item === locale
+                          item.key === locale
                             ? "bg-[var(--hg-surface-2)] text-[var(--hg-text)]"
                             : "text-[var(--hg-muted)] hover:bg-[var(--hg-surface-2)] hover:text-[var(--hg-text)]"
                         }`}
                       >
-                        {t(`languages.${item}`)}
+                        {item.label}
                       </button>
                     ))}
                   </div>

@@ -5,16 +5,17 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const SERVER_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "ai_session";
 
-function cookieOptions() {
-  const isProd = process.env.NODE_ENV === "production";
-  return {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "lax" as "lax" | "strict" | "none",
-    path: "/",
-  };
+function getSetCookieList(res: Response) {
+  const viaMethod = (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.();
+  if (Array.isArray(viaMethod) && viaMethod.length > 0) return viaMethod;
+  const raw = res.headers.get("set-cookie");
+  return raw
+    ? raw
+        .split(/,(?=\s*[^;,\s]+=)/g)
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : [];
 }
 
 export async function POST(req: NextRequest) {
@@ -38,15 +39,16 @@ export async function POST(req: NextRequest) {
   let data: any; // eslint is not enforced in route files; keep simple
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   const nextRes = NextResponse.json(data, { status: res.status });
-  // If backend returned a token, set it as a first-party session cookie
-  if (res.ok && data && typeof data === "object" && typeof data.token === "string") {
-    nextRes.cookies.set(SESSION_COOKIE_NAME, data.token, cookieOptions());
+  // Pass through backend Set-Cookie so the backend remains the single cookie owner.
+  const setCookieList = getSetCookieList(res);
+  for (const value of setCookieList) {
+    nextRes.headers.append("set-cookie", value);
   }
   try {
     if (SHOULD_LOG) {
       console.log('[auth-bff] POST /api/auth/login done', {
         status: res.status,
-        setCookie: res.ok && !!(data && typeof data === 'object' && data.token),
+        setCookie: setCookieList.length > 0,
       });
     }
   } catch {}
@@ -81,8 +83,10 @@ export async function GET(req: NextRequest) {
   if (!res.ok) return NextResponse.json(data, { status: res.status });
   const to = redirect.startsWith("/") ? redirect : "/";
   const nextRes = NextResponse.redirect(new URL(to, req.url));
-  if (data && typeof data === "object" && typeof data.token === "string") {
-    nextRes.cookies.set(SESSION_COOKIE_NAME, data.token, cookieOptions());
+  // Pass through backend Set-Cookie so the backend remains the single cookie owner.
+  const setCookieList = getSetCookieList(res);
+  for (const value of setCookieList) {
+    nextRes.headers.append("set-cookie", value);
   }
   try {
     if (SHOULD_LOG) {

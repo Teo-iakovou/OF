@@ -1,5 +1,5 @@
 "use client";
-import Reveal from "@/app/components/common/Reveal";
+import SectionReveal from "@/app/components/common/SectionReveal";
 
 const features = [
   { label: "AI Recommendations", lite: "Included", pro: "Advanced", ultimate: "Adaptive" },
@@ -12,20 +12,20 @@ const features = [
 
 export default function FeatureComparison() {
   return (
-    <Reveal as="section" id="features" className="py-16 text-white">
+    <SectionReveal as="section" id="features" className="py-16 text-white">
       <div className="space-y-8 text-center">
-        <p className="text-sm uppercase tracking-[0.4em] text-cyan-300/80">Capability matrix</p>
+        <p className="text-sm uppercase tracking-[0.4em] text-[var(--hg-accent)]/80">Capability matrix</p>
         <h2 className="text-4xl font-bold">Compare the experience</h2>
-        <p className="text-lg text-white/70 max-w-3xl mx-auto">
+        <p className="text-lg text-[var(--hg-muted)] max-w-3xl mx-auto">
           Every tier taps the same neural engine. Higher plans unlock more speed, depth, and bespoke workflows for
           SadTalker and marketing intelligence.
         </p>
       </div>
-      <div className="mt-12 overflow-x-auto rounded-3xl border border-white/10 bg-white/5 backdrop-blur theme-shadow">
+      <div className="mt-12 overflow-x-auto rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] backdrop-blur theme-shadow">
         <table className="w-full table-fixed border-separate border-spacing-y-3 px-4 py-6">
           <thead>
-            <tr className="text-sm uppercase tracking-[0.3em] text-cyan-200/80">
-              <th className="w-2/5 py-3 pl-4 text-left text-white/60">Feature</th>
+            <tr className="text-sm uppercase tracking-[0.3em] text-[var(--hg-accent)]/80">
+              <th className="w-2/5 py-3 pl-4 text-left text-[var(--hg-muted-2)]">Feature</th>
               <th className="w-1/5 py-3 text-center">Lite</th>
               <th className="w-1/5 py-3 text-center">Pro</th>
               <th className="w-1/5 py-3 pr-4 text-center">Ultimate</th>
@@ -35,17 +35,17 @@ export default function FeatureComparison() {
             {features.map((row) => (
               <tr
                 key={row.label}
-                className="text-base text-white/90 shadow-[0_15px_50px_rgba(18,43,102,0.35)] bg-gradient-to-r from-[#111a3a]/70 via-[#0d1328]/80 to-[#0a0f1c]/80"
+                className="text-base text-[var(--hg-text)] shadow-[0_8px_24px_rgba(2,6,14,0.25)] bg-[var(--hg-surface)]"
               >
                 <td className="w-2/5 py-4 pl-4 text-left font-semibold">{row.label}</td>
-                <td className="w-1/5 py-4 text-center text-cyan-200">{row.lite}</td>
-                <td className="w-1/5 py-4 text-center text-fuchsia-200">{row.pro}</td>
-                <td className="w-1/5 py-4 pr-4 text-center text-emerald-200">{row.ultimate}</td>
+                <td className="w-1/5 py-4 text-center text-[var(--hg-accent)]">{row.lite}</td>
+                <td className="w-1/5 py-4 text-center text-[#50C0F0]">{row.pro}</td>
+                <td className="w-1/5 py-4 pr-4 text-center text-[#7dd4fb]">{row.ultimate}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </Reveal>
+    </SectionReveal>
   );
 }

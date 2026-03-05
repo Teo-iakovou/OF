@@ -1,12 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Copy, Sparkles } from "lucide-react";
 
-import type { SadTalkerJobOptions } from "@/app/api/sadtalker/types";
 import { useUser } from "@/app/hooks/useUser";
 import UpgradeRequiredBanner from "@/app/components/common/UpgradeRequiredBanner";
+import { usePlanInfo } from "@/app/dashboard/PlanContext";
+import { createAddonCheckoutSession } from "@/app/utils/api";
+import { getRemaining } from "@/app/utils/quota";
+import TalkingHeadResultDrawer, {
+  type TalkingHeadRecentItem,
+} from "@/app/components/dashboard/talking-head/TalkingHeadResultDrawer";
 
-type JobState = "queued" | "running" | "succeeded" | "failed" | "active" | "completed" | "waiting" | null;
+type JobState =
+  | "queued"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "active"
+  | "completed"
+  | "waiting"
+  | null;
 
 type HistoryItem = {
   jobId: string;
@@ -14,10 +29,15 @@ type HistoryItem = {
   videoUrl: string;
   createdAt?: string;
   durationMs?: number;
-  options?: SadTalkerJobOptions | null;
+  options?: {
+    source_image?: string;
+    sourceImage?: string;
+    thumbnailUrl?: string;
+  } | null;
 };
 
 type UpgradeInfo = {
+  code?: string;
   error?: string;
   feature?: string;
   plan?: string | null;
@@ -27,47 +47,59 @@ type UpgradeInfo = {
 
 const HISTORY_USER_FALLBACK = "web-client";
 
-const preprocessOptions = [
-  { value: "full", label: "Full" },
-  { value: "crop", label: "Crop" },
-  { value: "resize", label: "Resize" },
-  { value: "none", label: "None" },
-];
+const FIXED_OPTIONS = {
+  preprocess: "full",
+  resolution: "512p",
+  enhancer: "gfpgan",
+  backgroundEnhancer: "",
+  expressionScale: 1,
+  poseStyle: 0,
+  batchSize: 2,
+  still: false,
+} as const;
 
-const enhancerOptions = [
-  { value: "", label: "None" },
-  { value: "gfpgan", label: "GFPGAN" },
-  { value: "RestoreFormer", label: "RestoreFormer" },
-];
+const statusClass: Record<TalkingHeadRecentItem["status"], string> = {
+  queued: "bg-white/10 text-white/70 border border-white/15",
+  processing: "bg-[#50C0F0]/15 text-[#9bdcf7] border border-[#50C0F0]/35",
+  done: "bg-emerald-500/15 text-emerald-200 border border-emerald-400/40",
+  failed: "bg-rose-500/15 text-rose-200 border border-rose-400/40",
+};
 
-const backgroundEnhancerOptions = [
-  { value: "", label: "None" },
-  { value: "realesrgan", label: "Real-ESRGAN" },
-  { value: "gpen", label: "GPEN" },
-];
-
-const resolutionOptions = [
-  { value: "512p", label: "512p (High Quality)" },
-  { value: "256p", label: "256p (Faster)" },
-];
+function toRecentStatus(state: JobState): TalkingHeadRecentItem["status"] {
+  if (state === "failed") return "failed";
+  if (state === "succeeded" || state === "completed") return "done";
+  if (state === "queued" || state === "waiting") return "queued";
+  return "processing";
+}
 
 export default function UploadTalkingHead() {
   const { user } = useUser({ required: true });
   const historyUserId = user?.id || HISTORY_USER_FALLBACK;
+  const { data: planData, refresh: refreshPlan, hasActiveInstance } = usePlanInfo();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const packageInstanceId = planData?.packageInstanceId ?? null;
+
+  const videosLimit =
+    typeof planData?.videosLimit === "number"
+      ? planData.videosLimit
+      : planData?.sadtalkerVideosLimit ?? null;
+  const videosUsed =
+    typeof planData?.videosUsed === "number"
+      ? planData.videosUsed
+      : planData?.sadtalkerVideosUsed ?? null;
+  const videosAddon =
+    typeof planData?.addons?.sadtalkerVideos === "number"
+      ? planData.addons.sadtalkerVideos
+      : planData?.addonsVideos ?? 0;
+  const videosRemaining =
+    typeof planData?.videosRemaining === "number"
+      ? Math.max(0, planData.videosRemaining)
+      : getRemaining(videosLimit, videosAddon, videosUsed);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
-  const [preprocess, setPreprocess] = useState<string>("full");
-  const [resolution, setResolution] = useState<string>("512p");
-  const [enhancer, setEnhancer] = useState<string>("");
-  const [backgroundEnhancer, setBackgroundEnhancer] = useState<string>("");
-  const [expressionScale, setExpressionScale] = useState<number>(1);
-  const [poseStyle, setPoseStyle] = useState<number>(0);
-  const [batchSize, setBatchSize] = useState<number>(2);
-  const [stillMode, setStillMode] = useState<boolean>(false);
-  const [inputYaw, setInputYaw] = useState<string>("");
-  const [inputPitch, setInputPitch] = useState<string>("");
-  const [inputRoll, setInputRoll] = useState<string>("");
 
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobState, setJobState] = useState<JobState>(null);
@@ -75,14 +107,30 @@ export default function UploadTalkingHead() {
   const [progress, setProgress] = useState<number | undefined>(undefined);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoReadyAt, setVideoReadyAt] = useState<string | null>(null);
+
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [errorRequestId, setErrorRequestId] = useState<string | null>(null);
   const [upgradeInfo, setUpgradeInfo] = useState<UpgradeInfo>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"create" | "history">("create");
+  const [forceUpsell, setForceUpsell] = useState(false);
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedRecent, setSelectedRecent] = useState<TalkingHeadRecentItem | null>(null);
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  const isOutOfCredits =
+    forceUpsell || (typeof videosRemaining === "number" ? videosRemaining <= 0 : false);
+  const hasActiveJob =
+    jobState === "queued" || jobState === "running" || jobState === "active" || jobState === "waiting";
+
+  const canSubmit = useMemo(() => {
+    return !!imageFile && !!audioFile && !isSubmitting && !hasActiveJob;
+  }, [imageFile, audioFile, isSubmitting, hasActiveJob]);
 
   const loadHistory = useCallback(async () => {
     try {
@@ -104,9 +152,18 @@ export default function UploadTalkingHead() {
     }
   }, [historyUserId]);
 
-  const canSubmit = useMemo(() => {
-    return !!imageFile && !!audioFile && !isSubmitting;
-  }, [imageFile, audioFile, isSubmitting]);
+  useEffect(() => {
+    const status = searchParams.get("status");
+    const kind = searchParams.get("kind");
+    if (status === "success" && kind === "addon") {
+      refreshPlan(true);
+      router.replace(pathname);
+    }
+  }, [searchParams, refreshPlan, router, pathname]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   useEffect(() => {
     if (!jobId) return;
@@ -122,16 +179,34 @@ export default function UploadTalkingHead() {
           throw new Error(`Status request failed (${res.status})`);
         }
         const data = await res.json();
-        setJobState(data.state ?? null);
+        const nextState = (data.state ?? null) as JobState;
+        setJobState(nextState);
         setJobStage(data.remoteState ?? null);
         if (typeof data.progress === "number") setProgress(data.progress);
-        const isSuccessState = data.state === "succeeded" || data.state === "completed";
+
+        const isSuccessState = nextState === "succeeded" || nextState === "completed";
         if (isSuccessState && data.result?.videoUrl) {
-          setVideoUrl(data.result.videoUrl);
-          setVideoReadyAt(new Date().toISOString());
+          const nextVideoUrl = data.result.videoUrl;
+          setVideoUrl(nextVideoUrl);
+          const now = new Date().toISOString();
+          setVideoReadyAt(now);
           if (pollRef.current) clearInterval(pollRef.current);
-        } else if (data.state === "failed") {
-          setError(data.error?.message || "SadTalker job failed");
+          await loadHistory();
+          setSelectedRecent({
+            id: jobId,
+            title: "Avatar Video",
+            createdAt: now,
+            status: "done",
+            stage: data.remoteState ?? null,
+            progress: typeof data.progress === "number" ? data.progress : undefined,
+            videoUrl: nextVideoUrl,
+            supportId: null,
+            thumbnailUrl: null,
+          });
+          setDrawerOpen(true);
+        } else if (nextState === "failed") {
+          setError(data.error?.message || "Video generation failed.");
+          if (typeof data?.requestId === "string") setErrorRequestId(data.requestId);
           if (pollRef.current) clearInterval(pollRef.current);
         }
       } catch (err) {
@@ -144,114 +219,48 @@ export default function UploadTalkingHead() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [jobId]);
+  }, [jobId, loadHistory]);
 
-  useEffect(() => {
-    loadHistory();
-  }, [loadHistory]);
+  const recentItems = useMemo<TalkingHeadRecentItem[]>(() => {
+    const historyItems: TalkingHeadRecentItem[] = history.map((item) => ({
+      id: item.remoteJobId || item.jobId,
+      title: "Avatar Video",
+      createdAt: item.createdAt,
+      status: "done",
+      videoUrl: item.videoUrl,
+      stage: null,
+      progress: undefined,
+      supportId: null,
+      thumbnailUrl:
+        item.options?.thumbnailUrl || item.options?.source_image || item.options?.sourceImage || null,
+    }));
 
-  useEffect(() => {
-    if (videoUrl) {
-      loadHistory();
-    }
-  }, [videoUrl, loadHistory]);
+    if (!jobId) return historyItems;
 
-  const renderHistory = () => (
-    <section className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 space-y-4">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500">History</p>
-          <h3 className="text-lg font-semibold text-gray-50">Recent talking heads</h3>
-          <p className="text-xs text-gray-500">Stored per account.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => loadHistory()}
-          className="inline-flex items-center justify-center rounded-full border border-gray-700 px-4 py-1.5 text-xs font-semibold text-gray-200 hover:border-blue-400 hover:text-blue-300"
-        >
-          Refresh
-        </button>
-      </div>
-      {historyLoading && <div className="text-sm text-gray-400">Loading your previous renders…</div>}
-      {!historyLoading && history.length === 0 && (
-        <div className="text-sm text-gray-400">
-          No talking head videos saved yet. Generate one above to populate this list.
-        </div>
-      )}
-      {!historyLoading && history.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {history.map((item) => {
-            const created = item.createdAt ? new Date(item.createdAt).toLocaleString() : "—";
-            const shortId = item.remoteJobId ? `#${item.remoteJobId.slice(-6)}` : `Job ${item.jobId}`;
-            return (
-              <article
-                key={`${item.jobId}-${item.remoteJobId || "local"}`}
-                className="rounded-xl border border-gray-800 bg-gray-950/80 p-3 space-y-3"
-              >
-                <div className="rounded-lg overflow-hidden bg-black aspect-video">
-                  <video
-                    src={item.videoUrl}
-                    className="w-full h-full object-cover"
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                    controls
-                  />
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500">{shortId}</p>
-                  <p className="text-sm text-gray-300">{created}</p>
-                </div>
-                <div className="flex items-center justify-between gap-2 text-sm">
-                  <a
-                    href={item.videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 underline"
-                  >
-                    Open
-                  </a>
-                  <a
-                    href={item.videoUrl}
-                    download
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-500"
-                  >
-                    Download
-                  </a>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        const res = await fetch("/api/sadtalker/history", {
-                          method: "DELETE",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ userId: historyUserId, jobId: item.jobId }),
-                        });
-                        if (!res.ok) return;
-                        setHistory((prev) => prev.filter((row) => row.jobId !== item.jobId));
-                      } catch {
-                        // best-effort delete; ignore errors
-                      }
-                    }}
-                    className="inline-flex items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-500"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
+    const liveItem: TalkingHeadRecentItem = {
+      id: jobId,
+      title: "Avatar Video",
+      createdAt: videoReadyAt || new Date().toISOString(),
+      status: toRecentStatus(jobState),
+      videoUrl,
+      stage: jobStage,
+      progress,
+      supportId: errorRequestId,
+      thumbnailUrl: null,
+    };
+
+    const exists = historyItems.some((item) => item.id === liveItem.id);
+    return exists ? historyItems : [liveItem, ...historyItems];
+  }, [history, jobId, jobState, videoUrl, jobStage, progress, errorRequestId, videoReadyAt]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (isOutOfCredits) return;
+
     setError(null);
+    setErrorCode(null);
+    setErrorRequestId(null);
+    setForceUpsell(false);
     setUpgradeInfo(null);
     setVideoUrl(null);
     setVideoReadyAt(null);
@@ -260,13 +269,11 @@ export default function UploadTalkingHead() {
     setJobStage(null);
 
     if (!imageFile) {
-      setError("Please choose a source image (PNG/JPG).");
-      setUpgradeInfo(null);
+      setError("Please choose a face photo (PNG/JPG).");
       return;
     }
     if (!audioFile) {
-      setError("Please choose an audio file (MP3/WAV).");
-      setUpgradeInfo(null);
+      setError("Please choose a voice audio file (MP3/WAV).");
       return;
     }
 
@@ -275,17 +282,16 @@ export default function UploadTalkingHead() {
       const formData = new FormData();
       formData.append("source_image", imageFile);
       formData.append("driven_audio", audioFile);
-      formData.append("preprocess", preprocess);
-      formData.append("resolution", resolution);
-      formData.append("expression_scale", expressionScale.toString());
-      formData.append("pose_style", poseStyle.toString());
-      formData.append("batch_size", batchSize.toString());
-      formData.append("still", stillMode ? "true" : "false");
-      if (enhancer) formData.append("enhancer", enhancer);
-      if (backgroundEnhancer) formData.append("background_enhancer", backgroundEnhancer);
-      if (inputYaw.trim()) formData.append("input_yaw", inputYaw.trim());
-      if (inputPitch.trim()) formData.append("input_pitch", inputPitch.trim());
-      if (inputRoll.trim()) formData.append("input_roll", inputRoll.trim());
+      formData.append("preprocess", FIXED_OPTIONS.preprocess);
+      formData.append("resolution", FIXED_OPTIONS.resolution);
+      formData.append("expression_scale", FIXED_OPTIONS.expressionScale.toString());
+      formData.append("pose_style", FIXED_OPTIONS.poseStyle.toString());
+      formData.append("batch_size", FIXED_OPTIONS.batchSize.toString());
+      formData.append("still", FIXED_OPTIONS.still ? "true" : "false");
+      if (FIXED_OPTIONS.enhancer) formData.append("enhancer", FIXED_OPTIONS.enhancer);
+      if (FIXED_OPTIONS.backgroundEnhancer) {
+        formData.append("background_enhancer", FIXED_OPTIONS.backgroundEnhancer);
+      }
       formData.append("userId", historyUserId);
 
       const res = await fetch("/api/sadtalker/create", {
@@ -294,9 +300,50 @@ export default function UploadTalkingHead() {
       });
 
       const data = await res.json();
+
       if (!res.ok) {
+        const codeRaw =
+          typeof data?.errorCode === "string"
+            ? data.errorCode
+            : typeof data?.code === "string"
+              ? data.code
+              : "";
+        if (res.status === 403 && data?.errorCode === "SADTALKER_NO_CREDITS") {
+          setError("You're out of video credits.");
+          setErrorCode("SADTALKER_NO_CREDITS");
+          setErrorRequestId(typeof data?.requestId === "string" ? data.requestId : null);
+          setForceUpsell(true);
+          refreshPlan(true);
+          return;
+        }
+
+        if (
+          codeRaw === "ACTIVE_INSTANCE_REQUIRED" ||
+          codeRaw === "FACE_ENROLLMENT_REQUIRED" ||
+          codeRaw === "FACE_REQUIRED_FOR_ENROLLMENT" ||
+          codeRaw === "MULTIPLE_FACES_NOT_ALLOWED" ||
+          codeRaw === "FACE_MISMATCH"
+        ) {
+          const mappedMessage =
+            codeRaw === "ACTIVE_INSTANCE_REQUIRED"
+              ? "No active package instance. Please select or purchase a package to continue."
+              : codeRaw === "FACE_ENROLLMENT_REQUIRED"
+              ? "Please enroll your profile face to continue."
+              : codeRaw === "FACE_REQUIRED_FOR_ENROLLMENT"
+                ? "No face detected. Upload a clear photo with one visible face."
+                : codeRaw === "MULTIPLE_FACES_NOT_ALLOWED"
+                  ? "Multiple faces detected. Upload an image with only one face."
+                  : "Face verification failed. This photo does not match your enrolled face.";
+          setError(mappedMessage);
+          setErrorCode(codeRaw);
+          setErrorRequestId(typeof data?.requestId === "string" ? data.requestId : null);
+          return;
+        }
+
         if (data?.code === "UPGRADE_REQUIRED") {
           setError(data?.error || "Upgrade required");
+          setErrorCode(typeof data?.code === "string" ? data.code : null);
+          setErrorRequestId(typeof data?.requestId === "string" ? data.requestId : null);
           setUpgradeInfo({
             code: data.code,
             error: data?.error,
@@ -307,312 +354,268 @@ export default function UploadTalkingHead() {
           });
           return;
         }
-        throw new Error(data?.error || "Failed to enqueue SadTalker job");
+
+        throw new Error(data?.error || "Failed to start video generation");
       }
 
       setJobId(data.jobId);
       setJobState("queued");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to start SadTalker job";
-      setError(message);
+      setError(err instanceof Error ? err.message : "Failed to start video generation");
+      setErrorCode(null);
+      setErrorRequestId(null);
       setUpgradeInfo(null);
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  if (!hasActiveInstance) return null;
+
   return (
-    <div className="space-y-6">
-      <div className="flex gap-2">
-        {[
-          { label: "Generate", value: "create" as const },
-          { label: "My videos", value: "history" as const },
-        ].map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            onClick={() => setActiveTab(tab.value)}
-            className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
-              activeTab === tab.value
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                : "bg-gray-800/70 text-gray-300 hover:text-white"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "create" && (
-        <>
-          <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Source Image (PNG/JPG)</label>
-            <input
-              type="file"
-              accept="image/png,image/jpeg"
-              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-              className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500"
-            />
-            <p className="mt-2 text-xs text-gray-500">Max 10 MB. Use a clear frontal face for best results.</p>
+    <div className="space-y-8 pb-20">
+      {isOutOfCredits ? (
+        <section className="rounded-2xl hg-surface p-5 text-white space-y-3">
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold">You’re out of video credits</h3>
+            <p className="text-sm hg-muted">Buy more to continue generating videos.</p>
           </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Driven Audio (MP3/WAV)</label>
-            <input
-              type="file"
-              accept="audio/mpeg,audio/wav"
-              onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
-              className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500"
-            />
-            <p className="mt-2 text-xs text-gray-500">Max 15 MB. Audio will drive lip sync.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Preprocess</label>
-            <select
-              value={preprocess}
-              onChange={(e) => setPreprocess(e.target.value)}
-              className="w-full bg-gray-900 text-gray-100 rounded-md p-3 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            >
-              {preprocessOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Resolution</label>
-            <select
-              value={resolution}
-              onChange={(e) => setResolution(e.target.value)}
-              className="w-full bg-gray-900 text-gray-100 rounded-md p-3 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            >
-              {resolutionOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Face Enhancer</label>
-            <select
-              value={enhancer}
-              onChange={(e) => setEnhancer(e.target.value)}
-              className="w-full bg-gray-900 text-gray-100 rounded-md p-3 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            >
-              {enhancerOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Background Enhancer</label>
-            <select
-              value={backgroundEnhancer}
-              onChange={(e) => setBackgroundEnhancer(e.target.value)}
-              className="w-full bg-gray-900 text-gray-100 rounded-md p-3 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            >
-              {backgroundEnhancerOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Expression Scale</label>
-            <input
-              type="range"
-              min={0.5}
-              max={1.5}
-              step={0.05}
-              value={expressionScale}
-              onChange={(e) => setExpressionScale(Number(e.target.value))}
-              className="w-full"
-            />
-            <p className="text-xs text-gray-400 mt-1">{expressionScale.toFixed(2)}</p>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Pose Style</label>
-              <input
-                type="number"
-                min={-10}
-                max={10}
-                value={poseStyle}
-                onChange={(e) => setPoseStyle(Number(e.target.value))}
-                className="w-full bg-gray-900 text-gray-100 rounded-md p-3 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
+          {error === "You're out of video credits." ? (
+            <div className="rounded-md hg-surface-soft px-3 py-2 text-xs hg-muted">
+              {error}
+              {errorRequestId ? <div className="mt-1">Support ID: {errorRequestId}</div> : null}
             </div>
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Batch Size</label>
-              <input
-                type="number"
-                min={1}
-                max={8}
-                value={batchSize}
-                onChange={(e) => setBatchSize(Number(e.target.value))}
-                className="w-full bg-gray-900 text-gray-100 rounded-md p-3 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-            </div>
-          </div>
-
-          <div className="col-span-1 md:col-span-2">
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input
-                type="checkbox"
-                checked={stillMode}
-                onChange={(e) => setStillMode(e.target.checked)}
-                className="h-4 w-4"
-              />
-              Use still-mode (keeps head movements minimal)
-            </label>
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Input Yaw (comma separated)</label>
-            <input
-              type="text"
-              value={inputYaw}
-              onChange={(e) => setInputYaw(e.target.value)}
-              placeholder="e.g. -10,0,10"
-              className="w-full bg-gray-900 text-gray-100 rounded-md p-3 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Input Pitch (comma separated)</label>
-            <input
-              type="text"
-              value={inputPitch}
-              onChange={(e) => setInputPitch(e.target.value)}
-              placeholder="e.g. -3,0,3"
-              className="w-full bg-gray-900 text-gray-100 rounded-md p-3 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Input Roll (comma separated)</label>
-            <input
-              type="text"
-              value={inputRoll}
-              onChange={(e) => setInputRoll(e.target.value)}
-              placeholder="e.g. -2,0,2"
-              className="w-full bg-gray-900 text-gray-100 rounded-md p-3 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className={`w-full md:w-auto px-6 py-3 rounded-md font-semibold transition ${
-            canSubmit ? "bg-blue-600 hover:bg-blue-500" : "bg-gray-700 cursor-not-allowed"
-          }`}
-        >
-          {isSubmitting ? "Submitting…" : "Generate Talking Head"}
-        </button>
-      </form>
-
-      {jobId && (
-        <div className="bg-gray-800/80 border border-gray-700 rounded-lg p-4 space-y-2">
-          <div className="text-xs uppercase tracking-wide text-gray-500">Job</div>
-          <div className="text-sm text-gray-300 break-all">{jobId}</div>
-          <div className="space-y-1 text-sm text-gray-200">
-            <div className="flex items-center justify-between">
-              <span>Status</span>
-              <span className="font-semibold text-blue-400">{jobState ?? "queued"}</span>
-            </div>
-            {jobStage && (
-              <div className="text-xs uppercase tracking-wide text-gray-500">
-                Current step: <span className="text-gray-300">{jobStage}</span>
-              </div>
-            )}
-          </div>
-          {typeof progress === "number" && (
-            <div>
-              <div className="w-full bg-gray-900/70 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-blue-500 h-2 transition-all"
-                  style={{ width: `${Math.max(5, Math.min(100, progress))}%` }}
-                />
-              </div>
-              <div className="mt-1 text-xs text-gray-400">{progress.toFixed(0)}% complete</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-900/40 border border-red-700 text-red-200 rounded-lg p-4 text-sm space-y-3">
-          <div>{error}</div>
-          {upgradeInfo ? (
-            <UpgradeRequiredBanner
-              code={upgradeInfo.code}
-              error={upgradeInfo.error}
-              feature={upgradeInfo.feature}
-              plan={upgradeInfo.plan}
-              remaining={upgradeInfo.remaining}
-              limit={upgradeInfo.limit}
-            />
           ) : null}
-        </div>
-      )}
-
-      {videoUrl && activeTab === "create" && (
-        <section className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 space-y-5 shadow-2xl shadow-black/40">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-500">Result ready</p>
-              <h3 className="text-lg font-semibold text-gray-50">Talking head generated successfully</h3>
-              {videoReadyAt && (
-                <p className="text-xs text-gray-400">
-                  Ready {new Date(videoReadyAt).toLocaleString(undefined, { hour12: false })}
-                </p>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <a
-                href={videoUrl}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-900"
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: "Buy 5", pack: "pack_5" },
+              { label: "Buy 15", pack: "pack_15" },
+              { label: "Buy 30", pack: "pack_30", badge: "Best value" },
+            ].map((pack) => (
+              <button
+                key={pack.pack}
+                type="button"
+                onClick={async () => {
+                  if (!packageInstanceId) return;
+                  try {
+                    const res = await createAddonCheckoutSession({
+                      addonType: "sadtalkerVideos",
+                      addonPack: pack.pack,
+                      packageInstanceId,
+                    });
+                    if (res?.url) window.location.href = res.url;
+                  } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : "Failed to start checkout";
+                    setError(message);
+                  }
+                }}
+                disabled={!packageInstanceId}
+                className="rounded-full border border-[var(--hg-border)] px-4 py-2 text-xs font-semibold hg-muted hover:border-[var(--hg-accent)] hover:text-[var(--hg-accent)] disabled:opacity-50"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                  <path d="M12 3a1 1 0 0 1 1 1v8.586l2.293-2.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 1.414-1.414L11 12.586V4a1 1 0 0 1 1-1Z" />
-                  <path d="M5 18a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z" />
-                </svg>
-                Download MP4
-              </a>
-              <a
-                href={videoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-gray-600 px-5 py-2 text-sm font-semibold text-gray-100 hover:border-blue-400 hover:text-blue-300"
-              >
-                View in new tab
-              </a>
-            </div>
-          </div>
-          <div className="rounded-xl border border-gray-800 overflow-hidden bg-black">
-            <video controls src={videoUrl} className="w-full max-h-[480px] object-contain" />
+                {pack.label}
+                {pack.badge ? (
+                  <span className="ml-2 rounded-full border border-[var(--hg-border)] px-2 py-0.5 text-[10px] uppercase tracking-wide hg-muted-2">
+                    {pack.badge}
+                  </span>
+                ) : null}
+              </button>
+            ))}
           </div>
         </section>
-      )}
+      ) : null}
 
-      {activeTab === "create" && renderHistory()}
-        </>
-      )}
+      <section className="mx-auto w-full max-w-3xl rounded-2xl hg-surface p-5 md:p-6 text-white">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="block text-sm hg-muted">Face photo (PNG/JPG)</label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg"
+                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+                className="block w-full text-sm hg-muted file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--hg-accent)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#04131d] hover:file:opacity-90"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm hg-muted">Driven audio (MP3/WAV)</label>
+              <input
+                type="file"
+                accept="audio/mpeg,audio/wav"
+                onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
+                className="block w-full text-sm hg-muted file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--hg-accent)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#04131d] hover:file:opacity-90"
+              />
+            </div>
+          </div>
 
-      {activeTab === "history" && renderHistory()}
+          {(jobId || isSubmitting) ? (
+            <div className="rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 py-2 text-xs text-[var(--hg-muted)]">
+              <div className="flex items-center justify-between gap-2">
+                <span>Status: {jobState || (isSubmitting ? "submitting" : "idle")}</span>
+                {typeof progress === "number" ? <span>{progress.toFixed(0)}%</span> : null}
+              </div>
+              {jobStage ? <p className="mt-1">Stage: {jobStage}</p> : null}
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="submit"
+              disabled={!canSubmit || isOutOfCredits}
+              className={`inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
+                canSubmit && !isOutOfCredits
+                  ? "bg-[var(--hg-accent)] text-[#04131d] hover:opacity-90"
+                  : "bg-[var(--hg-surface-2)] text-[var(--hg-muted-2)] cursor-not-allowed"
+              }`}
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              {isSubmitting ? "Generating…" : "Generate"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setImageFile(null);
+                setAudioFile(null);
+                setError(null);
+                setErrorCode(null);
+                setErrorRequestId(null);
+              }}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 text-sm text-[var(--hg-muted)] hover:text-white"
+            >
+              Reset
+            </button>
+          </div>
+        </form>
+
+        {error ? (
+          <div className="mt-4 space-y-3 rounded-xl border border-rose-500/35 bg-rose-500/10 p-4 text-sm text-rose-100">
+            <p>{error}</p>
+            {errorRequestId ? (
+              <div className="flex items-center gap-2 text-xs">
+                <span>Support ID: {errorRequestId}</span>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(errorRequestId)}
+                  className="inline-flex items-center gap-1 rounded border border-rose-200/40 px-2 py-1 text-[11px] hover:border-rose-100"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy
+                </button>
+              </div>
+            ) : null}
+            {errorCode === "FACE_ENROLLMENT_REQUIRED" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const next = new URLSearchParams(searchParams.toString());
+                  next.set("enroll", "1");
+                  const q = next.toString();
+                  router.push(q ? `${pathname}?${q}` : pathname);
+                }}
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--hg-accent)] px-3 text-xs font-semibold text-[#04131d] hover:opacity-90"
+              >
+                Enroll face
+              </button>
+            ) : null}
+            {errorCode === "ACTIVE_INSTANCE_REQUIRED" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    window.dispatchEvent(new Event("dashboard:open-packages"));
+                  } catch {}
+                  router.push("/#packages");
+                }}
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--hg-accent)] px-3 text-xs font-semibold text-[#04131d] hover:opacity-90"
+              >
+                View packages
+              </button>
+            ) : null}
+            {upgradeInfo ? (
+              <UpgradeRequiredBanner
+                code={upgradeInfo.code}
+                error={upgradeInfo.error}
+                feature={upgradeInfo.feature}
+                plan={upgradeInfo.plan}
+                remaining={upgradeInfo.remaining}
+                limit={upgradeInfo.limit}
+              />
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-white">Recent</h3>
+        </div>
+
+        {historyLoading && recentItems.length === 0 ? (
+          <div className="flex gap-4 overflow-hidden">
+            {[0, 1, 2].map((idx) => (
+              <div key={idx} className="h-48 w-64 shrink-0 animate-pulse rounded-2xl bg-white/5" />
+            ))}
+          </div>
+        ) : null}
+
+        {!historyLoading && recentItems.length === 0 ? (
+          <div className="rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] p-4 text-sm text-[var(--hg-muted)]">
+            No videos yet. Generate your first avatar video.
+          </div>
+        ) : null}
+
+        {recentItems.length > 0 ? (
+          <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2">
+            {recentItems.map((item) => {
+              const createdAt = item.createdAt
+                ? new Date(item.createdAt).toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                  })
+                : "Just now";
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedRecent(item);
+                    setDrawerOpen(true);
+                  }}
+                  className="group w-[240px] shrink-0 snap-start rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] p-3 text-left transition hover:border-[var(--hg-accent)]/50"
+                >
+                  <div className="relative h-28 overflow-hidden rounded-xl border border-[var(--hg-border-2)] bg-black/25">
+                    {item.thumbnailUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.thumbnailUrl}
+                        alt="Video source preview"
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs text-[var(--hg-muted)]">
+                        No preview
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 space-y-1">
+                    <p className="text-sm font-medium text-white">Avatar Video</p>
+                    <p className="text-xs text-[var(--hg-muted)]">{createdAt}</p>
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${statusClass[item.status]}`}>
+                      {item.status}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </section>
+
+      <TalkingHeadResultDrawer open={drawerOpen} onOpenChange={setDrawerOpen} item={selectedRecent} />
     </div>
   );
 }

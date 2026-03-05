@@ -27,18 +27,26 @@ export async function serverFetchJson(input: string, init: RequestInit = {}): Pr
   const cookieHeader = incoming.get('cookie');
   if (cookieHeader) h.set('cookie', cookieHeader);
 
-  const res = await fetch(url, {
-    ...init,
-    // Avoid Next cache for auth/session calls by default
-    cache: init.cache ?? 'no-store',
-    headers: h,
-    // credentials is a no-op on server fetch, cookies are forwarded via header
-  });
+  try {
+    const res = await fetch(url, {
+      ...init,
+      // Avoid Next cache for auth/session calls by default
+      cache: init.cache ?? 'no-store',
+      headers: h,
+      // credentials is a no-op on server fetch, cookies are forwarded via header
+    });
 
-  const text = await res.text();
-  let data: unknown;
-  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-  return { ok: res.ok, status: res.status, data };
+    const text = await res.text();
+    let data: unknown;
+    try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+    return { ok: res.ok, status: res.status, data };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 502,
+      data: { error: "fetch_failed", message: err instanceof Error ? err.message : String(err) },
+    };
+  }
 }
 
 // Convenience: fetch current user on the server
@@ -46,5 +54,6 @@ export type ServerUser = { id: string; email: string; plan?: string | null } | n
 
 export async function serverGetUser(): Promise<ServerUser> {
   const r = await serverFetchJson('/api/auth/me', { method: 'GET' });
-  return r.ok ? (r.data as ServerUser) : null;
+  const payload = r.data as { user?: ServerUser | null } | null;
+  return r.ok && payload && payload.user ? payload.user : null;
 }

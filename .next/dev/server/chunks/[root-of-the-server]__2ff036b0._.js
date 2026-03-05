@@ -220,7 +220,7 @@ async function getCurrentUserId(req) {
         } catch  {
             data = null;
         }
-        const id = typeof data?.id === "string" ? data.id.trim() : "";
+        const id = typeof data?.user?.id === "string" ? data.user.id.trim() : "";
         return id || null;
     } catch (err) {
         console.error("[sadtalker:history] auth lookup failed", err);

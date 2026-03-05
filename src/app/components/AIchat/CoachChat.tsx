@@ -1,12 +1,19 @@
 "use client";
 import { useEffect, useRef, useState, memo } from "react";
-import { coachChat, fetchConversation, generateConversationTitle } from "@/app/utils/api";
+import {
+  coachChat,
+  fetchConversation,
+  generateConversationTitle,
+  summarizeConversation,
+  createEmptyConversation,
+} from "@/app/utils/api";
 import { Copy, Check } from "lucide-react";
 import type {
   CoachChatResult,
   CoachChatResponse,
   CoachChatLimitData,
   CoachChatRateLimitData,
+  CoachChatContextLimitData,
   CoachChatGenericError,
 } from "@/app/utils/api";
 import { fetchCoachChatPrompts } from "@/app/utils/api";
@@ -15,12 +22,10 @@ import { Skeleton } from "@/app/components/ui/Skeleton";
 import { AssistantFooter } from "../AIchat/AssistantFooter";
 import { CreditsChip } from "../AIchat/CreditsChip";
 import { UpgradeCta } from "../AIchat/UpgradeCta";
-import { Volume2 } from "lucide-react";
-import { ttsSynthesize } from "@/app/utils/api";
 
 // Message with meta for requestId/latency/context
 interface Message {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
   _id?: string;
   meta?: {
@@ -33,17 +38,22 @@ interface Conversation {
   _id: string;
   title?: string;
   messages: Message[];
+  tokensUsed?: number;
+  tokensLimit?: number;
+  nearLimit?: boolean;
 }
 
 function CoachChat({
   latestContentInfo,
   initialConversationId,
   onNewConversation,
+  onContextChange,
   layout = "panel",
 }: {
   onNewConversation: (newId: string) => void;
   latestContentInfo?: string;
   initialConversationId?: string;
+  onContextChange?: (info: { tokensUsed?: number; tokensLimit?: number; nearLimit?: boolean } | null) => void;
   layout?: "page" | "panel";
 }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -55,6 +65,10 @@ function CoachChat({
 
   const [error, setError] = useState<string | null>(null);
   const [isLimited, setIsLimited] = useState(false);
+  const [isContextLimited, setIsContextLimited] = useState(false);
+  const [contextNearLimit, setContextNearLimit] = useState(false);
+  const [contextInfo, setContextInfo] = useState<{ used?: number; limit?: number } | null>(null);
+  const [contextActionLoading, setContextActionLoading] = useState(false);
   const [credits, setCredits] = useState<{ used: number; limit: number } | null>(null);
   const [prompts, setPrompts] = useState<string[]>([]);
   const [promptsLoading, setPromptsLoading] = useState<boolean>(true);
@@ -62,10 +76,6 @@ function CoachChat({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const audioCache = useRef<Map<string, string>>(new Map());
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playingKey, setPlayingKey] = useState<string | null>(null);
-  const ttsSeqRef = useRef(0);
 
   // FIX: track which conversationId we've already loaded to avoid refetch/remount blink
   const loadedIdRef = useRef<string | null>(null);
@@ -126,91 +136,6 @@ function tokenizeWordsWithSpaces(s: string) {
   return s.match(/\S+|\s+/g) ?? [];
 }
 
-  // Split into ~400-char chunks by sentence to reduce initial latency on long texts
-  function chunkText(s: string, maxLen = 400): string[] {
-    const parts = s.split(/(?<=[\.!?])\s+/);
-    const out: string[] = [];
-    let buf = "";
-    for (const p of parts) {
-      if ((buf + (buf ? " " : "") + p).length > maxLen) {
-        if (buf) out.push(buf);
-        buf = p;
-      } else {
-        buf = buf ? buf + " " + p : p;
-      }
-    }
-    if (buf) out.push(buf);
-    return out.length ? out : [s];
-  }
-
-  async function playTTS(key: string, text: string) {
-    try {
-      // Toggle off if same key is playing
-      if (playingKey === key) {
-        audioRef.current?.pause();
-        audioRef.current = null;
-        setPlayingKey(null);
-        return;
-      }
-
-      // Stop any existing playback
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-
-      setPlayingKey(key);
-      const seq = ++ttsSeqRef.current;
-
-      const chunks = text.length > 500 ? chunkText(text) : [text];
-      let idx = 0;
-
-      const playNext = async () => {
-        if (ttsSeqRef.current !== seq) return; // cancelled by a newer request
-        if (idx >= chunks.length) {
-          setPlayingKey((k) => (k === key ? null : k));
-          return;
-        }
-        const ck = `${key}#${idx}`;
-        let url = audioCache.current.get(ck);
-        if (!url) {
-          url = await ttsSynthesize(chunks[idx], {});
-          audioCache.current.set(ck, url);
-        }
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => {
-          if (ttsSeqRef.current !== seq) return;
-          idx += 1;
-          playNext();
-        };
-        audio.onerror = () => {
-          if (ttsSeqRef.current !== seq) return;
-          idx += 1;
-          playNext();
-        };
-        await audio.play().catch(() => {
-          setPlayingKey((k) => (k === key ? null : k));
-        });
-      };
-
-      playNext();
-    } catch {
-      setPlayingKey(null);
-    }
-  }
-
-  // Stop audio on unmount or route change
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      setPlayingKey(null);
-      ttsSeqRef.current += 1;
-    };
-  }, []);
 
   // ----- textarea auto-grow -----
   const autoGrow = () => {
@@ -232,6 +157,19 @@ function tokenizeWordsWithSpaces(s: string) {
     }
     prevMsgCount.current = messageCount;
   }, [messageCount]);
+
+  useEffect(() => {
+    if (!onContextChange) return;
+    if (!conversation || !conversation._id) {
+      onContextChange(null);
+      return;
+    }
+    onContextChange({
+      tokensUsed: conversation.tokensUsed,
+      tokensLimit: conversation.tokensLimit,
+      nearLimit: conversation.nearLimit,
+    });
+  }, [conversation, onContextChange]);
 
   // ----- Load existing conversation by id (guarded) -----
   useEffect(() => {
@@ -290,16 +228,67 @@ function tokenizeWordsWithSpaces(s: string) {
     };
   }, []); // FIX: don't refetch on every new message
 
+  const handleStartNewChat = async () => {
+    if (contextActionLoading) return;
+    setIsLimited(false);
+    setIsContextLimited(false);
+    setContextNearLimit(false);
+    setContextInfo(null);
+    setConversation(null);
+    setInput("");
+    setShowPrompts(true);
+    setContextActionLoading(true);
+    try {
+      const newId = await createEmptyConversation();
+      if (newId) {
+        const nextConversation = await fetchConversation(newId);
+        if (nextConversation) {
+          setConversation(nextConversation as Conversation);
+        }
+        loadedIdRef.current = newId;
+        onNewConversation?.(newId);
+      }
+    } finally {
+      setContextActionLoading(false);
+    }
+  };
+
+  const handleSummarizeContinue = async () => {
+    if (contextActionLoading || !conversation?._id) return;
+    setContextActionLoading(true);
+    try {
+      const summarized = await summarizeConversation(conversation._id);
+      if (summarized?.newConversationId) {
+        const nextConversation = await fetchConversation(summarized.newConversationId);
+        if (nextConversation) {
+          setConversation(nextConversation as Conversation);
+        } else {
+          setConversation(null);
+        }
+        setInput("");
+        setIsContextLimited(false);
+        setContextNearLimit(false);
+        setContextInfo(null);
+        loadedIdRef.current = summarized.newConversationId;
+        onNewConversation?.(summarized.newConversationId);
+      }
+    } finally {
+      setContextActionLoading(false);
+    }
+  };
+
   const sendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const text = input.trim();
-    if (!text || isSending || isLimited) return;
+    if (!text || isSending || isLimited || isContextLimited) return;
 
     setShowPrompts(false);
     setIsSending(true);
     setError(null);
+    setContextNearLimit(false);
 
     // optimistic message
+    const previousConversation = conversation;
     const optimistic: Conversation =
       conversation
         ? { ...conversation, messages: [...conversation.messages, { role: "user", content: text }] }
@@ -332,6 +321,15 @@ function tokenizeWordsWithSpaces(s: string) {
           setError(data.message || data.error || "You’re sending messages too fast. Try again shortly.");
           setIsSending(false);
           if (!conversation?._id) setConversation(null);
+          return;
+        }
+
+        case 409: {
+          const data = res.data as CoachChatContextLimitData;
+          setIsContextLimited(true);
+          setContextInfo({ used: data.tokensUsed, limit: data.tokensLimit });
+          setIsSending(false);
+          setConversation(previousConversation || null);
           return;
         }
 
@@ -377,6 +375,11 @@ function tokenizeWordsWithSpaces(s: string) {
 
   setIsSending(false);
   if (data.quota) setCredits(data.quota);
+  setIsContextLimited(false);
+  setContextNearLimit(Boolean(data.nearContextLimit));
+  if (typeof data.tokensUsed === "number" || typeof data.tokensLimit === "number") {
+    setContextInfo({ used: data.tokensUsed ?? undefined, limit: data.tokensLimit ?? undefined });
+  }
 
   // first message in brand-new chat?
   const wasFirstUserMessage = (optimistic.messages.length === 1);
@@ -408,7 +411,7 @@ function tokenizeWordsWithSpaces(s: string) {
   };
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
-    if (isSending || isLimited) return;
+    if (isSending || isLimited || isContextLimited) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -482,7 +485,8 @@ function tokenizeWordsWithSpaces(s: string) {
     </p>
   ) : (
     <>
-   {conversation!.messages.map((msg, idx) => {
+  {conversation!.messages.map((msg, idx) => {
+  if (msg.role === "system") return null;
   const isUser = msg.role === "user";
   return (
     <div key={msg._id || idx} className={`mb-4 ${isUser ? "flex justify-end" : "block"}`}>
@@ -504,18 +508,6 @@ function tokenizeWordsWithSpaces(s: string) {
             {!((streamRef.current && conversation && streamRef.current.convId === conversation._id && streamRef.current.msgIndex === idx)) && (
               <>
                 <CopyButton text={msg.content} />
-                <button
-              type="button"
-              onClick={() => playTTS(`${conversation!._id}:${idx}`, msg.content)}
-              className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded border ${
-                playingKey === `${conversation!._id}:${idx}`
-                  ? "border-cyan-500 text-cyan-400"
-                  : "border-gray-600 text-gray-300 hover:text-white"
-              }`}
-            >
-              <Volume2 size={14} />
-              {playingKey === `${conversation!._id}:${idx}` ? "Stop" : "Play"}
-            </button>
               </>
             )}
             {msg.meta && <AssistantFooter meta={msg.meta} />}
@@ -552,6 +544,52 @@ function tokenizeWordsWithSpaces(s: string) {
         ].join(" ")}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
+        {isContextLimited ? (
+          <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
+            <div className="font-semibold">Context limit reached.</div>
+            <div className="mt-1 text-amber-200">
+              Start a new chat or summarize to continue this thread.
+            </div>
+            {contextInfo?.limit ? (
+              <div className="mt-1 text-xs text-amber-200">
+                {Number(contextInfo.used ?? 0).toLocaleString()} / {Number(contextInfo.limit).toLocaleString()} tokens
+              </div>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleStartNewChat}
+                disabled={contextActionLoading}
+                className="rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-100 hover:bg-amber-500/30 disabled:opacity-60"
+              >
+                Start new chat
+              </button>
+              <button
+                type="button"
+                onClick={handleSummarizeContinue}
+                disabled={contextActionLoading}
+                className="rounded-lg border border-amber-400/50 px-3 py-1.5 text-xs font-semibold text-amber-100 hover:border-amber-300 disabled:opacity-60"
+              >
+                Summarize and continue
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {!isContextLimited && contextNearLimit ? (
+          <div className="mb-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-100">
+            <span className="font-semibold">Context window nearly full.</span>{" "}
+            Start a new chat to keep things fast.
+            <button
+              type="button"
+              onClick={handleStartNewChat}
+              className="ml-2 rounded-md border border-amber-400/40 px-2 py-0.5 text-[11px] font-semibold text-amber-100 hover:border-amber-300"
+            >
+              Start new chat
+            </button>
+          </div>
+        ) : null}
+
         {showPrompts && (
           <div className="w-full max-w-2xl mx-auto px-0 mb-3">
             {promptsLoading ? (
@@ -576,7 +614,7 @@ function tokenizeWordsWithSpaces(s: string) {
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {credits && <CreditsChip used={credits.used} limit={credits.limit} />}
-            {isLimited && <UpgradeCta href="/dashboard/billing" />}
+            {isLimited && <UpgradeCta />}
           </div>
         </div>
 
@@ -584,12 +622,18 @@ function tokenizeWordsWithSpaces(s: string) {
           <textarea
             ref={textareaRef}
             className="flex-1 bg-transparent text-gray-100 placeholder-gray-500 focus:outline-none resize-none text-base leading-[1.5] pt-[0.65rem] pb-[0.65rem] overflow-hidden"
-            placeholder={isLimited ? "Upgrade to continue chatting…" : "Type your message..."}
+            placeholder={
+              isContextLimited
+                ? "Context limit reached. Start a new chat or summarize."
+                : isLimited
+                  ? "Upgrade to continue chatting…"
+                  : "Type your message..."
+            }
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onInput={autoGrow}
             onKeyDown={handleKeyDown}
-            disabled={isSending || isLimited}
+            disabled={isSending || isLimited || isContextLimited}
             rows={1}
             style={{ minHeight: 44 }}
           />
@@ -597,8 +641,8 @@ function tokenizeWordsWithSpaces(s: string) {
           <button
             className="h-10 px-4 rounded-md bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition disabled:opacity-60"
             type="submit"
-            disabled={!input.trim() || isSending || isLimited}
-            aria-disabled={isSending || isLimited}
+            disabled={!input.trim() || isSending || isLimited || isContextLimited}
+            aria-disabled={isSending || isLimited || isContextLimited}
           >
             {isSending ? (
               <span className="inline-flex items-center gap-2">

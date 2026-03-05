@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { fetchConversations, type ConversationSummary } from "@/app/utils/api";
-import { BookOpen, Volume2 } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { dbg } from "@/app/utils/debug";
 import { Skeleton } from "@/app/components/ui/Skeleton";
-import { ttsSynthesize } from "@/app/utils/api";
 
 type Props = {
   onSelect: (id: string) => void;
@@ -119,23 +118,16 @@ export default function CoachChatHistory({
                 <div className="flex items-center gap-2">
                   <BookOpen className={`w-4 h-4 ${active ? "text-cyan-400" : "text-gray-400"}`} />
                   <span className="font-medium truncate">{c.title || "Untitled"}</span>
-                  <span className="ml-auto">
-                    <button
-                      type="button"
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        try {
-                          const url = await ttsSynthesize(c.title || "Conversation");
-                          const a = new Audio(url);
-                          a.play();
-                        } catch {}
-                      }}
-                      className="inline-flex items-center text-xs text-gray-300 hover:text-white"
-                      aria-label="Play title"
-                    >
-                      <Volume2 className="w-4 h-4" />
-                    </button>
-                  </span>
+                  {c.continuedFromConversationId ? (
+                    <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
+                      continued
+                    </span>
+                  ) : null}
+                  {c.continuedToConversationId ? (
+                    <span className="rounded-full border border-gray-400/30 bg-gray-400/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gray-300">
+                      summarized
+                    </span>
+                  ) : null}
                 </div>
                 <div className="mt-1 text-[11px] text-gray-400">
                   {formatDate(c.updatedAt)}

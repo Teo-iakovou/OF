@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { analyzeImageMultipart, ttsSynthesize } from "@/app/utils/api";
+import Link from "next/link";
+import { analyzeImageMultipart, selectPackageInstance } from "@/app/utils/api";
 import type { ResultDoc } from "@/app/types/analysis";
+import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import {
   UploadCloud,
   ImageIcon,
   CheckCircle2,
   X,
   Loader2,
-  Languages,
-  Volume2,
 } from "lucide-react";
 import UpgradeRequiredBanner from "@/app/components/common/UpgradeRequiredBanner";
+import { PACKAGES_URL } from "@/app/utils/urls";
 
 type Status = "idle" | "ready" | "uploading" | "success" | "error";
 
@@ -38,22 +39,99 @@ type AnalyzeRequestError = Error & {
   plan?: string | null;
   remaining?: number | null;
   limit?: number | null;
+  payload?: unknown;
+};
+
+type ErrorMeta = {
+  code?: string | null;
+  statusCode?: number | null;
+  rawMessage?: string | null;
+  requestId?: string | null;
+};
+
+const mapErrorToUserMessage = (meta: ErrorMeta) => {
+  const code = meta.code || "";
+  if (code === "UPGRADE_REQUIRED") {
+    return {
+      title: "Upgrade required",
+      message: "Your plan doesn’t include this feature. Upgrade to continue.",
+      actionLabel: "View plans",
+      actionHref: PACKAGES_URL,
+      requestId: meta.requestId || undefined,
+    };
+  }
+  if (code === "FACE_REQUIRED_FOR_ENROLLMENT") {
+    return {
+      title: "Face enrollment required",
+      message: "Please enroll your profile face to continue.",
+      requestId: meta.requestId || undefined,
+    };
+  }
+  if (code === "FACE_ENROLLMENT_REQUIRED") {
+    return {
+      title: "Face enrollment required",
+      message: "Please enroll your profile face to continue.",
+      requestId: meta.requestId || undefined,
+    };
+  }
+  if (code === "FACE_MISMATCH") {
+    return {
+      title: "Face verification failed",
+      message: "This upload doesn’t match the enrolled persona for this package.",
+      requestId: meta.requestId || undefined,
+    };
+  }
+  if (code === "FACE_ID_DRIFT" || code === "FACE_REENROLL_REQUIRED") {
+    return {
+      title: "Face verification needs re-enrollment",
+      message: "We detected a face ID drift. Please re-enroll your face photo for this package to continue.",
+      actionLabel: "Re-enroll face",
+      actionHref: "/dashboard?enroll=1",
+      requestId: meta.requestId || undefined,
+    };
+  }
+  if (code === "MULTIPLE_FACES_NOT_ALLOWED") {
+    return {
+      title: "Multiple faces detected",
+      message: "Please upload an image with only one visible face.",
+      requestId: meta.requestId || undefined,
+    };
+  }
+  if (code === "PERSONA_ALREADY_BOUND") {
+    return {
+      title: "Persona already bound",
+      message: "This persona belongs to another active package.",
+      requestId: meta.requestId || undefined,
+    };
+  }
+  return {
+    title: "Upload failed",
+    message: "We couldn’t analyze that image. Please try again.",
+    requestId: meta.requestId || undefined,
+  };
 };
 
 const MAX_MB = 25;
 const ACCEPT = ["image/png", "image/jpeg", "image/webp", "image/avif"];
 
 export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileUploadProps) {
+  const { refresh: refreshPlan } = usePlanInfo();
   const [status, setStatus] = useState<Status>("idle");
   const [file, setFile] = useState<File | null>(null);
   const [previewURL, setPreviewURL] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [errorRequestId, setErrorRequestId] = useState<string | null>(null);
+  const [errorMeta, setErrorMeta] = useState<ErrorMeta | null>(null);
+  const lastPlanRefreshRef = useRef<number>(0);
   const [upgradeInfo, setUpgradeInfo] = useState<UpgradeInfo>(null);
-
-  const [withCaptions, setWithCaptions] = useState(true);
-  const [autoDub, setAutoDub] = useState(false);
-  const [dubLang, setDubLang] = useState("EN");
+  const [personaMismatch, setPersonaMismatch] = useState<{
+    packagePersonaKey: string;
+    requestedPersonaKey: string;
+  } | null>(null);
+  const [personaAlreadyBound, setPersonaAlreadyBound] = useState<{
+    existingInstanceId?: string;
+  } | null>(null);
+  const [bindingActionLoading, setBindingActionLoading] = useState(false);
 
   const [dragActive, setDragActive] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
@@ -88,6 +166,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
     const v = validate(f);
     if (v) {
       setError(v);
+      setErrorMeta({ rawMessage: v });
       setUpgradeInfo(null);
       setStatus("error");
       return;
@@ -108,55 +187,81 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
     inputRef.current?.click();
   }
 
-  async function onSubmit() {
-    if (!file || status === "uploading") return;
+  async function onSubmit(fileOverride?: File) {
+    const selectedFile = fileOverride ?? file;
+    if (!selectedFile || status === "uploading") return;
 
     setStatus("uploading");
     setUploadPct(0);
     setError(null);
     setErrorRequestId(null);
+    setErrorMeta(null);
     setUpgradeInfo(null);
+    setPersonaMismatch(null);
+    setPersonaAlreadyBound(null);
+    setError(null);
 
     const controller = new AbortController();
     abortRef.current = controller;
 
     try {
       const { insights, duplicate, requestId } = await analyzeImageMultipart({
-        file,
+        file: selectedFile,
         packageInstanceId,
-        captions: withCaptions,
         signal: controller.signal,
         onProgress: (pct: number) => setUploadPct(pct),
       });
 
       onUploadSuccess(insights as ResultDoc, { duplicate, requestId });
-
-      if (autoDub) {
-        try {
-          const first = insights?.promotion?.recommendedPlatforms?.[0];
-          const caption = (first?.caption as string) || "";
-          if (caption.trim()) {
-            const url = await ttsSynthesize(`[${dubLang}] ${caption}`);
-            const a = new Audio(url);
-            a.play().catch(() => {});
-          }
-        } catch {
-          // silent TTS failure
-        }
+      const now = Date.now();
+      if (now - lastPlanRefreshRef.current > 500) {
+        lastPlanRefreshRef.current = now;
+        refreshPlan(true);
       }
 
       setStatus("success");
       setErrorRequestId(null);
       setUpgradeInfo(null);
+      setPersonaMismatch(null);
+      setPersonaAlreadyBound(null);
       // keep preview so user sees what was uploaded; call reset() if you want to clear immediately
     } catch (e: unknown) {
       if (controller.signal.aborted) {
         setError("Upload cancelled.");
         setErrorRequestId(null);
+        setErrorMeta({ rawMessage: "Upload cancelled." });
         setUpgradeInfo(null);
       } else {
-        const errObj = e as AnalyzeRequestError;
-        const maybeRequestId = typeof errObj?.requestId === "string" ? errObj.requestId : null;
+        const errObj = e as AnalyzeRequestError & { errorCode?: string; error?: string; data?: unknown };
+        const nested =
+          errObj && typeof errObj.data === "object" && errObj.data
+            ? (errObj.data as {
+                errorCode?: unknown;
+                code?: unknown;
+                error?: unknown;
+                message?: unknown;
+                requestId?: unknown;
+                status?: unknown;
+              })
+            : null;
+        const codeRaw =
+          (typeof errObj?.errorCode === "string" && errObj.errorCode) ||
+          (typeof errObj?.code === "string" && errObj.code) ||
+          (typeof errObj?.error === "string" && errObj.error) ||
+          (typeof errObj?.message === "string" && errObj.message) ||
+          (nested && typeof nested.errorCode === "string" ? nested.errorCode : null) ||
+          (nested && typeof nested.code === "string" ? nested.code : null) ||
+          (nested && typeof nested.error === "string" ? nested.error : null) ||
+          (nested && typeof nested.message === "string" ? nested.message : null) ||
+          null;
+        const maybeRequestId =
+          (typeof errObj?.requestId === "string" && errObj.requestId) ||
+          (nested && typeof nested.requestId === "string" ? nested.requestId : null) ||
+          null;
+        const statusCode =
+          (errObj as { status?: number })?.status ??
+          (nested && typeof nested.status === "number" ? nested.status : null) ??
+          null;
         const maybeUpgrade =
           errObj?.code === "UPGRADE_REQUIRED"
             ? {
@@ -168,14 +273,58 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
                 limit: typeof errObj.limit === "number" ? errObj.limit : null,
               }
             : null;
-        const msg =
-          e instanceof Error
+        const personaEnrollRequired =
+          codeRaw === "FACE_REQUIRED_FOR_ENROLLMENT" || codeRaw === "FACE_ENROLLMENT_REQUIRED";
+        const faceMismatch = codeRaw === "FACE_MISMATCH";
+        const faceIdDrift = codeRaw === "FACE_ID_DRIFT" || codeRaw === "FACE_REENROLL_REQUIRED";
+        const multipleFaces = codeRaw === "MULTIPLE_FACES_NOT_ALLOWED";
+        if (codeRaw === "PACKAGE_NOT_BOUND_TO_PERSONA" && errObj.payload) {
+          const payload = errObj.payload as {
+            packagePersonaKey?: unknown;
+            requestedPersonaKey?: unknown;
+          };
+          const packagePersonaKey =
+            typeof payload.packagePersonaKey === "string" ? payload.packagePersonaKey : "";
+          const requestedPersonaKey =
+            typeof payload.requestedPersonaKey === "string" ? payload.requestedPersonaKey : "";
+          if (packagePersonaKey && requestedPersonaKey) {
+            setPersonaMismatch({ packagePersonaKey, requestedPersonaKey });
+          }
+        }
+        if (codeRaw === "PERSONA_ALREADY_BOUND" && errObj.payload) {
+          const payload = errObj.payload as { existingInstanceId?: unknown };
+          const existingInstanceId =
+            typeof payload.existingInstanceId === "string" ? payload.existingInstanceId : undefined;
+          setPersonaAlreadyBound({ existingInstanceId });
+        }
+        const msg = personaEnrollRequired
+          ? "Please enroll your profile face to continue."
+          : faceMismatch
+            ? "This package is locked to a different persona face. Select the correct package or buy a new one for this persona."
+          : faceIdDrift
+            ? "We detected a face ID drift. Please re-enroll your face photo for this package to continue."
+          : multipleFaces
+            ? "Please upload an image with only one visible face to enroll this persona."
+          : codeRaw === "PERSONA_ALREADY_BOUND"
+            ? "This persona already belongs to another active package. Please select the correct package and try again."
+          : e instanceof Error
             ? e.message
             : typeof e === "string"
-            ? e
-            : "Upload failed. Please try again.";
+              ? e
+              : "Upload failed. Please try again.";
+        if (maybeRequestId && (statusCode === 409 || statusCode === 400 || statusCode === 422)) {
+          try {
+            window.dispatchEvent(new Event("ai-auth-changed"));
+          } catch {}
+        }
         setError(msg);
         setErrorRequestId(maybeRequestId);
+        setErrorMeta({
+          code: codeRaw,
+          statusCode,
+          rawMessage: e instanceof Error ? e.message : typeof e === "string" ? e : null,
+          requestId: maybeRequestId,
+        });
         setUpgradeInfo(maybeUpgrade);
       }
       setStatus("error");
@@ -192,7 +341,10 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
     setStatus("idle");
     setError(null);
     setErrorRequestId(null);
+    setErrorMeta(null);
     setUpgradeInfo(null);
+    setPersonaMismatch(null);
+    setPersonaAlreadyBound(null);
     setFile(null);
     setUploadPct(0);
     if (previewURL) URL.revokeObjectURL(previewURL);
@@ -200,271 +352,239 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
     if (inputRef.current) inputRef.current.value = "";
   }
 
-  /* ───────────────────── UI ───────────────────── */
-  const statusSummary = useMemo(() => {
-    if (!file) {
-      return {
-        title: "Ready for upload",
-        detail: "Use a high-quality portrait or promo shot so the AI can understand wardrobe, mood, and setting.",
-        tone: "text-gray-300",
-      };
-    }
-    if (status === "uploading") {
-      const phase = uploadPct < 60 ? "Uploading securely…" : "Running analysis…";
-      return {
-        title: phase,
-        detail:
-          uploadPct < 60
-            ? "We’re transferring your image with TLS encryption."
-            : "Google Vision + GPT are building captions, hashtags, and posting windows.",
-        tone: "text-indigo-200",
-      };
-    }
-    if (status === "success") {
-      return {
-        title: "Insights ready",
-        detail: "Scroll down to review captions, best times, and platform-specific tips.",
-        tone: "text-emerald-200",
-      };
-    }
-    if (status === "error" && error) {
-      return {
-        title: "Upload failed",
-        detail: error,
-        tone: "text-rose-200",
-      };
-    }
-    return {
-      title: "File selected",
-      detail: "Hit “Analyze with AI” to generate a campaign from this image.",
-      tone: "text-gray-200",
-    };
-  }, [error, file, status, uploadPct]);
+  const showDebug = process.env.NODE_ENV !== "production";
 
   return (
-    <div className="w-full max-w-lg mx-auto">
-      {/* Card frame */}
-      <div className="rounded-2xl bg-[#0B1222]/80 ring-1 ring-white/10 shadow-xl p-4 sm:p-6 backdrop-blur">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <div className="min-w-0">
-            <h3 className="text-lg sm:text-2xl font-bold tracking-tight text-white">
-              Upload an image
-            </h3>
-            <p className="text-xs sm:text-sm text-gray-300/80 truncate">
-              We’ll analyze it and suggest captions, hashtags & best posting times.
-            </p>
+    <div className="w-full max-w-none">
+      <div className="rounded-2xl hg-surface p-4 backdrop-blur">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold tracking-tight text-white">Upload image</h3>
+            <p className="text-xs hg-muted">Drag & drop or click to browse</p>
           </div>
+        </div>
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragActive(true);
+          }}
+          onDragLeave={() => setDragActive(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragActive(false);
+            handleFiles(e.dataTransfer.files);
+          }}
+          onClick={() => onSelectClick()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => (e.key === "Enter" ? onSelectClick() : null)}
+          className={`relative h-32 md:h-[150px] rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition
+            ${dragActive ? "border-[#50C0F0] bg-[rgba(80,192,240,0.14)]" : "border-[var(--hg-border-2)] bg-[var(--hg-surface-2)] hover:border-[var(--hg-border)]"}`}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept={ACCEPT.join(",")}
+            hidden
+            onChange={(e) => handleFiles(e.target.files)}
+          />
+          <div className="flex h-full flex-col items-center justify-center gap-2 hg-text">
+            <div
+              className={`grid place-items-center rounded-full w-9 h-9
+              ${dragActive ? "bg-[rgba(80,192,240,0.24)]" : "bg-[rgba(255,255,255,0.06)]"}`}
+            >
+              <UploadCloud className="w-5 h-5" />
+            </div>
+            <div className="text-sm">
+              <span className="font-semibold text-white">Click to choose</span>{" "}
+              or drag & drop
+            </div>
+            <div className="text-[11px] hg-muted-2">Max {MAX_MB}MB • PNG/JPG/WebP/AVIF</div>
+          </div>
+          {dragActive && (
+            <div className="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-[rgba(80,192,240,0.45)]" />
+          )}
+        </div>
 
-          {/* Enhancements */}
-          <div className="flex items-center flex-wrap gap-2 sm:gap-4 w-full sm:w-auto justify-center sm:justify-end">
-            {/* Captions switch */}
-            <Switch
-              label="Captions"
-              checked={withCaptions}
-              onChange={setWithCaptions}
-            />
-            {/* Auto-dub group */}
-            <div className="flex items-center gap-2">
-              <Switch
-                label="Auto-dub"
-                checked={autoDub}
-                onChange={setAutoDub}
-                icon={<Volume2 className="w-3.5 h-3.5" />}
-              />
-              <div className="relative">
-                <div className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
-                  <Languages className="w-4 h-4" />
+        {file ? (
+          <div className="mt-3 rounded-xl hg-surface-soft p-3">
+            <div className="flex items-center gap-3">
+              {previewURL ? (
+                <Image
+                  src={previewURL}
+                  alt="Preview"
+                  width={60}
+                  height={60}
+                  className="h-[60px] w-[60px] rounded-md object-cover border border-[var(--hg-border)]"
+                />
+              ) : (
+                <div className="h-[60px] w-[60px] rounded-md bg-[rgba(255,255,255,0.04)] border border-[var(--hg-border)] grid place-items-center">
+                  <ImageIcon className="w-4 h-4 opacity-70 text-[var(--hg-muted)]" />
                 </div>
-                <select
-                  value={dubLang}
-                  onChange={(e) => setDubLang(e.target.value)}
-                  disabled={!autoDub}
-                  className="pl-8 pr-3 py-1.5 rounded-md bg-white/5 text-white border border-white/10 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <option value="EN">EN</option>
-                  <option value="ES">ES</option>
-                  <option value="FR">FR</option>
-                  <option value="DE">DE</option>
-                </select>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-white">{file.name}</div>
+                <div className="text-xs hg-muted">{file.type || "image"} • {formatSize(file.size)}</div>
+                {status === "uploading" ? (
+                  <div className="mt-2">
+                    <Progress pct={uploadPct} />
+                  </div>
+                ) : null}
+                {status === "success" ? (
+                  <div className="mt-2 inline-flex items-center gap-1 text-emerald-300 text-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Uploaded & analyzed
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
-        </div>
-        <div className="mb-5 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-gray-300 leading-relaxed">
-          <p className="uppercase tracking-[0.25em] text-[10px] text-gray-400 mb-2">Before you upload</p>
-          <ul className="space-y-1 list-disc list-inside text-gray-300/90">
-            <li>Use crisp, vertical content so the AI can read outfits and scene details.</li>
-            <li>Keep files under {MAX_MB}MB; PNG or JPG preserves the most detail.</li>
-            <li>Expect ~15–20 seconds while we run safety checks and craft captions.</li>
-          </ul>
-        </div>
+        ) : null}
 
-        {/* Body grid */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {/* Drop zone */}
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragActive(true);
-            }}
-            onDragLeave={() => setDragActive(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragActive(false);
-              handleFiles(e.dataTransfer.files);
-            }}
-            onClick={() => onSelectClick()}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => (e.key === "Enter" ? onSelectClick() : null)}
-            className={`relative rounded-xl border-2 border-dashed p-4 sm:p-8 text-center cursor-pointer transition
-              ${dragActive ? "border-indigo-400 bg-indigo-400/10" : "border-white/15 bg-white/5 hover:border-white/25"}`}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              accept={ACCEPT.join(",")}
-              hidden
-              onChange={(e) => handleFiles(e.target.files)}
-            />
-            <div className="flex flex-col items-center gap-2 text-gray-200">
-              <div
-                className={`grid place-items-center rounded-full w-12 h-12
-                ${dragActive ? "bg-indigo-500/20" : "bg-white/5"}`}
-              >
-                <UploadCloud className="w-6 h-6" />
-              </div>
-              <div className="text-sm sm:text-base">
-                <span className="font-semibold text-white">Click to choose</span>{" "}
-                or drag & drop your image
-              </div>
-              <div className="text-xs text-gray-400">
-                PNG, JPG, WEBP, AVIF — up to {MAX_MB}MB
-              </div>
-            </div>
-
-            {/* drag overlay */}
-            {dragActive && (
-              <div className="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-indigo-400/60" />
-            )}
-          </div>
-
-          {/* Preview & actions */}
-          <div className="rounded-xl bg-white/5 border border-white/10 p-4 sm:p-5">
-            {!file ? (
-              <div className="h-full min-h-[200px] grid place-items-center text-gray-400">
-                <div className="flex flex-col items-center gap-2">
-                  <ImageIcon className="w-8 h-8 opacity-60" />
-                  <div className="text-sm">No file selected yet</div>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Preview */}
-                <div className="flex items-center gap-3">
-                  {previewURL ? (
-                    <Image
-                      src={previewURL}
-                      alt="Preview"
-                      width={120}
-                      height={120}
-                      className="w-28 h-28 rounded-lg object-cover border border-white/10 shadow"
-                    />
+        {error && (
+          <div className="mt-3 text-xs text-rose-300 bg-rose-900/20 border border-rose-700/40 rounded-md px-3 py-2 space-y-2">
+            {(() => {
+              const mapped = mapErrorToUserMessage(errorMeta || { rawMessage: error });
+              return (
+                <>
+                  <div className="font-semibold text-rose-200">{mapped.title}</div>
+                  <div className="break-words whitespace-normal">{mapped.message}</div>
+                  {mapped.actionLabel && mapped.actionHref ? (
+                    <Link
+                      href={mapped.actionHref}
+                      className="inline-flex items-center rounded-md border border-rose-700/60 px-2.5 py-1 text-[11px] hover:border-rose-400"
+                    >
+                      {mapped.actionLabel}
+                    </Link>
                   ) : null}
-                  <div className="flex-1">
-                    <div className="text-white text-sm font-semibold truncate">
-                      {file.name}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      {file.type || "image"} • {formatSize(file.size)}
-                    </div>
-                    {status === "uploading" && (
-                      <div className="mt-3">
-                        <Progress pct={uploadPct} />
-                      </div>
-                    )}
-                    {status === "success" && (
-                      <div className="mt-3 inline-flex items-center gap-1 text-emerald-400 text-xs">
-                        <CheckCircle2 className="w-4 h-4" /> Uploaded & analyzed
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Errors */}
-                {error && (
-                  <div className="mt-3 text-xs text-rose-300 bg-rose-900/20 border border-rose-700/40 rounded-md px-3 py-2 space-y-2">
-                    <div>{error}</div>
-                    {errorRequestId && (
-                      <button
-                        type="button"
-                        onClick={() => navigator.clipboard.writeText(errorRequestId)}
-                        className="inline-flex items-center gap-1 text-[11px] text-gray-300 underline hover:text-white"
-                      >
-                        Copy request ID: {errorRequestId}
-                      </button>
-                    )}
-                    {upgradeInfo ? (
-                      <UpgradeRequiredBanner
-                        code={upgradeInfo.code}
-                        error={upgradeInfo.error}
-                        feature={upgradeInfo.feature}
-                        plan={upgradeInfo.plan}
-                        remaining={upgradeInfo.remaining}
-                        limit={upgradeInfo.limit}
-                      />
-                    ) : null}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <button
-                    onClick={onSubmit}
-                    disabled={!file || status === "uploading"}
-                    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition
-                      ${
-                        file && status !== "uploading"
-                          ? "bg-indigo-600 hover:bg-indigo-500 shadow"
-                          : "bg-white/10 cursor-not-allowed"
-                      }`}
-                  >
-                    {status === "uploading" ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Uploading…
-                      </>
-                    ) : (
-                      <>Analyze with AI</>
-                    )}
-                  </button>
-
-                  {status === "uploading" ? (
-                    <button
-                      onClick={onCancel}
-                      className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 bg-white/10 hover:bg-white/15 border border-white/10"
-                    >
-                      <X className="w-4 h-4" />
-                      Cancel
-                    </button>
-                  ) : (
-                    <button
-                      onClick={reset}
-                      className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 bg-white/10 hover:bg-white/15 border border-white/10"
-                    >
-                      <X className="w-4 h-4" />
-                      Reset
-                    </button>
-                  )}
-                </div>
-                <div className="mt-4 rounded-lg border border-white/10 bg-[#0d1426] px-3 py-2 text-xs">
-                  <p className={`font-semibold ${statusSummary.tone}`}>{statusSummary.title}</p>
-                  <p className="text-gray-400 mt-0.5">{statusSummary.detail}</p>
-                </div>
-              </>
+                </>
+              );
+            })()}
+            {errorRequestId && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] hg-muted">
+                  Support ID: {errorRequestId}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(errorRequestId)}
+                  className="inline-flex items-center gap-1 text-[11px] hg-muted underline hover:text-[#50C0F0]"
+                >
+                  Copy
+                </button>
+              </div>
             )}
+            {upgradeInfo ? (
+              <UpgradeRequiredBanner
+                code={upgradeInfo.code}
+                error={mapErrorToUserMessage({ code: "UPGRADE_REQUIRED" }).title}
+                feature={upgradeInfo.feature}
+                plan={upgradeInfo.plan}
+                remaining={upgradeInfo.remaining}
+                limit={upgradeInfo.limit}
+              />
+            ) : null}
+            {showDebug && errorMeta ? (
+              <details className="rounded-md border border-rose-700/40 bg-rose-900/10 px-3 py-2 text-[11px] text-rose-100">
+                <summary className="cursor-pointer text-rose-200">Debug</summary>
+                <div className="mt-2 space-y-1 break-words whitespace-normal">
+                  <div>Status: {errorMeta.statusCode ?? "—"}</div>
+                  <div>Code: {errorMeta.code ?? "—"}</div>
+                  <div>Message: {String(errorMeta.rawMessage ?? "—")}</div>
+                </div>
+              </details>
+            ) : null}
+            {personaMismatch ? (
+              <div className="rounded-md border border-rose-700/40 bg-rose-900/10 px-3 py-2 text-rose-200">
+                <p>
+                  This package is bound to persona{" "}
+                  <span className="font-semibold">{personaMismatch.packagePersonaKey}</span>.
+                  You requested{" "}
+                  <span className="font-semibold">{personaMismatch.requestedPersonaKey}</span>.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-3">
+                  <Link
+                    href="/dashboard"
+                    className="text-[11px] underline underline-offset-2 hover:text-white"
+                  >
+                    Select another package
+                  </Link>
+                  <Link
+                    href="/#packages"
+                    className="text-[11px] underline underline-offset-2 hover:text-white"
+                  >
+                    Buy another package
+                  </Link>
+                </div>
+              </div>
+            ) : null}
+            {personaAlreadyBound?.existingInstanceId ? (
+              <div className="rounded-md border border-rose-700/40 bg-rose-900/10 px-3 py-2 text-rose-200">
+                <p>
+                  This persona already belongs to another active package. Please select the correct package and try again.
+                </p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setBindingActionLoading(true);
+                    try {
+                      await selectPackageInstance(personaAlreadyBound.existingInstanceId || "");
+                      if (typeof window !== "undefined") {
+                        window.dispatchEvent(new Event("ai-auth-changed"));
+                      }
+                    } catch (err) {
+                      console.error("Failed to select package instance:", err);
+                    } finally {
+                      setBindingActionLoading(false);
+                    }
+                  }}
+                  disabled={bindingActionLoading}
+                  className="mt-2 inline-flex items-center gap-2 rounded-md border border-rose-700/60 px-2.5 py-1 text-[11px] hover:border-rose-400 disabled:opacity-60"
+                >
+                  {bindingActionLoading ? "Selecting..." : "Select that package"}
+                </button>
+              </div>
+            ) : null}
           </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => onSubmit()}
+            disabled={!file || status === "uploading"}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition
+              ${
+                file && status !== "uploading"
+                  ? "bg-[#50C0F0] text-[#07141d] hover:opacity-90 shadow"
+                  : "bg-[rgba(255,255,255,0.10)] cursor-not-allowed"
+              }`}
+          >
+            {status === "uploading" ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Uploading…
+              </>
+            ) : (
+              <>Analyze with AI</>
+            )}
+          </button>
+
+          {status === "uploading" ? (
+            <button
+              onClick={onCancel}
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] border border-[var(--hg-border)]"
+            >
+              <X className="w-4 h-4" />
+              Cancel
+            </button>
+          ) : (
+            <button
+              onClick={reset}
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] border border-[var(--hg-border)]"
+            >
+              <X className="w-4 h-4" />
+              Reset
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -477,53 +597,14 @@ function Progress({ pct }: { pct: number }) {
   const v = Math.max(0, Math.min(100, Math.round(pct)));
   return (
     <div className="w-full">
-      <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+      <div className="h-2 rounded-full bg-[rgba(255,255,255,0.10)] overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-indigo-400 to-indigo-600"
+          className="h-full bg-gradient-to-r from-[#50C0F0] to-[#7fd9ff]"
           style={{ width: `${v}%` }}
         />
       </div>
-      <div className="mt-1 text-[10px] text-gray-400">{v}%</div>
+      <div className="mt-1 text-[10px] hg-muted">{v}%</div>
     </div>
   );
 }
 
-function Switch({
-  label,
-  checked,
-  onChange,
-  icon,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={`inline-flex items-center gap-2 text-xs font-medium rounded-full px-2 py-1
-        border transition ${
-          checked
-            ? "bg-white/10 text-white border-white/20"
-            : "bg-transparent text-gray-300 border-white/10 hover:bg-white/5"
-        }`}
-      title={label}
-    >
-      <span
-        className={`inline-flex h-4 w-7 rounded-full p-0.5 transition
-          ${checked ? "bg-indigo-600" : "bg-white/15"}`}
-      >
-        <span
-          className={`h-3 w-3 rounded-full bg-white transition-transform
-          ${checked ? "translate-x-3" : ""}`}
-        />
-      </span>
-      {icon}
-      <span>{label}</span>
-    </button>
-  );
-}

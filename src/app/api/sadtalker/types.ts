@@ -21,6 +21,8 @@ export type SadTalkerFilePayload = {
 
 export type SadTalkerJobPayload = {
   userId: string;
+  packageInstanceId?: string | null;
+  personaKey?: string | null;
   requestId?: string;
   imageUrl?: string;
   audioUrl?: string;

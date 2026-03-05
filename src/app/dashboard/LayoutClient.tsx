@@ -1,14 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Spinner from "@/app/components/dashboard/loading spinner/page";
 import DashboardSidebar from "@/app/components/dashboard/sidebar/DashboardSidebar";
 import { FloatingChatProvider } from "@/app/components/AIchat/FloatingChatContext";
 import FloatingChatWidget from "@/app/components/AIchat/FloatingChatWidget";
 import MobileProjectNavDrawer from "@/app/components/dashboard/buttons/MobileProjectNavDrawer";
+import FaceEnrollModal from "@/app/components/dashboard/FaceEnrollModal";
+import DashboardGlow from "@/app/components/dashboard/DashboardGlow";
 import { Menu } from "lucide-react";
 import { useConsent } from "@/app/components/consent/ConsentContext";
 import { useUser } from "@/app/hooks/useUser";
+import { usePlanInfo } from "@/app/dashboard/PlanContext";
 
 type User = { id: string; email: string; plan?: string | null } | null;
 
@@ -25,6 +28,9 @@ export default function LayoutClient({
   const { open: openConsent } = useConsent();
   // Hydrate auth client-side using server-provided user to avoid first-paint 401
   const { user, loading: userLoading } = useUser({ required: true, initialUser });
+  const { data: planData, hasActiveInstance, refresh: refreshPlan } = usePlanInfo();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const pathname = usePathname();
 
@@ -46,6 +52,10 @@ export default function LayoutClient({
 
   // also hide the floating widget on the dedicated chat routes
   const showFloating = showBottomSpacer;
+  const forceEnroll = searchParams.get("enroll") === "1";
+  const shouldBlock =
+    forceEnroll ||
+    (Boolean(hasActiveInstance) && Boolean(planData) && planData?.faceEnrolled === false);
 
   if (!hasMounted || userLoading || !user)
     return (
@@ -58,13 +68,18 @@ export default function LayoutClient({
     <>
       <FloatingChatProvider>
         {/* allow natural page scroll; sidebar remains fixed */}
-        <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black flex">
+        <div className="relative min-h-screen overflow-x-hidden bg-[var(--hg-bg)] flex">
+          <DashboardGlow />
           {/* Sidebar */}
           <div
             className="hidden md:flex fixed top-6 left-6 z-30 transition-all duration-200"
             style={{ width: sidebarWidth, height: "calc(100svh - 3rem)", padding: "0.5rem 0" }}
           >
-            <DashboardSidebar expanded={expanded} setExpanded={setExpanded} />
+            <DashboardSidebar
+              expanded={expanded}
+              setExpanded={setExpanded}
+              onOpenCookiePreferences={openConsent}
+            />
           </div>
 
           {/* Content column */}
@@ -78,7 +93,7 @@ export default function LayoutClient({
           {!showBottomSpacer && (
             <div
               aria-hidden
-              className="pointer-events-none fixed inset-x-0 bottom-0 z-[5] bg-gradient-to-br from-gray-900 via-gray-800 to-black"
+              className="pointer-events-none fixed inset-x-0 bottom-0 z-[5] bg-[var(--hg-bg)]"
               style={{ height: "env(safe-area-inset-bottom, 0px)" }}
             />
           )}
@@ -99,14 +114,22 @@ export default function LayoutClient({
           {/* Mobile Project Navigation Drawer */}
           <MobileProjectNavDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
-          {/* Persistent cookie prefs on dashboard routes (footer is hidden here) */}
-          <button
-            onClick={openConsent}
-            className="fixed bottom-3 right-3 z-40 text-xs text-gray-300/80 hover:text-white underline underline-offset-2"
-          >
-            Cookie preferences
-          </button>
         </div>
+        <FaceEnrollModal
+          open={shouldBlock}
+          onSuccess={async () => {
+            await refreshPlan(true);
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new Event("ai-auth-changed"));
+            }
+            if (forceEnroll) {
+              const next = new URLSearchParams(searchParams.toString());
+              next.delete("enroll");
+              const q = next.toString();
+              router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+            }
+          }}
+        />
       </FloatingChatProvider>
     </>
   );

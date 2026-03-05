@@ -11,9 +11,19 @@ export const dynamic = "force-dynamic";
 const SERVER_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "ai_session";
 
+// File validation constants
+const MAX_IMAGE_SIZE_MB = 10;
+const MAX_AUDIO_SIZE_MB = 15;
+const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg"];
+const ALLOWED_AUDIO_TYPES = ["audio/mpeg", "audio/wav"];
+
 type CreateBody = SadTalkerJobPayload & {
   priority?: number;
 };
+
+function makeRequestId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 function sanitizeString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -134,12 +144,23 @@ function validateUrl(value: unknown): string {
 }
 
 async function handleJsonPayload(body: Partial<CreateBody>) {
+  const requestId = makeRequestId();
   if (!body || typeof body !== "object") {
-    return { error: NextResponse.json({ error: "Invalid JSON body" }, { status: 400 }) };
+    return {
+      error: NextResponse.json(
+        { error: "Invalid JSON body", errorCode: "VALIDATION_ERROR", requestId },
+        { status: 400 }
+      ),
+    };
   }
   const { imageUrl, audioUrl, userId, webhookUrl, metadata, options } = body;
   if (!userId || typeof userId !== "string") {
-    return { error: NextResponse.json({ error: "userId is required" }, { status: 400 }) };
+    return {
+      error: NextResponse.json(
+        { error: "userId is required", errorCode: "VALIDATION_ERROR", requestId },
+        { status: 400 }
+      ),
+    };
   }
 
   let image: string;
@@ -148,7 +169,12 @@ async function handleJsonPayload(body: Partial<CreateBody>) {
     image = validateUrl(imageUrl);
     audio = validateUrl(audioUrl);
   } catch (err) {
-    return { error: NextResponse.json({ error: `Invalid input: ${(err as Error).message}` }, { status: 400 }) };
+    return {
+      error: NextResponse.json(
+        { error: `Invalid input: ${(err as Error).message}`, errorCode: "VALIDATION_ERROR", requestId },
+        { status: 400 }
+      ),
+    };
   }
 
   let webhook: string | null = null;
@@ -156,15 +182,30 @@ async function handleJsonPayload(body: Partial<CreateBody>) {
     try {
       webhook = validateUrl(webhookUrl);
     } catch (err) {
-      return { error: NextResponse.json({ error: `Invalid webhookUrl: ${(err as Error).message}` }, { status: 400 }) };
+      return {
+        error: NextResponse.json(
+          { error: `Invalid webhookUrl: ${(err as Error).message}`, errorCode: "VALIDATION_ERROR", requestId },
+          { status: 400 }
+        ),
+      };
     }
   }
 
   if (!image.toLowerCase().match(/\.(png|jpg|jpeg)$/)) {
-    return { error: NextResponse.json({ error: "imageUrl must point to a .png or .jpg file" }, { status: 400 }) };
+    return {
+      error: NextResponse.json(
+        { error: "imageUrl must point to a .png or .jpg file", errorCode: "VALIDATION_ERROR", requestId },
+        { status: 400 }
+      ),
+    };
   }
   if (!audio.toLowerCase().match(/\.(mp3|wav)$/)) {
-    return { error: NextResponse.json({ error: "audioUrl must point to a .mp3 or .wav file" }, { status: 400 }) };
+    return {
+      error: NextResponse.json(
+        { error: "audioUrl must point to a .mp3 or .wav file", errorCode: "VALIDATION_ERROR", requestId },
+        { status: 400 }
+      ),
+    };
   }
 
   const payload: SadTalkerJobPayload = {
@@ -176,20 +217,87 @@ async function handleJsonPayload(body: Partial<CreateBody>) {
     options: sanitizeOptions(options),
   };
 
-  return { payload, priority: typeof body.priority === "number" ? body.priority : undefined, requestId: body.requestId };
+  return {
+    payload,
+    priority: typeof body.priority === "number" ? body.priority : undefined,
+    requestId: sanitizeString(body.requestId) || requestId,
+  };
 }
 
 async function handleFormPayload(req: NextRequest) {
+  const requestId = makeRequestId();
   const form = await req.formData();
 
   const sourceImage = form.get("source_image");
   const drivenAudio = form.get("driven_audio");
 
   if (!(sourceImage instanceof File) || sourceImage.size === 0) {
-    return { error: NextResponse.json({ error: "source_image file is required" }, { status: 400 }) };
+    return {
+      error: NextResponse.json(
+        { error: "source_image file is required", errorCode: "VALIDATION_ERROR", requestId },
+        { status: 400 }
+      ),
+    };
   }
   if (!(drivenAudio instanceof File) || drivenAudio.size === 0) {
-    return { error: NextResponse.json({ error: "driven_audio file is required" }, { status: 400 }) };
+    return {
+      error: NextResponse.json(
+        { error: "driven_audio file is required", errorCode: "VALIDATION_ERROR", requestId },
+        { status: 400 }
+      ),
+    };
+  }
+
+  // File validation - image
+  if (!ALLOWED_IMAGE_TYPES.includes(sourceImage.type)) {
+    return {
+      error: NextResponse.json(
+        {
+          error: "Invalid image type. Only PNG and JPEG are supported.",
+          errorCode: "VALIDATION_ERROR",
+          requestId,
+        },
+        { status: 400 }
+      ),
+    };
+  }
+  if (sourceImage.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+    return {
+      error: NextResponse.json(
+        {
+          error: `Image file too large. Maximum size is ${MAX_IMAGE_SIZE_MB}MB.`,
+          errorCode: "VALIDATION_ERROR",
+          requestId,
+        },
+        { status: 400 }
+      ),
+    };
+  }
+
+  // File validation - audio
+  if (!ALLOWED_AUDIO_TYPES.includes(drivenAudio.type)) {
+    return {
+      error: NextResponse.json(
+        {
+          error: "Invalid audio type. Only MP3 and WAV are supported.",
+          errorCode: "VALIDATION_ERROR",
+          requestId,
+        },
+        { status: 400 }
+      ),
+    };
+  }
+  if (drivenAudio.size > MAX_AUDIO_SIZE_MB * 1024 * 1024) {
+    return {
+      error: NextResponse.json(
+        {
+          error: `Audio file too large. Maximum size is ${MAX_AUDIO_SIZE_MB}MB.`,
+          errorCode: "VALIDATION_ERROR",
+          requestId,
+        },
+        { status: 400 }
+      ),
+    };
   }
 
   const preprocess = sanitizeString(form.get("preprocess")) ?? "full";
@@ -241,17 +349,21 @@ async function handleFormPayload(req: NextRequest) {
   return {
     payload,
     priority: parseInteger(form.get("priority")),
-    requestId: sanitizeString(form.get("requestId")),
+    requestId,
     imageHash,
   };
 }
 
-async function ensureSadTalkerQuota(req: NextRequest, imageHash?: string) {
+async function ensureSadTalkerQuota(req: NextRequest, imageHash?: string, imageBase64?: string) {
+  const localRequestId = makeRequestId();
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (!token) {
     return {
       ok: false as const,
-      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      response: NextResponse.json(
+        { error: "Unauthorized", errorCode: "UNAUTHORIZED", requestId: localRequestId },
+        { status: 401 }
+      ),
     };
   }
 
@@ -261,10 +373,17 @@ async function ensureSadTalkerQuota(req: NextRequest, imageHash?: string) {
   };
 
   try {
+    let body;
+    let contentType = "application/json";
+    if (imageBase64) {
+      body = JSON.stringify({ imageHash, imageBase64 });
+    } else {
+      body = JSON.stringify(imageHash ? { imageHash } : {});
+    }
     const resp = await fetch(`${SERVER_BASE_URL}/api/user/sadtalker/consume`, {
       method: "POST",
-      headers,
-      body: JSON.stringify(imageHash ? { imageHash } : {}),
+      headers: { ...headers, "Content-Type": contentType },
+      body,
       cache: "no-store",
     });
 
@@ -279,7 +398,10 @@ async function ensureSadTalkerQuota(req: NextRequest, imageHash?: string) {
     if (resp.status === 401) {
       return {
         ok: false as const,
-        response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+        response: NextResponse.json(
+          { error: "Unauthorized", errorCode: "UNAUTHORIZED", requestId: data?.requestId ?? localRequestId },
+          { status: 401 }
+        ),
       };
     }
 
@@ -295,7 +417,7 @@ async function ensureSadTalkerQuota(req: NextRequest, imageHash?: string) {
             plan: data?.plan ?? null,
             remaining: data?.remaining ?? null,
             limit: data?.limit ?? null,
-            requestId: data?.requestId ?? null,
+            requestId: data?.requestId ?? localRequestId,
           },
           { status: 402 },
         ),
@@ -310,14 +432,29 @@ async function ensureSadTalkerQuota(req: NextRequest, imageHash?: string) {
             error:
               data?.error ||
               "Your current plan only allows videos for a single face. Please reuse your original photo or upgrade your plan.",
-            code: data?.code,
+            code: data?.errorCode || data?.code,
+            errorCode: data?.errorCode,
             feature: data?.feature,
             plan: data?.plan ?? null,
             remaining: data?.remaining ?? null,
             limit: data?.limit ?? null,
-            requestId: data?.requestId ?? null,
+            requestId: data?.requestId ?? localRequestId,
           },
           { status: 403 },
+        ),
+      };
+    }
+    if (resp.status === 409) {
+      return {
+        ok: false as const,
+        response: NextResponse.json(
+          {
+            error: data?.error || data?.message || "Face verification required",
+            code: data?.errorCode || data?.code,
+            errorCode: data?.errorCode || data?.code,
+            requestId: data?.requestId ?? localRequestId,
+          },
+          { status: 409 }
         ),
       };
     }
@@ -329,21 +466,37 @@ async function ensureSadTalkerQuota(req: NextRequest, imageHash?: string) {
       });
       return {
         ok: false as const,
-        response: NextResponse.json({ error: "Failed to verify video quota" }, { status: 500 }),
+        response: NextResponse.json(
+          {
+            error: data?.error || "Failed to verify video quota",
+            errorCode: data?.errorCode || data?.code || "INTERNAL_ERROR",
+            requestId: data?.requestId ?? localRequestId,
+          },
+          { status: resp.status || 500 }
+        ),
       };
     }
 
-    return { ok: true as const, userId: data.userId as string };
+    return {
+      ok: true as const,
+      userId: data.userId as string,
+      packageInstanceId: typeof data.packageInstanceId === "string" ? data.packageInstanceId : null,
+      personaKey: typeof data.personaKey === "string" ? data.personaKey : null,
+    };
   } catch (err) {
     console.error("[sadtalker:create] quota request failed", err);
     return {
       ok: false as const,
-      response: NextResponse.json({ error: "Failed to verify video quota" }, { status: 500 }),
+      response: NextResponse.json(
+        { error: "Failed to verify video quota", errorCode: "INTERNAL_ERROR", requestId: localRequestId },
+        { status: 500 }
+      ),
     };
   }
 }
 
 export async function POST(req: NextRequest) {
+  const routeRequestId = makeRequestId();
   try {
     const contentType = req.headers.get("content-type") || "";
     let parsed:
@@ -363,21 +516,37 @@ export async function POST(req: NextRequest) {
     }
 
     if (!parsed || parsed.error) {
-      return parsed?.error ?? NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      return (
+        parsed?.error ??
+        NextResponse.json(
+          { error: "Invalid payload", errorCode: "VALIDATION_ERROR", requestId: routeRequestId },
+          { status: 400 }
+        )
+      );
     }
     if (!parsed.payload) {
-      return NextResponse.json({ error: "Payload missing" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Payload missing", errorCode: "VALIDATION_ERROR", requestId: routeRequestId },
+        { status: 400 }
+      );
     }
 
     // Enforce per-plan SadTalker limits and single-face restriction (for non-ultimate plans).
     const imageHash = (parsed as any).imageHash as string | undefined;
-    const quota = await ensureSadTalkerQuota(req, imageHash);
+    const imageBase64 = (parsed as any)?.payload?.imageFile?.data;
+    const quota = await ensureSadTalkerQuota(req, imageHash, imageBase64);
     if (!quota.ok) {
       return quota.response;
     }
 
     // Always use the authenticated user id for job/user bookkeeping, ignoring any client-provided userId.
     parsed.payload.userId = quota.userId;
+    if (quota.packageInstanceId) {
+      parsed.payload.packageInstanceId = quota.packageInstanceId;
+    }
+    if (quota.personaKey) {
+      parsed.payload.personaKey = quota.personaKey;
+    }
 
     const queue = getSadTalkerQueue();
     const job = await queue.add(
@@ -394,9 +563,15 @@ export async function POST(req: NextRequest) {
       },
     );
 
-    return NextResponse.json({ jobId: job.id, state: "queued" }, { status: 202 });
+    return NextResponse.json(
+      { jobId: job.id, state: "queued", requestId: parsed.requestId || routeRequestId },
+      { status: 202 }
+    );
   } catch (err) {
     console.error("[sadtalker:create] error", err);
-    return NextResponse.json({ error: "Failed to enqueue SadTalker job" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to enqueue SadTalker job", errorCode: "INTERNAL_ERROR", requestId: routeRequestId },
+      { status: 500 }
+    );
   }
 }

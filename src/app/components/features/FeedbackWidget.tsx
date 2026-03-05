@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { sendFeedback } from "@/app/utils/api";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { MessageCircle } from "lucide-react";
 
 export default function FeedbackWidget() {

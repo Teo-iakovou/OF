@@ -51,7 +51,7 @@ const HistoryList: React.FC<Props> = ({
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {history.map((item) => (
           <HistoryCard
             key={item._id}
@@ -59,7 +59,7 @@ const HistoryList: React.FC<Props> = ({
             selectedItems={selectedItems}
             setSelectedItems={setSelectedItems}
             onDeleteClick={openConfirmModal}
-            onOpenClick={onOpenClick}     
+            onOpenClick={onOpenClick}
           />
         ))}
       </div>

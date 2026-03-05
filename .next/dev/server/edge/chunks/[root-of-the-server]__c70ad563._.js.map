@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/i18n/routing.ts"],"sourcesContent":["import {defineRouting} from 'next-intl/routing';\n\nexport const routing = defineRouting({\n  locales: ['en', 'el', 'es', 'it'],\n  defaultLocale: 'en',\n  localePrefix: 'as-needed',\n  localeCookie: {\n    name: 'NEXT_LOCALE',\n    maxAge: 60 * 60 * 24 * 365,\n    sameSite: 'lax'\n  }\n});\n"],"names":[],"mappings":";;;;AAAA;;AAEO,MAAM,UAAU,IAAA,2PAAa,EAAC;IACnC,SAAS;QAAC;QAAM;QAAM;QAAM;KAAK;IACjC,eAAe;IACf,cAAc;IACd,cAAc;QACZ,MAAM;QACN,QAAQ,KAAK,KAAK,KAAK;QACvB,UAAU;IACZ;AACF"}},
+    {"offset": {"line": 41, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/middleware.ts"],"sourcesContent":["import createMiddleware from 'next-intl/middleware';\nimport {routing} from './src/i18n/routing';\n\nexport default createMiddleware(routing);\n\nexport const config = {\n  matcher: ['/', '/((?!api|_next|_vercel|.*\\\\..*).*)']\n};\n"],"names":[],"mappings":";;;;;;AAAA;AACA;;;uCAEe,IAAA,yMAAgB,EAAC,yIAAO;AAEhC,MAAM,SAAS;IACpB,SAAS;QAAC;QAAK;KAAqC;AACtD"}}]
+}

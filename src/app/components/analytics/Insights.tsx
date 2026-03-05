@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState } from "react";
 import type { ResultDoc, RecommendedPlatform } from "@/app/types/analysis";
 import ClipboardButton from "@/app/components/dashboard/buttons/clipboard";
-import { ttsSynthesize } from "@/app/utils/api";
 import { FaRedditAlien, FaInstagram, FaTiktok } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import type { ReactNode } from "react";
@@ -96,37 +95,6 @@ function PlatformCard({ rec }: { rec: RecommendedPlatform }) {
   const borderGrad = PLATFORM_BORDER[rec.platform] || PLATFORM_BORDER[title] || "from-purple-500/70 to-indigo-500/70";
   const logoBg = PLATFORM_LOGO_BG[rec.platform] || PLATFORM_LOGO_BG[title] || "from-purple-500 to-indigo-500";
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState(false);
-
-  async function toggleTTS() {
-    try {
-      if (playing) {
-        audioRef.current?.pause();
-        audioRef.current = null;
-        setPlaying(false);
-        return;
-      }
-      if (!rec.caption) return;
-      const url = await ttsSynthesize(rec.caption);
-      const a = new Audio(url);
-      audioRef.current = a;
-      a.onended = () => setPlaying(false);
-      a.onerror = () => setPlaying(false);
-      setPlaying(true);
-      await a.play().catch(() => setPlaying(false));
-    } catch {
-      setPlaying(false);
-    }
-  }
-
-  useEffect(() => () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-  }, []);
-
   return (
     <div className={`rounded-2xl p-[1.5px] bg-gradient-to-br ${borderGrad} shadow-[0_0_0_1px_rgba(255,255,255,0.04)] h-full`}>
       <div className="rounded-2xl bg-[#0A0F1E]/90 px-5 py-5 h-full flex flex-col">
@@ -166,15 +134,6 @@ function PlatformCard({ rec }: { rec: RecommendedPlatform }) {
               text={actions.primary.text}
               className="w-full sm:w-auto rounded-xl px-4 py-2 bg-gradient-to-b from-indigo-500 to-blue-600 hover:brightness-110 text-white font-semibold shadow-[0_8px_24px_rgba(56,97,251,0.35)]"
             />
-          )}
-          {rec.caption && (
-            <button
-              type="button"
-              onClick={toggleTTS}
-              className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-gray-600 text-gray-200 hover:text-white hover:bg-white/5"
-            >
-              {playing ? "Stop" : "Generate voice-over"}
-            </button>
           )}
         </div>
       </div>

@@ -1,6 +1,8 @@
 import React from "react";
 
-export function UpgradeCta({ href = "/dashboard/billing" }: { href?: string }) {
+import { PACKAGES_URL } from "@/app/utils/urls";
+
+export function UpgradeCta({ href = PACKAGES_URL }: { href?: string }) {
   return (
     <a
       href={href}

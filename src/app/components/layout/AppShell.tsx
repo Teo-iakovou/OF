@@ -31,6 +31,9 @@ export default function AppShell({ children }: AppShellProps) {
   })();
   const useLandingShell =
     pathWithoutLocale === "/" ||
+    /^\/(lite|pro|ultimate)$/.test(pathWithoutLocale) ||
+    pathWithoutLocale === "/login" ||
+    pathWithoutLocale === "/signup" ||
     pathWithoutLocale === "/privacy" ||
     pathWithoutLocale === "/terms" ||
     pathWithoutLocale === "/cookies";

@@ -48,6 +48,14 @@ export interface RecommendedPlatform {
   bestTimesLocal?: string[];        // ["18:00-21:00", ...]
   notes?: string[];
   subreddits?: string[];            // for Reddit
+  policyHints?: string[];
+  policyWhy?: string;
+  selectedIds?: {
+    timePackId?: string | null;
+    hashtagPackId?: string | null;
+    captionStyleId?: string | null;
+    ctaId?: string | null;
+  };
 }
 
 export interface Promotion {
@@ -56,6 +64,10 @@ export interface Promotion {
   hasFace: boolean;
   recommendedPlatforms: RecommendedPlatform[];
   ctaVariants: string[];
+  selectedIds?: {
+    platformMixId?: string | null;
+    ctaId?: string | null;
+  };
   riskFlags: string[];
 }
 

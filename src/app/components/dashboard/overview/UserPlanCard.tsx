@@ -2,10 +2,11 @@
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { useUser } from "@/app/hooks/useUser";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
+import { formatRemaining } from "@/app/utils/quotaDisplay";
 
 export default function UserPlanCard() {
   const { user, loading: userLoading } = useUser({ required: false });
-  const { data: planData, loading } = usePlanInfo();
+  const { data: planData, loading, hasActiveInstance, isMissingActiveInstance } = usePlanInfo();
 
   if (loading || userLoading) {
     return (
@@ -17,18 +18,19 @@ export default function UserPlanCard() {
     );
   }
 
-  if (!planData?.hasAccess) return null;
-  const uploadsRemaining = planData.uploadsRemaining ?? 0;
+  if (isMissingActiveInstance || !hasActiveInstance || !planData?.hasAccess) return null;
+  const uploadsRemaining = planData.uploadsRemaining ?? null;
+  const uploadsRemainingLabel = formatRemaining(uploadsRemaining);
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 shadow-md">
       <h2 className="text-xl font-bold text-white mb-2">Your Plan</h2>
       <p className="text-gray-300">
-        Plan: <span className="text-cyan-400">{planData.package ?? "Unknown"}</span>
+        Plan: <span className="text-cyan-400">{planData.package ?? "—"}</span>
       </p>
       <p className="text-gray-300">
         Uploads Remaining:{" "}
-        <span className="text-pink-400">{uploadsRemaining}</span>
+        <span className="text-pink-400">{uploadsRemainingLabel}</span>
       </p>
       {planData.expiresAt && (
         <p className="text-gray-300">

@@ -16,16 +16,16 @@ const variantStyles: Record<
   { background: string; edgeColor: string }
 > = {
   gradient: {
-    background: "bg-gradient-to-r from-[#44186f] via-[#1b1e5a] to-[#020414]",
-    edgeColor: "#1b1e5a",
+    background: "bg-gradient-to-br from-[var(--hg-surface)] via-[#0d1621] to-[var(--hg-bg)]",
+    edgeColor: "var(--hg-border)",
   },
   dark: {
-    background: "bg-gradient-to-b from-[#050819] via-[#040b1f] to-[#020414]",
-    edgeColor: "#1b1e5a",
+    background: "bg-gradient-to-b from-[var(--hg-bg)] via-[#0a0f16] to-[var(--hg-surface)]",
+    edgeColor: "var(--hg-border)",
   },
   darker: {
-    background: "bg-gradient-to-b from-[#020414] via-[#010712] to-[#01030a]",
-    edgeColor: "#010712",
+    background: "bg-[var(--hg-bg)]",
+    edgeColor: "var(--hg-border)",
   },
 };
 

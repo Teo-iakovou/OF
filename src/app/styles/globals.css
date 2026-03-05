@@ -2,13 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --hg-bg: #0B1118;
+  --hg-surface: #121C28;
+  --hg-surface-2: #162232;
+  --hg-border: rgba(255,255,255,0.08);
+  --hg-border-2: rgba(255,255,255,0.05);
+  --hg-text: #EAF0FF;
+  --hg-muted: rgba(234,240,255,0.65);
+  --hg-muted-2: rgba(234, 240, 255, 0.45);
+  --hg-accent: #50C0F0;
+  --hg-accent-soft: rgba(80,192,240,0.18);
+  --hg-accent-2: var(--hg-accent-soft);
+}
+
 html,
 body {
-  @apply bg-gray-900 text-gray-100 font-sans;
+  @apply font-sans;
+  background: var(--hg-bg);
+  color: var(--hg-text);
 }
 
 a {
-  @apply text-blue-400 hover:text-blue-300 transition-colors;
+  @apply transition-colors;
+  color: var(--hg-accent);
+}
+
+a:hover {
+  color: #7dd4fb;
 }
 
 .btn {
@@ -17,6 +38,52 @@ a {
 @layer utilities {
   .shadow-button {
     @apply shadow-lg hover:shadow-xl transition-shadow;
+  }
+  .hg-surface {
+    background: var(--hg-surface);
+    border: 1px solid var(--hg-border);
+    box-shadow: 0 14px 36px rgba(2, 6, 14, 0.35);
+  }
+  .hg-surface-soft {
+    background: var(--hg-surface-2);
+    border: 1px solid var(--hg-border-2);
+  }
+  .hg-divider {
+    border-color: var(--hg-border-2);
+  }
+  .hg-text {
+    color: var(--hg-text);
+  }
+  .hg-muted {
+    color: var(--hg-muted);
+  }
+  .hg-muted-2 {
+    color: var(--hg-muted-2);
+  }
+  .hg-accent-hover {
+    color: var(--hg-muted);
+    transition: color 180ms ease;
+  }
+  .hg-accent-hover:hover {
+    color: var(--hg-accent);
+  }
+
+  /* Landing page utilities */
+  .landing-bg {
+    background: var(--hg-bg);
+  }
+
+  .landing-surface {
+    background: var(--hg-surface);
+    border: 1px solid var(--hg-border);
+  }
+
+  .landing-text-accent {
+    color: var(--hg-accent);
+  }
+
+  .landing-border {
+    border-color: var(--hg-border);
   }
 }
 html {

@@ -2,10 +2,19 @@
 
 import { packages } from "@/app/components/packages/Packages";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Trash2 } from "lucide-react";
 import { useCart } from "./CartContext";
-import { startCheckout } from "@/app/utils/api";
+import { useUser } from "@/app/hooks/useUser";
+import { buildLoginHref } from "@/app/utils/authRedirect";
+import {
+  startCheckout,
+  subscribeCheckoutInFlight,
+  getCheckoutInFlightSnapshot,
+  getCheckoutInFlightServerSnapshot,
+} from "@/app/utils/api";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -14,8 +23,22 @@ interface CartDrawerProps {
 }
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { cartItems, removeFromCart, changeQty } = useCart();
+  const { user, loading: userLoading } = useUser({ required: false });
   const [isMounted, setIsMounted] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const checkoutInFlight = useSyncExternalStore(
+    subscribeCheckoutInFlight,
+    getCheckoutInFlightSnapshot,
+    getCheckoutInFlightServerSnapshot
+  );
+  const currentPath = useMemo(() => {
+    const query = searchParams.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [pathname, searchParams]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -41,12 +64,17 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   }, 0);
 
   const handleStripePayment = async () => {
-    if (!cartItems.length) return;
+    if (!cartItems.length || isCheckingOut || checkoutInFlight || userLoading) return;
+    if (!user) {
+      router.push(buildLoginHref(pathname, currentPath, "checkout"));
+      return;
+    }
+    setIsCheckingOut(true);
     try {
       await startCheckout(cartItems[0].id);
     } catch (error) {
       console.error("Stripe checkout error:", error);
-      alert("Please sign in before checkout.");
+      setIsCheckingOut(false);
     }
   };
 
@@ -146,7 +174,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           <span className="text-cyan-400">${subtotal}</span>
         </div>
         <button
-          disabled={cartItems.length === 0}
+          disabled={cartItems.length === 0 || isCheckingOut || checkoutInFlight}
           onClick={handleStripePayment}
           className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-700 hover:to-indigo-700 transition text-lg font-semibold py-4 rounded-xl shadow-lg disabled:opacity-60"
         >

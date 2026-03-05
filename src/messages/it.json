@@ -16,25 +16,259 @@
       "it": "IT"
     }
   },
+  "auth": {
+    "title": "Continua su Echofy",
+    "subtitle": "Accedi o crea un account per continuare il tuo flusso.",
+    "signInEyebrow": "Accedi",
+    "signUpEyebrow": "Registrati",
+    "continueWithGoogle": "Continua con Google",
+    "continueWithApple": "Continua con Apple",
+    "continueWithSSO": "Continua con SSO",
+    "continueWithEmail": "Continua con Email",
+    "createAccount": "Crea account",
+    "oauthComingSoon": "Accesso con Google, Apple e SSO in arrivo.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "emailFootnote": "Nessuna password richiesta. Ti facciamo accedere via email.",
+    "signingIn": "Accesso in corso...",
+    "goToSignup": "Ti serve un account? Registrati",
+    "goToLogin": "Hai già un account? Accedi",
+    "termsLine": "Continuando, accetti i nostri",
+    "terms": "Termini",
+    "privacy": "Privacy",
+    "errors": {
+      "signInFailed": "Accesso non riuscito",
+      "verifyFailed": "Impossibile verificare la sessione. Abilita i cookie e riprova."
+    }
+  },
   "landing": {
     "hero": {
       "eyebrow": "Piattaforma AI per creator",
       "title": "Crea contenuti vincenti più velocemente con un unico flusso AI",
-      "subtitle": "Carica una foto e ottieni strategia per piattaforma, caption, hashtag e talking-head output in un unico posto."
+      "subtitle": "Carica una foto e ottieni strategia per piattaforma, caption, hashtag e talking-head output in un unico posto.",
+      "primaryCta": "Inizia",
+      "secondaryCta": "Accedi",
+      "workflow": {
+        "title": "Anteprima flusso",
+        "badge": "Live",
+        "items": [
+          "Carica immagine",
+          "Genera strategia",
+          "Controlla report",
+          "Pubblica più velocemente"
+        ]
+      }
+    },
+    "brands": {
+      "eyebrow": "Scelto da",
+      "title": "Usato da team creator moderni",
+      "items": ["CreatorDaily", "PixelStudio", "MonoMedia", "NorthSocial", "HypeOps"]
+    },
+    "how": {
+      "eyebrow": "Come funziona",
+      "title": "Tre passi per contenuti pronti alla produzione",
+      "steps": [
+        { "num": "1", "title": "Carica", "desc": "Aggiungi una volta una foto del volto, poi carica le immagini contenuto per l'analisi." },
+        { "num": "2", "title": "Genera", "desc": "Ricevi strategia, caption, hashtag e finestre di pubblicazione consigliate." },
+        { "num": "3", "title": "Scala", "desc": "Monitora nello storico, ottimizza con AI chat e pubblica con continuità." }
+      ]
+    },
+    "features": {
+      "eyebrow": "Funzionalità",
+      "title": "Tutto ciò che ti serve in un'unica dashboard",
+      "items": [
+        { "title": "Analisi immagini AI", "desc": "Genera strategia di pubblicazione pronta per piattaforma da un solo upload." },
+        { "title": "Caption + hashtag", "desc": "Ottieni rapidamente varianti testo ottimizzate e set di hashtag." },
+        { "title": "Chat con coach AI", "desc": "Chiedi riscritture, suggerimenti di timing e direzione creativa." },
+        { "title": "Avatar video AI", "desc": "Trasforma foto del volto + audio in video parlati pronti da condividere." },
+        { "title": "Storico e report", "desc": "Traccia output, rivedi piani e apri i dettagli report quando vuoi." },
+        { "title": "Sicurezza legata al volto", "desc": "Registrazione e verifica per istanza pacchetto proteggono l'utilizzo." }
+      ]
+    },
+    "testimonials": {
+      "eyebrow": "Testimonianze",
+      "title": "Scelto da creator che pubblicano ogni settimana",
+      "author": "Creator {index}",
+      "quotes": [
+        "Ho dimezzato il tempo di preparazione e capito subito quando pubblicare.",
+        "Il flusso report + storico è molto chiaro e veloce.",
+        "I video talking-head insieme alle caption ci hanno dato un motore contenuti affidabile."
+      ]
     },
     "faq": {
       "eyebrow": "FAQ",
-      "title": "Risposte prima di iniziare"
+      "title": "Risposte prima di iniziare",
+      "items": [
+        {
+          "q": "Come genera i suggerimenti Echofy?",
+          "a": "Analizziamo i contenuti visivi caricati e produciamo piani per piattaforma, caption, hashtag e finestre di pubblicazione."
+        },
+        {
+          "q": "Posso usarlo per stili di contenuto diversi?",
+          "a": "Sì. Ogni upload può produrre una strategia diversa e puoi confrontare i risultati dallo storico."
+        },
+        {
+          "q": "Devo registrare il mio volto?",
+          "a": "Sì, è richiesta una registrazione una tantum per ogni istanza di pacchetto attiva per sicurezza e controllo accessi."
+        },
+        {
+          "q": "Il video talking-head è incluso?",
+          "a": "Sì. La generazione video è inclusa in base al piano, con crediti extra disponibili come add-on."
+        },
+        {
+          "q": "Cosa succede quando raggiungo i limiti quota?",
+          "a": "Puoi aumentare capacità con un piano superiore o acquistare add-on in fatturazione senza cambiare la configurazione attuale."
+        },
+        {
+          "q": "Dove posso rivedere gli output precedenti?",
+          "a": "Lo storico dashboard conserva analisi e report precedenti così puoi riaprirli in qualsiasi momento."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Pronto a scalare il tuo motore contenuti?",
+      "subtitle": "Inizia con un solo upload e trasforma il tuo flusso settimanale di pianificazione contenuti.",
+      "button": "Vedi piani"
     }
   },
   "pricing": {
     "eyebrow": "Prezzi",
     "title": "Piani che crescono con te",
-    "subtitle": "Scegli il piano adatto alle tue esigenze di creazione contenuti. Puoi cambiare piano in qualsiasi momento."
+    "subtitle": "Scegli il piano adatto alle tue esigenze di creazione contenuti. Puoi cambiare piano in qualsiasi momento.",
+    "includesLabel": "Include",
+    "highlightsLabel": "Punti chiave",
+    "plans": {
+      "lite": {
+        "title": "Lite",
+        "price": "$99",
+        "period": "/una tantum",
+        "outcome": "Ideale per iniziare e testare l'analisi AI",
+        "includes": [
+          "Analisi immagini AI con strategia per piattaforma",
+          "Suggerimenti caption e hashtag",
+          "Storico e report",
+          "Protezione con registrazione volto una tantum"
+        ],
+        "highlights": ["Upload inclusi", "Risultati rapidi", "Supporto email (base)"],
+        "badge": null,
+        "cta": "Inizia"
+      },
+      "pro": {
+        "title": "Pro",
+        "price": "$189",
+        "period": "/una tantum",
+        "outcome": "Ideale per creator costanti che pubblicano ogni settimana",
+        "includes": [
+          "Tutto di Lite",
+          "Quote più alte (upload + maggiore uso AI)",
+          "Output strategico avanzato (dettagliato per piattaforma)",
+          "Elaborazione prioritaria",
+          "Supporto migliore"
+        ],
+        "highlights": ["Più popolare", "Più capacità AI", "Consegna più veloce"],
+        "badge": "Più popolare",
+        "cta": "Inizia"
+      },
+      "ultimate": {
+        "title": "Ultimate",
+        "price": "$399",
+        "period": "/una tantum",
+        "outcome": "Ideale per power user e agenzie",
+        "includes": [
+          "Tutto di Pro",
+          "Quote massime per scalare",
+          "Crediti video Talking Head inclusi",
+          "Supporto premium"
+        ],
+        "highlights": ["Miglior valore per team", "Priorità più alta", "Scala da agenzia"],
+        "badge": "Miglior valore",
+        "cta": "Inizia"
+      }
+    }
+  },
+  "packagePage": {
+    "notFound": {
+      "title": "Pacchetto non trovato",
+      "subtitle": "Questo piano non esiste o non è più disponibile.",
+      "backToPricing": "Torna ai prezzi"
+    },
+    "hero": {
+      "eyebrow": "Dettagli piano",
+      "primaryCta": "Acquista ora",
+      "processingCta": "Reindirizzamento...",
+      "signInAlert": "Accedi per continuare.",
+      "secondaryCta": "Torna ai prezzi",
+      "summary": {
+        "title": "Cosa ottieni",
+        "addToCart": "Aggiungi al carrello"
+      }
+    },
+    "sections": {
+      "socialProof": {
+        "eyebrow": "Scelto da",
+        "title": "Pensato per team creator moderni",
+        "items": ["CreatorDaily", "PixelStudio", "MonoMedia", "NorthSocial", "HypeOps"]
+      },
+      "included": {
+        "eyebrow": "Incluso",
+        "title": "Tutto ciò che include questo piano",
+        "subtitle": "Progettato per mantenere il tuo flusso veloce, sicuro e costante."
+      },
+      "how": {
+        "eyebrow": "Come funziona",
+        "title": "Dall'acquisto alla produzione in tre passaggi",
+        "steps": [
+          { "num": "1", "title": "Attiva piano", "desc": "Completa il checkout e sblocca subito questo pacchetto nel tuo account." },
+          { "num": "2", "title": "Registra e carica", "desc": "Completa il face enrollment una tantum e inizia a caricare contenuti per l'analisi." },
+          { "num": "3", "title": "Genera e scala", "desc": "Usa report, guida chat e storico per pubblicare con continuità." }
+        ]
+      },
+      "security": {
+        "eyebrow": "Sicurezza",
+        "title": "Face enrollment e controllo accessi",
+        "enrollment": "Il face enrollment è richiesto prima dell'uso e l'accesso resta bloccato finché non è completato.",
+        "quota": "L'enrollment non consuma la tua quota upload; solo l'analisi contenuti consuma quota."
+      },
+      "addons": {
+        "eyebrow": "Add-on",
+        "title": "Top-up quando ti serve più capacità",
+        "subtitle": "Aumenta utilizzo con add-on senza cambiare il tuo pacchetto attivo."
+      }
+    },
+    "faq": {
+      "eyebrow": "FAQ",
+      "title": "Risposte sul piano",
+      "planSpecificQuestion": "Per chi è più adatto il piano {plan}?",
+      "planSpecific": {
+        "lite": "Lite è ideale per testare il flusso e pubblicare i primi output ottimizzati.",
+        "pro": "Pro è ideale per creator settimanali che richiedono limiti più alti e priorità.",
+        "ultimate": "Ultimate è ideale per agenzie e power user con produzione ad alto volume."
+      },
+      "items": [
+        {
+          "q": "Posso fare upgrade più avanti?",
+          "a": "Sì. Puoi passare a un piano superiore in qualsiasi momento senza perdere lo storico."
+        },
+        {
+          "q": "Gli add-on scadono subito?",
+          "a": "Gli add-on si applicano all'uso account e seguono le regole di fatturazione correnti."
+        },
+        {
+          "q": "Il supporto è incluso?",
+          "a": "Sì. Il livello supporto dipende dal pacchetto selezionato."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Pronto a sbloccare questo piano?",
+      "subtitle": "Inizia ora e passa dall'idea a contenuti pronti alla pubblicazione in un solo flusso.",
+      "primaryCta": "Continua al checkout",
+      "secondaryCta": "Confronta tutti i piani"
+    }
   },
   "dashboardNav": {
     "overview": "Panoramica",
-    "upload": "Carica Contenuto",
+    "upload": "Carica contenuto",
     "aiChat": "AI Chat",
     "talkingHead": "Talking Head"
   }

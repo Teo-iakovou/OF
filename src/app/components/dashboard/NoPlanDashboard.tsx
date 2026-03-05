@@ -35,7 +35,7 @@ export default function NoPlanDashboard() {
             <p className="text-gray-300">Pick a plan to unlock uploads, AI chat, and talking head tools.</p>
           </div>
           <Link
-            href="/lite"
+            href="/#packages"
             className="inline-flex items-center justify-center rounded-lg bg-cyan-600 hover:bg-cyan-700 px-5 py-2 text-white font-semibold"
           >
             Explore plans →

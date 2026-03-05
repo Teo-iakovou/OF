@@ -2,135 +2,284 @@
 
 import Link from "next/link";
 import Reveal from "@/app/components/common/Reveal";
-import type { MouseEvent } from "react";
+import { Check, Crown, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { Outfit } from "next/font/google";
+import { useTranslations } from "next-intl";
 
-const glowStyles: Record<string, { base: string; hover: string; border: string }> = {
-  lite: {
-    base: "0 4px 18px rgba(59,130,246,0.08)",
-    hover: "0 16px 55px rgba(59,130,246,0.25)",
-    border: "border-cyan-300/15",
-  },
-  pro: {
-    base: "0 4px 18px rgba(236,72,153,0.08)",
-    hover: "0 16px 55px rgba(236,72,153,0.25)",
-    border: "border-pink-300/15",
-  },
-  ultimate: {
-    base: "0 4px 18px rgba(168,85,247,0.08)",
-    hover: "0 16px 55px rgba(168,85,247,0.25)",
-    border: "border-purple-300/15",
-  },
-};
-
-const haloClasses: Record<string, string> = {
-  lite: "from-cyan-400/30 via-transparent to-transparent",
-  pro: "from-pink-400/30 via-transparent to-transparent",
-  ultimate: "from-purple-400/30 via-transparent to-transparent",
-};
-
-const cardBackgrounds: Record<string, string> = {
-  lite:
-    "radial-gradient(circle at 20% 0%, rgba(131,216,255,0.38), transparent 55%), linear-gradient(145deg, rgba(24,41,95,0.98), rgba(9,14,37,0.95))",
-  pro:
-    "radial-gradient(circle at 50% -20%, rgba(255,170,221,0.4), transparent 60%), linear-gradient(145deg, rgba(38,24,88,0.98), rgba(10,7,29,0.95))",
-  ultimate:
-    "radial-gradient(circle at 80% 0%, rgba(195,157,255,0.4), transparent 60%), linear-gradient(145deg, rgba(30,18,92,0.98), rgba(9,8,31,0.95))",
-};
+const priceFont = Outfit({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+});
 
 export const packages = [
   {
     id: "lite",
     title: "Lite",
-    price: "$49",
-    description: "Kickstart your AI workflow with essentials.",
-    features: ["Basic Analytics", "5 Uploads / day", "Email Support"],
-    button: "Select Lite",
+    price: "$99",
+    period: "/one-time",
+    outcome: "Best for getting started and testing AI analysis",
+    includes: [
+      "AI image analysis with platform strategy",
+      "Caption and hashtag suggestions",
+      "History and reports",
+      "One-time face enrollment protection",
+    ],
+    features: [
+      "AI image analysis with platform strategy",
+      "Caption and hashtag suggestions",
+      "History and reports",
+      "One-time face enrollment protection",
+    ],
+    highlights: ["Uploads included", "Fast results", "Email support (basic)"],
+    badge: null,
+    icon: ShieldCheck,
+    featured: false,
   },
   {
     id: "pro",
     title: "Pro",
-    price: "$349",
-    description: "Accelerate creation with priority rendering.",
-    features: ["Custom AI Insights", "Unlimited Uploads", "Dedicated 24/7 Support"],
-    button: "Select Pro",
+    price: "$189",
+    period: "/one-time",
+    outcome: "Best for consistent creators posting weekly",
+    includes: [
+      "Everything in Lite",
+      "Higher quotas (uploads + more AI usage)",
+      "Advanced strategy output (detailed per platform)",
+      "Priority processing",
+      "Better support",
+    ],
+    features: [
+      "Everything in Lite",
+      "Higher quotas (uploads + more AI usage)",
+      "Advanced strategy output (detailed per platform)",
+      "Priority processing",
+      "Better support",
+    ],
+    highlights: ["Most popular", "More AI capacity", "Faster turnaround"],
+    badge: "Most Popular",
+    icon: Sparkles,
+    featured: true,
   },
   {
     id: "ultimate",
     title: "Ultimate",
-    price: "$499",
-    description: "Enterprise-grade orchestration and coaching.",
-    features: ["Full AI Integration", "Premium Support", "Custom Reports"],
-    button: "Select Ultimate",
+    price: "$399",
+    period: "/one-time",
+    outcome: "Best for power users and agencies",
+    includes: [
+      "Everything in Pro",
+      "Maximum quotas for scale",
+      "Talking Head video credits included",
+      "Premium support",
+    ],
+    features: [
+      "Everything in Pro",
+      "Maximum quotas for scale",
+      "Talking Head video credits included",
+      "Premium support",
+    ],
+    highlights: ["Best value for teams", "Highest priority", "Agency-ready scale"],
+    badge: "Best Value",
+    icon: Crown,
+    featured: false,
   },
 ];
 
-export default function Packages() {
+type PlanCopy = {
+  title: string;
+  price: string;
+  period: string;
+  outcome: string;
+  includes: string[];
+  highlights: string[];
+  badge: string | null;
+  cta: string;
+};
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isPlanCopy(value: unknown): value is PlanCopy {
+  if (!value || typeof value !== "object") return false;
+  const obj = value as Record<string, unknown>;
   return (
-    <section id="packages" className="scroll-mt-32 space-y-10 text-white ">
+    typeof obj.title === "string" &&
+    typeof obj.price === "string" &&
+    typeof obj.period === "string" &&
+    typeof obj.outcome === "string" &&
+    isStringArray(obj.includes) &&
+    isStringArray(obj.highlights) &&
+    (typeof obj.badge === "string" || obj.badge === null) &&
+    typeof obj.cta === "string"
+  );
+}
+
+export default function Packages() {
+  const t = useTranslations("pricing");
+  const fallbackPlans: Record<string, PlanCopy> = {
+    lite: {
+      title: "Lite",
+      price: "$99",
+      period: "/one-time",
+      outcome: "Best for getting started and testing AI analysis",
+      includes: [
+        "AI image analysis with platform strategy",
+        "Caption and hashtag suggestions",
+        "History and reports",
+        "One-time face enrollment protection",
+      ],
+      highlights: ["Uploads included", "Fast results", "Email support (basic)"],
+      badge: null,
+      cta: "Get started",
+    },
+    pro: {
+      title: "Pro",
+      price: "$189",
+      period: "/one-time",
+      outcome: "Best for consistent creators posting weekly",
+      includes: [
+        "Everything in Lite",
+        "Higher quotas (uploads + more AI usage)",
+        "Advanced strategy output (detailed per platform)",
+        "Priority processing",
+        "Better support",
+      ],
+      highlights: ["Most popular", "More AI capacity", "Faster turnaround"],
+      badge: "Most Popular",
+      cta: "Get started",
+    },
+    ultimate: {
+      title: "Ultimate",
+      price: "$399",
+      period: "/one-time",
+      outcome: "Best for power users and agencies",
+      includes: [
+        "Everything in Pro",
+        "Maximum quotas for scale",
+        "Talking Head video credits included",
+        "Premium support",
+      ],
+      highlights: ["Best value for teams", "Highest priority", "Agency-ready scale"],
+      badge: "Best Value",
+      cta: "Get started",
+    },
+  };
+
+  return (
+    <section id="packages" className="scroll-mt-32 space-y-10 text-white">
+      {/* Header */}
       <div className="space-y-4 text-center">
-        <p className="text-sm uppercase tracking-[0.4em] text-cyan-300/80">Choose your flow</p>
-        <h2 className="text-4xl font-bold">Tailored plans for every creator</h2>
-        <p className="text-lg text-white/70 max-w-3xl mx-auto">
-          Pick the bandwidth and support that matches your ambitions. Upgrade anytime as your SadTalker productions
-          scale.
+        <p className="text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("eyebrow")}</p>
+        <h2 className="text-3xl md:text-4xl font-semibold text-white">{t("title")}</h2>
+        <p className="text-base text-[var(--hg-muted)] max-w-2xl mx-auto">
+          {t("subtitle")}
         </p>
       </div>
-      <div className="flex flex-wrap justify-center gap-8">
+
+      {/* Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 max-w-6xl mx-auto px-4">
         {packages.map((pkg, i) => (
           <Reveal
             as="div"
             key={pkg.id}
-            delay={i * 150}
-            className="w-full max-w-[18rem] sm:max-w-[19rem]"
+            delay={i * 100}
+            className="flex"
           >
+            {(() => {
+              const rawPlan = t.raw(`plans.${pkg.id}`);
+              const plan = isPlanCopy(rawPlan) ? rawPlan : fallbackPlans[pkg.id];
+              return (
             <div
-              className={`relative min-h-[28rem] rounded-[28px] group backdrop-blur p-8 transition duration-[900ms] hover:-translate-y-2 hover:scale-[1.002]`}
-              style={{ boxShadow: glowStyles[pkg.id].base, backgroundImage: cardBackgrounds[pkg.id] }}
-              onMouseEnter={(e: MouseEvent<HTMLDivElement>) => {
-                e.currentTarget.style.transition = "box-shadow 0.9s ease, transform 0.9s ease";
-                e.currentTarget.style.boxShadow = glowStyles[pkg.id].hover;
-              }}
-              onMouseLeave={(e: MouseEvent<HTMLDivElement>) => {
-                e.currentTarget.style.transition = "box-shadow 0.9s ease, transform 0.9s ease";
-                e.currentTarget.style.boxShadow = glowStyles[pkg.id].base;
-              }}
+              className={`
+                group relative isolate flex min-h-[400px] flex-col w-full rounded-3xl border p-4 md:p-5
+                transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--hg-accent)]/50 hover:shadow-[0_14px_30px_rgba(80,192,240,0.16)]
+                ${pkg.featured
+                  ? 'border-[var(--hg-border)] bg-[var(--hg-surface-2)] shadow-[0_18px_45px_rgba(0,0,0,0.38)]'
+                  : 'border-[var(--hg-border)] bg-[var(--hg-surface)] shadow-[0_18px_45px_rgba(0,0,0,0.35)]'
+                }
+              `}
             >
-              <div
-                className={`text-sm pointer-events-none absolute -inset-6 opacity-0 blur-[120px] transition duration-[900ms] group-hover:opacity-30 bg-gradient-to-r ${haloClasses[pkg.id]}`}
-              />
-            {pkg.id === "pro" && (
-              <div
-                className="absolute -top-4 left-1/2 flex min-w-[11rem] -translate-x-1/2 items-center justify-center overflow-hidden rounded-full border border-white/40 px-5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.32em] text-white shadow-[0_18px_65px_rgba(255,95,180,0.5)]"
-                style={{
-                  background:
-                    "linear-gradient(125deg, #ff5fb2 0%, #ff68b8 45%, #ff5fb2 100%)",
-                }}
-              >
-                <span className="pointer-events-none absolute inset-0 bg-white/25 opacity-30 blur-3xl" />
-                <span className="relative">Most Popular</span>
+              {pkg.featured ? (
+                <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(900px_circle_at_50%_-20%,rgba(80,192,240,0.14),transparent_55%)]" />
+              ) : null}
+
+              {/* Badge */}
+              {plan.badge ? (
+                <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2">
+                  <div
+                    className={`rounded-full px-2 ${
+                      pkg.featured ? "bg-[var(--hg-surface-2)]" : "bg-[var(--hg-surface)]"
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-accent)_14%,transparent)] px-3 py-1 text-[11px] font-semibold tracking-wide text-[#9fd9f3] shadow-[0_10px_22px_rgba(80,192,240,0.14)]">
+                    <Zap className="h-3.5 w-3.5" />
+                    {plan.badge}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--hg-border)] bg-white/[0.03]">
+                <pkg.icon className={`h-6 w-6 ${pkg.featured ? "text-[var(--hg-accent)]" : "text-white/80"}`} />
               </div>
-            )}
-            <div className="space-y-3 text-center">
-              <h3 className="text-2xl font-bold">{pkg.title}</h3>
-              <p className="text-white/70 text-sm">{pkg.description}</p>
-              <p className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-500">
-                {pkg.price}
-              </p>
+
+              {/* Plan Name */}
+              <div className="space-y-1.5">
+                <h3 className="text-xl font-semibold text-white">{plan.title}</h3>
+                <p className="text-sm text-[var(--hg-muted)]">{plan.outcome}</p>
+              </div>
+
+              {/* Pricing */}
+              <div className="mt-4 mb-6">
+                <div className="flex items-baseline gap-1">
+                  <span className={`${priceFont.className} text-3xl md:text-4xl font-extrabold leading-none text-white`}>
+                    {plan.price}
+                  </span>
+                  <span className="text-base text-[var(--hg-muted)]">{plan.period}</span>
+                </div>
+              </div>
+
+              <div className="mb-4 text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("includesLabel")}</div>
+              {/* Features List */}
+              <ul className="mb-6 space-y-3">
+                {plan.includes.map((feature, idx) => (
+                  <li key={idx} className="flex items-start gap-3.5 text-sm md:text-[15px] leading-6 text-[var(--hg-muted)]">
+                    <Check className="h-5.5 w-5.5 shrink-0 text-[var(--hg-accent)] mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mb-3 text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("highlightsLabel")}</div>
+              <div className="mb-8 flex flex-wrap gap-2">
+                {plan.highlights.map((highlight) => (
+                  <span
+                    key={highlight}
+                    className="inline-flex items-center rounded-full border border-[var(--hg-border)] bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-white/90"
+                  >
+                    {highlight}
+                  </span>
+                ))}
+              </div>
+
+              {/* CTA Button */}
+              <Link href={`/${pkg.id}`} className="mt-auto">
+                <button
+                  className={`
+                    h-12 w-full rounded-2xl text-sm font-semibold transition-all
+                    ${pkg.featured
+                      ? 'bg-[var(--hg-accent)] text-[#04131d] hover:opacity-90 shadow-[0_10px_26px_rgba(80,192,240,0.35)]'
+                      : 'bg-[var(--hg-surface-2)] text-white border border-[var(--hg-border)] hover:border-[var(--hg-accent)]/50 group-hover:shadow-[inset_0_0_0_1px_rgba(80,192,240,0.35)]'
+                    }
+                  `}
+                >
+                  {plan.cta}
+                </button>
+              </Link>
             </div>
-            <ul className="mt-8 space-y-4 text-white/80">
-              {pkg.features.map((feature) => (
-                <li key={`${pkg.id}-${feature}`} className="flex items-center gap-3 text-base">
-                  <span className="h-2 w-2 rounded-full bg-white/70" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <Link href={`/${pkg.id}`} className="mt-8 block">
-              <button className="w-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 py-3 font-semibold text-white shadow-lg hover:opacity-90 transition">
-                {pkg.button}
-              </button>
-            </Link>
-            </div>
+              );
+            })()}
           </Reveal>
         ))}
       </div>

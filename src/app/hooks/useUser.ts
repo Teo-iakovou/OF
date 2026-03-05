@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { BASE_URL, fetchJson } from "@/app/utils/fetcher";
 import { useRouter } from "next/navigation";
 
-type User = { id: string; email: string; plan?: string | null } | null;
+type User = {
+  id: string;
+  email: string;
+  plan?: string | null;
+  firstName?: string;
+  lastName?: string;
+} | null;
+type MeResponse = { user?: Exclude<User, null> | null } | null;
 
 // Simple in-memory cache to avoid duplicate /me calls across components
 let cachedUser: User | undefined = undefined; // undefined = unknown, null = unauthenticated
@@ -17,8 +24,9 @@ async function fetchUserOnce(): Promise<User> {
   if (inFlight) return inFlight;
   inFlight = (async () => {
     try {
-      const r = await fetchJson(`${BASE_URL}/api/auth/me`, { method: "GET", cache: "no-store" });
-      cachedUser = r.ok ? (r.data as User) : null;
+      const r = await fetchJson(`/api/auth/me`, { method: "GET", cache: "no-store" });
+      const payload = r.data as MeResponse;
+      cachedUser = r.ok && payload && payload.user ? payload.user : null;
     } catch {
       cachedUser = null;
     } finally {

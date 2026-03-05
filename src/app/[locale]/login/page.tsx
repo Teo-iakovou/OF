@@ -1,6 +1,6 @@
 import { redirect } from "@/i18n/navigation";
 import LoginPageContent from "@/app/login/LoginPageContent";
-import { serverGetUser } from "@/app/utils/serverFetch";
+import { serverFetchJson, serverGetUser } from "@/app/utils/serverFetch";
 import { sanitizeRedirect } from "@/app/utils/sanitizeRedirect";
 
 export default async function LoginPage({
@@ -13,10 +13,19 @@ export default async function LoginPage({
   const { locale } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const redirectTo = sanitizeRedirect(resolvedSearchParams?.next);
+  const intent = Array.isArray(resolvedSearchParams?.intent)
+    ? resolvedSearchParams?.intent?.[0]
+    : resolvedSearchParams?.intent;
   const user = await serverGetUser();
   if (user) {
-    redirect({ href: redirectTo || "/dashboard", locale });
+    const pkg = await serverFetchJson("/api/user/check-package", { method: "GET" });
+    const packageData = pkg.data as { hasAccess?: boolean; packageInstanceId?: string } | null;
+    const hasActiveAccess = Boolean(packageData?.hasAccess && packageData?.packageInstanceId);
+    if (hasActiveAccess) {
+      redirect({ href: "/dashboard", locale });
+    }
+    redirect({ href: redirectTo || "/", locale });
   }
 
-  return <LoginPageContent redirectTo={redirectTo} />;
+  return <LoginPageContent redirectTo={redirectTo} intent={intent} />;
 }
