@@ -1,6 +1,8 @@
+import { NextRequest, NextResponse } from "next/server";
+
 const SERVER_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const cookie = request.headers.get("cookie");
   const contentType = request.headers.get("content-type");
   const headers = new Headers();
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
   if (outContentType) outHeaders.set("content-type", outContentType);
   if (outCacheControl) outHeaders.set("cache-control", outCacheControl);
 
-  return new Response(resp.body, {
+  return new NextResponse(resp.body, {
     status: resp.status,
     statusText: resp.statusText,
     headers: outHeaders,

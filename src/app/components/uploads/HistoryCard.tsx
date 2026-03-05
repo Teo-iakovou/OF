@@ -29,7 +29,8 @@ const HistoryCard = ({
   // Tiny summary (kept *minimal*): top platform and best time
   const top = item.promotion?.recommendedPlatforms?.[0];
   const topPlatform = top?.platform;
-  const niche = item.promotion?.niche;
+  type PromotionWithOptionalNiche = NonNullable<typeof item.promotion> & { niche?: string };
+  const niche = (item.promotion as PromotionWithOptionalNiche | undefined)?.niche;
   const when = new Date(item.createdAt).toLocaleString();
   const meta = [
     niche ? `Niche: ${niche}` : null,
