@@ -1,10 +1,11 @@
 const Feedback = require("../models/feedback");
+const { sendErr } = require("../utils/sendErr");
 
 const createFeedback = async (req, res) => {
   const { message } = req.body || {};
 
   if (!message || message.trim() === "") {
-    return res.status(400).json({ error: "Feedback message is required" });
+    return sendErr(req, res, 400, "Feedback message is required");
   }
 
   try {
@@ -12,7 +13,7 @@ const createFeedback = async (req, res) => {
     res.status(201).json({ success: true });
   } catch (err) {
     console.error("❌ Feedback error:", err);
-    res.status(500).json({ error: "Failed to save feedback" });
+    return sendErr(req, res, 500, "Failed to save feedback");
   }
 };
 

@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { FaTwitter, FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
 import { useConsent } from "@/app/components/consent/ConsentContext";
 const Footer = () => (

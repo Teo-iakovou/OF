@@ -1,4 +1,5 @@
 const { signToken, getCookieOptions, SESSION_COOKIE_NAME } = require("../utils/jwt");
+const { sendErr } = require("../utils/sendErr");
 const User = require("../models/user");
 
 // Simple credential login (email-only dev mode). You can extend with password/OTP.
@@ -9,9 +10,12 @@ async function login(req, res) {
     // top-level redirect-based login for cross-site cookie scenarios.
     const isGet = req.method === "GET";
     const email = isGet ? (req.query?.email || "") : ((req.body || {}).email || "");
+    const provider = isGet ? (req.query?.provider || null) : ((req.body || {}).provider || null);
+    const googleId = isGet ? (req.query?.googleId || null) : ((req.body || {}).googleId || null);
+    const fullName = isGet ? (req.query?.name || null) : ((req.body || {}).name || null);
     const redirect = isGet ? (req.query?.redirect || null) : null;
     if (typeof email !== "string" || !email.includes("@")) {
-      return res.status(400).json({ error: "Valid email is required" });
+      return sendErr(req, res, 400, "Valid email is required");
     }
     if (AUTH_DEBUG) {
       try {
@@ -23,10 +27,37 @@ async function login(req, res) {
         });
       } catch {}
     }
-    let user = await User.findOne({ email: email.toLowerCase().trim() });
+    const normalizedEmail = email.toLowerCase().trim();
+    let user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       // Optional: auto-create user in dev; in production you may require invite / OAuth
-      user = await User.create({ email: email.toLowerCase().trim() });
+      const [firstName = "", ...rest] =
+        typeof fullName === "string" ? fullName.trim().split(/\s+/) : [];
+      const lastName = rest.join(" ");
+      user = await User.create({
+        email: normalizedEmail,
+        provider: provider === "google" ? "google" : "email",
+        googleId: provider === "google" && typeof googleId === "string" ? googleId : null,
+        firstName,
+        lastName,
+      });
+    } else if (provider === "google") {
+      const updates = {};
+      if (typeof googleId === "string" && googleId && user.googleId !== googleId) {
+        updates.googleId = googleId;
+      }
+      if (user.provider !== "google") {
+        updates.provider = "google";
+      }
+      if (typeof fullName === "string" && fullName.trim()) {
+        const [firstName = "", ...rest] = fullName.trim().split(/\s+/);
+        const lastName = rest.join(" ");
+        if (!user.firstName && firstName) updates.firstName = firstName;
+        if (!user.lastName && lastName) updates.lastName = lastName;
+      }
+      if (Object.keys(updates).length > 0) {
+        user = await User.findByIdAndUpdate(user._id, updates, { new: true });
+      }
     }
 
     const token = signToken({ sub: user._id.toString(), email: user.email });
@@ -50,7 +81,7 @@ async function login(req, res) {
     return res.json({ id: user._id.toString(), email: user.email, plan: user.purchasedPackage || null, token });
   } catch (e) {
     if (AUTH_DEBUG) { try { console.error('[auth] login error', e?.message || e); } catch {} }
-    return res.status(500).json({ error: "Login failed" });
+    return sendErr(req, res, 500, "Login failed");
   }
 }
 
@@ -70,13 +101,21 @@ async function me(req, res) {
       console.log('[auth] /me', { hasCookie, userId: req.user?.id || null });
     } catch {}
   }
-  if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
+  if (!req.user || !req.user.id) return sendErr(req, res, 401, "Unauthorized");
   try {
     const user = await User.findById(req.user.id);
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-    return res.json({ id: user._id.toString(), email: user.email, plan: user.purchasedPackage || null });
+    if (!user) return sendErr(req, res, 401, "Unauthorized");
+    return res.json({
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        plan: user.purchasedPackage || null,
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+      },
+    });
   } catch {
-    return res.status(500).json({ error: "Failed to load session" });
+    return sendErr(req, res, 500, "Failed to load session");
   }
 }
 

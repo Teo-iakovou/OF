@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const resultSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, index: true, default: null },
   email: { type: String, required: true },
   csl: { type: Number, min: 0, max: 3 },               // Content Safety Level
   niche: { type: String },                              // Detected niche
@@ -25,6 +26,8 @@ const resultSchema = new mongoose.Schema({
 });
 
 // Efficient lookups
+resultSchema.index({ userId: 1, createdAt: -1 });
+resultSchema.index({ userId: 1, imageHash: 1, createdAt: -1 });
 resultSchema.index({ email: 1, createdAt: -1 });
 resultSchema.index({ email: 1, imageHash: 1, createdAt: -1 });
 

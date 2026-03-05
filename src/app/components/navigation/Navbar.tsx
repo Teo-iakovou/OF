@@ -13,11 +13,10 @@ import {
 import { useEffect, useState } from "react";
 import { FiMenu, FiX, FiUser } from "react-icons/fi";
 import { FaTwitter, FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
-import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "../cart/CartContext"; // Make sure the path is correct!
 import { useUser } from "@/app/hooks/useUser";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { logoutClient } from "@/app/utils/authClient";
 import { useSectionObserver } from "@/app/hooks/useSectionObserver";
 

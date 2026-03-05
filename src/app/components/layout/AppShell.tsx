@@ -1,8 +1,7 @@
 "use client";
 
 import { ReactNode, useState } from "react";
-import { usePathname } from "next/navigation";
-import ToastNotification from "../notifications/ToastNotification";
+import { usePathname } from "@/i18n/navigation";
 import RouteTransitionOverlay from "../navigation/RouteTransitionOverlay";
 import Navbar from "../navigation/Navbar";
 import Footer from "../navigation/Footer";
@@ -21,20 +20,35 @@ export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const handleCartClick = () => setCartDrawerOpen(true);
+  const pathWithoutLocale = (() => {
+    const parts = pathname.split("/").filter(Boolean);
+    if (parts.length === 0) return "/";
+    if (["en", "el", "es", "it"].includes(parts[0])) {
+      const stripped = `/${parts.slice(1).join("/")}`;
+      return stripped === "/" ? "/" : stripped;
+    }
+    return pathname;
+  })();
+  const useLandingShell =
+    pathWithoutLocale === "/" ||
+    pathWithoutLocale === "/privacy" ||
+    pathWithoutLocale === "/terms" ||
+    pathWithoutLocale === "/cookies";
+  const isDashboardRoute = pathWithoutLocale.startsWith("/dashboard");
+  const isAiDashboardRoute = pathWithoutLocale.startsWith("/dashboard/ai");
 
   return (
     <ConsentProvider>
       <CartProvider>
         <AuthModalProvider>
-          {!pathname.startsWith("/dashboard") && (
+          {!isDashboardRoute && !useLandingShell && (
             <Navbar onCartClick={handleCartClick} />
           )}
 
           <main className="flex-grow">{children}</main>
 
-          <ToastNotification />
           <RouteTransitionOverlay />
-          {!pathname.startsWith("/dashboard/ai") && <Footer />}
+          {!isAiDashboardRoute && !useLandingShell && <Footer />}
 
           <ConsentBanner />
           <ConsentModal />

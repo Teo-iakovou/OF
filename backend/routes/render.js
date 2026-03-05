@@ -6,9 +6,12 @@ const { putObject, signUrl } = require("../utils/s3");
 const axios = require("axios");
 const { analyzeImageBufferWithGoogleVision } = require("../utils/analyzeImageWithGoogleVision");
 const RenderJob = require("../models/renderJob");
+const { guardActiveInstanceAndFace } = require("../middleware/guardActiveInstanceAndFace");
 
 const router = express.Router();
 const upload = multer({ dest: path.resolve(__dirname, "../uploads") });
+
+router.use(guardActiveInstanceAndFace({ requireFaceEnrolled: true }));
 
 // POST /api/render/generate
 // multipart/form-data: image file + fields: text, voiceId, consent

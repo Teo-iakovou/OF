@@ -7,6 +7,7 @@ const { ipKeyGenerator } = require("express-rate-limit"); // IPv6-safe keys
 
 const User = require("../models/user");
 const { checkChatQuota } = require("../middleware/chatLimits");
+const { guardActiveInstanceAndFace } = require("../middleware/guardActiveInstanceAndFace");
 const { coachChatHandler, suggestPrompts } = require("../controllers/coachChatController");
 
 // Per-user rate limit (POST /): prefer authenticated user id, fallback to IPv6-safe IP
@@ -45,6 +46,8 @@ async function attachUser(req, res, next) {
     return res.status(500).json({ error: "User lookup failed" });
   }
 }
+
+router.use(guardActiveInstanceAndFace({ requireFaceEnrolled: true }));
 
 // Chat send
 router.post("/", chatLimiter, attachUser, checkChatQuota, coachChatHandler);

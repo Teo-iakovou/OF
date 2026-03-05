@@ -6,7 +6,19 @@ const connectDB = require("./utils/db");
 const dotenv = require("dotenv");
 dotenv.config({ path: ".env" });
 dotenv.config({ path: ".env.local", override: true });
-connectDB();
+const { getCookieOptions } = require("./utils/jwt");
+if (process.env.NODE_ENV !== "production") {
+  const opts = getCookieOptions();
+  try {
+    console.log("[cookies] resolved", {
+      sameSite: opts.sameSite,
+      secure: opts.secure,
+      domain: opts.domain || null,
+    });
+  } catch {}
+}
+const { validateAddonPriceEnv } = require("./config/addons");
+validateAddonPriceEnv();
 const coachChatRoutes = require("./routes/coach-chat");
 const conversationRoutes = require("./routes/conversations");
 const analyzeRoutes = require("./routes/analyze");
@@ -15,16 +27,27 @@ const renderInternalRoutes = require("./routes/render-internal");
 const userRoutes = require("./routes/userRoutes");
 const checkoutRoutes = require("./routes/checkout");
 const feedbackRoutes = require("./routes/feedbackRoutes");
-const ttsRoutes = require("./routes/tts");
 const authRoutes = require("./routes/auth");
+const billingRoutes = require("./routes/billing");
+const debugRoutes = require("./routes/debug");
+const personaRoutes = require("./routes/persona");
+const recommendationRoutes = require("./routes/recommendations");
 const webhookController = require("./controllers/checkoutController");
-const { requestId } = require("./middleware/requestId");
+const PackageInstance = require("./models/packageInstance");
+const { requestIdMiddleware } = require("./middleware/requestId");
 const { authMiddleware } = require("./middleware/auth");
 const { requireAuth } = require("./middleware/requireAuth");
+const { ensureRekognitionCollection } = require("./utils/rekognition");
+const { requestLogger } = require("./middleware/requestLogger");
 
 
 const app = express();
-app.use(requestId);
+app.post(
+  "/api/checkout/webhook",
+  express.raw({ type: "application/json" }),
+  webhookController.handleStripeWebhook
+);
+app.use(requestIdMiddleware);
 // ✅ CORS for all routes (env-driven allowlist + credentials)
 const allowedOrigins = String(process.env.ALLOWED_ORIGINS || "http://localhost:3000")
   .split(",")
@@ -50,17 +73,14 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
-// ✅ Stripe webhook - must come before express.json
-app.post(
-  "/api/checkout/webhook",
-  express.raw({ type: "application/json" }),
-  webhookController.handleStripeWebhook
-);
-
 // ✅ JSON parser (after webhook)
 app.use(express.json());
 app.use(cookieParser());
 app.use(authMiddleware);
+app.use(requestLogger);
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api/debug", debugRoutes);
+}
 
 // ✅ Auth routes (public)
 app.use("/api/auth", authRoutes);
@@ -72,16 +92,29 @@ app.use("/api/user", requireAuth, userRoutes);
 app.use("/api/checkout", checkoutRoutes); // login not required for webhook/create
 app.use("/api/coach-chat", requireAuth, coachChatRoutes);
 app.use("/api/feedback", requireAuth, feedbackRoutes);
-app.use("/api/tts", requireAuth, ttsRoutes);
 app.use("/api/conversations", requireAuth, conversationRoutes);
 app.use("/api/render", requireAuth, renderRoutes);
 app.use("/api/render-internal", renderInternalRoutes);
+app.use("/api/billing", requireAuth, billingRoutes);
+app.use("/api/persona", requireAuth, personaRoutes);
+app.use("/api/recommendations", requireAuth, recommendationRoutes);
 
 const PORT = process.env.PORT || 5001;
 
 if (!PORT) {
   throw new Error("🚨 PORT environment variable is required on Render.");
 }
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+
+(async () => {
+  console.log("[startup]", { pid: process.pid, env: process.env.NODE_ENV || "development" });
+  await connectDB();
+  if (process.env.NODE_ENV !== "production") {
+    await PackageInstance.syncIndexes();
+  }
+  await ensureRekognitionCollection();
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
+})().catch((err) => {
+  console.error("[startup] failed:", err?.message || err);
 });

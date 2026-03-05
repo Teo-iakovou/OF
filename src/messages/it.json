@@ -1,0 +1,41 @@
+{
+  "navbar": {
+    "links": {
+      "features": "Funzionalità",
+      "howItWorks": "Come funziona",
+      "pricing": "Prezzi",
+      "faq": "FAQ"
+    },
+    "language": "Lingua",
+    "signIn": "Accedi",
+    "getStarted": "Inizia",
+    "languages": {
+      "en": "EN",
+      "el": "EL",
+      "es": "ES",
+      "it": "IT"
+    }
+  },
+  "landing": {
+    "hero": {
+      "eyebrow": "Piattaforma AI per creator",
+      "title": "Crea contenuti vincenti più velocemente con un unico flusso AI",
+      "subtitle": "Carica una foto e ottieni strategia per piattaforma, caption, hashtag e talking-head output in un unico posto."
+    },
+    "faq": {
+      "eyebrow": "FAQ",
+      "title": "Risposte prima di iniziare"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Prezzi",
+    "title": "Piani che crescono con te",
+    "subtitle": "Scegli il piano adatto alle tue esigenze di creazione contenuti. Puoi cambiare piano in qualsiasi momento."
+  },
+  "dashboardNav": {
+    "overview": "Panoramica",
+    "upload": "Carica Contenuto",
+    "aiChat": "AI Chat",
+    "talkingHead": "Talking Head"
+  }
+}

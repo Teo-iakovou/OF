@@ -292,6 +292,7 @@ async function recordJobHistory(job, payload) {
       durationMs: payload.durationMs || null,
       createdAt: new Date().toISOString(),
       options: job.data?.options || null,
+      packageInstanceId: job.data?.packageInstanceId || null,
     };
     const key = `sadtalker:history:${userId}`;
     await redis.lpush(key, JSON.stringify(record));

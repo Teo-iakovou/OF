@@ -1,4 +1,6 @@
 const PackageInstance = require("../models/packageInstance");
+const { sendErr } = require("../utils/sendErr");
+const { sendQuotaError } = require("../utils/quotaError");
 
 const addMonths = (d, m = 1) =>
   new Date(d.getFullYear(), d.getMonth() + m, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
@@ -21,31 +23,53 @@ function planLimit(plan) {
 async function checkChatQuota(req, res, next) {
   try {
     const user = req._user; // must be attached earlier in the route
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    if (!user) return sendErr(req, res, 401, "Unauthorized");
 
-    let instance = null;
-    if (user.activePackageInstanceId) {
-      instance = await PackageInstance.findOne({
-        _id: user.activePackageInstanceId,
-        userId: user._id,
-        status: "active",
+    const instance = user.activePackageInstanceId
+      ? await PackageInstance.findOne({
+          _id: user.activePackageInstanceId,
+          userId: user._id,
+          status: "active",
+        })
+      : null;
+    if (!instance) {
+      return sendErr(req, res, 409, "ACTIVE_INSTANCE_REQUIRED", {
+        errorCode: "ACTIVE_INSTANCE_REQUIRED",
       });
-    }
-    if (!instance) {
-      const instances = await PackageInstance.getActiveByUserId(user._id);
-      instance = instances[0] || null;
-    }
-    if (!instance) {
-      return res.status(402).json({ error: "Chat limit reached for your plan", action: "upgrade" });
     }
 
     await ensureCycle(instance);
-    instance.chatMonthlyLimit = planLimit(instance.planKey || "lite");
-    if (instance.chatUsedThisCycle >= instance.chatMonthlyLimit)
-      return res.status(402).json({ error: "Chat limit reached for your plan", action: "upgrade" });
+    const baseChatLimit =
+      typeof instance.chatMonthlyLimit === "number"
+        ? instance.chatMonthlyLimit
+        : planLimit(instance.planKey || "lite");
+    const addonsChatTokens =
+      typeof instance.addons?.chatTokens === "number"
+        ? instance.addons.chatTokens
+        : typeof instance.addons?.chat === "number"
+          ? instance.addons.chat
+          : 0;
+    const effectiveChatLimit = baseChatLimit === 0 ? 0 : baseChatLimit + addonsChatTokens;
+    const isUnlimited = effectiveChatLimit === 0;
+    req.chatQuota = {
+      instanceId: instance._id.toString(),
+      effectiveChatLimit,
+      isUnlimited,
+    };
+    if (isUnlimited) return next();
+    if (instance.chatUsedThisCycle >= effectiveChatLimit) {
+      return sendQuotaError(res, 402, {
+        message: "Chat limit reached for your plan",
+        feature: "ai_chat",
+        plan: instance.planKey,
+        remaining: 0,
+        limit: effectiveChatLimit,
+        requestId: req.requestId || null,
+      });
+    }
     return next();
   } catch (e) {
-    return res.status(500).json({ error: "Quota check failed" });
+    return sendErr(req, res, 500, "Quota check failed");
   }
 }
 

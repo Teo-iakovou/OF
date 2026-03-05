@@ -7,6 +7,8 @@ async function generateCaptionWithOpenAI(visionData = {}, dynamicData = {}, {
   attempts = 2,
   timeoutMs = 12000,
   temperature = 0.8,
+  styleDirective = "",
+  avoidPhrases = [],
 } = {}) {
   const objects = (visionData.objects || []).map(o => o.name).slice(0, 8).join(", ");
   const colors  = (visionData.dominantColors || [])
@@ -17,6 +19,9 @@ async function generateCaptionWithOpenAI(visionData = {}, dynamicData = {}, {
   const hashtags = Array.isArray(dynamicData.hashtags) ? dynamicData.hashtags.slice(0, 10).join(" ") : "";
   const bestPostTime = dynamicData.bestPostTime || "18:00";
   const platform = dynamicData.platform || "Instagram";
+  const avoidBlock = Array.isArray(avoidPhrases)
+    ? avoidPhrases.filter(Boolean).slice(0, 10).join(" | ")
+    : "";
 
   const prompt = `
 You are a creative social media strategist.
@@ -33,10 +38,12 @@ Task:
 - Length: ≤ 20 words
 - If hashtags provided, place 2–3 of them naturally (optional)
 - Avoid banned words on discovery platforms; keep it platform-appropriate
+- Style directive: ${styleDirective || "Use a clear hook and specific payoff."}
 
 Extra context:
 - Suggested time: ${bestPostTime}
 - Hashtag pool: ${hashtags}
+- Avoid phrases: ${avoidBlock || "n/a"}
 `;
 
   const payload = {

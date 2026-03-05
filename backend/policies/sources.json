@@ -1,0 +1,196 @@
+{
+  "version": "sources-v1-2026-02-20",
+  "lastUpdated": "2026-02-20",
+  "platforms": [
+    {
+      "platform": "Instagram",
+      "sources": [
+        {
+          "name": "Instagram Transparency Center",
+          "url": "https://transparency.fb.com/policies/community-standards/",
+          "lastChecked": "2026-02-20"
+        },
+        {
+          "name": "Instagram Creators",
+          "url": "https://creators.instagram.com/",
+          "lastChecked": "2026-02-20"
+        }
+      ],
+      "rules": [
+        "Keep feed and Reels previews safe-for-feed.",
+        "Avoid explicit solicitation in captions.",
+        "Prefer profile funnel and compliant call-to-action language."
+      ],
+      "bannedPhrases": [
+        "explicit full nude",
+        "pay for explicit",
+        "adult content guaranteed",
+        "uncensored in bio now",
+        "leak drop"
+      ],
+      "do": [
+        "Use tasteful hooks and profile-first conversion.",
+        "Lead with visual storytelling and clean CTA.",
+        "Keep language brand-safe for discovery surfaces."
+      ],
+      "dont": [
+        "Do not use explicit sexual wording in captions.",
+        "Do not promise prohibited content directly.",
+        "Do not use spammy engagement bait."
+      ],
+      "why": "Discovery ranking and moderation are stricter on explicit phrasing, so compliant language increases reach stability."
+    },
+    {
+      "platform": "TikTok",
+      "sources": [
+        {
+          "name": "TikTok Community Guidelines",
+          "url": "https://www.tiktok.com/community-guidelines",
+          "lastChecked": "2026-02-20"
+        },
+        {
+          "name": "TikTok Creative Center",
+          "url": "https://ads.tiktok.com/business/creativecenter/",
+          "lastChecked": "2026-02-20"
+        }
+      ],
+      "rules": [
+        "Use safe language and focus on story hooks.",
+        "Keep CTAs indirect and profile-centric.",
+        "Avoid explicit claims and sensitive wording."
+      ],
+      "bannedPhrases": [
+        "adult content only",
+        "explicit clip",
+        "NSFW guaranteed",
+        "pay to unlock explicit",
+        "uncensored link"
+      ],
+      "do": [
+        "Start with a high-curiosity hook.",
+        "Keep copy punchy and platform-native.",
+        "Drive traffic through compliant profile prompts."
+      ],
+      "dont": [
+        "Do not mention explicit transactions in caption.",
+        "Do not use policy-sensitive sexual phrases.",
+        "Do not overstuff hashtags."
+      ],
+      "why": "Short-form distribution rewards safe, engaging hooks while explicit wording can reduce recommendation depth."
+    },
+    {
+      "platform": "Twitter",
+      "sources": [
+        {
+          "name": "X Rules and Policies",
+          "url": "https://help.x.com/en/rules-and-policies",
+          "lastChecked": "2026-02-20"
+        },
+        {
+          "name": "X Creator and Monetization Help",
+          "url": "https://help.x.com/",
+          "lastChecked": "2026-02-20"
+        }
+      ],
+      "rules": [
+        "Use clear context and avoid spam formatting.",
+        "Prioritize concise statements and thread-friendly hooks.",
+        "Keep links contextual and avoid repetitive bait phrasing."
+      ],
+      "bannedPhrases": [
+        "guaranteed viral now",
+        "spam this link",
+        "buy followers",
+        "instant explicit unlock",
+        "bot boost"
+      ],
+      "do": [
+        "Use sharp one-liners with context.",
+        "Pin best-performing posts for funnel continuity.",
+        "Pair concise CTA with thematic hashtags."
+      ],
+      "dont": [
+        "Do not use repetitive spam-like copy.",
+        "Do not use misleading engagement bait.",
+        "Do not overload with irrelevant tags."
+      ],
+      "why": "Signal quality and contextual relevance drive engagement more than aggressive promotional wording."
+    },
+    {
+      "platform": "Reddit",
+      "sources": [
+        {
+          "name": "Reddit Content Policy",
+          "url": "https://www.redditinc.com/policies/content-policy",
+          "lastChecked": "2026-02-20"
+        },
+        {
+          "name": "Reddit Moderator Guidelines",
+          "url": "https://support.reddithelp.com/",
+          "lastChecked": "2026-02-20"
+        }
+      ],
+      "rules": [
+        "Follow subreddit-specific posting rules first.",
+        "Use context-aware titles and non-spam tone.",
+        "Keep self-promo balanced with community value."
+      ],
+      "bannedPhrases": [
+        "upvote for explicit",
+        "click now limited explicit",
+        "spam drop",
+        "no rules content",
+        "auto-post network"
+      ],
+      "do": [
+        "Tailor language to each subreddit culture.",
+        "Provide context instead of hard-sell copy.",
+        "Keep captions straightforward and human."
+      ],
+      "dont": [
+        "Do not paste generic promo text everywhere.",
+        "Do not violate subreddit content constraints.",
+        "Do not force conversion-first copy in strict communities."
+      ],
+      "why": "Community-fit language prevents moderation removals and increases sustained visibility."
+    },
+    {
+      "platform": "OnlyFans Funnel",
+      "sources": [
+        {
+          "name": "OnlyFans Acceptable Use Policy",
+          "url": "https://onlyfans.com/terms",
+          "lastChecked": "2026-02-20"
+        },
+        {
+          "name": "Platform Funnel Playbook (Internal)",
+          "url": "internal://playbooks/onlyfans-funnel",
+          "lastChecked": "2026-02-20"
+        }
+      ],
+      "rules": [
+        "Keep acquisition channels compliant and brand-safe.",
+        "Use profile and bio bridges for conversion.",
+        "Align teaser messaging with posted content boundaries."
+      ],
+      "bannedPhrases": [
+        "illegal content",
+        "non-consensual",
+        "underage",
+        "bypass payment",
+        "stolen leak"
+      ],
+      "do": [
+        "Use transparent CTA language for premium access.",
+        "Keep intent clear without policy-trigger wording.",
+        "Maintain consistency between teaser and destination."
+      ],
+      "dont": [
+        "Do not overpromise prohibited content.",
+        "Do not use deceptive urgency spam.",
+        "Do not mismatch funnel messaging and landing offer."
+      ],
+      "why": "Consistent, compliant funnel copy improves conversion while reducing account risk on acquisition channels."
+    }
+  ]
+}

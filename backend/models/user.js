@@ -4,6 +4,10 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
+  provider: { type: String, enum: ["email", "google"], default: "email" },
+  googleId: { type: String, default: null, unique: true, sparse: true },
+  firstName: { type: String, default: "", maxlength: 60 },
+  lastName: { type: String, default: "", maxlength: 60 },
   activePackageInstanceId: { type: mongoose.Schema.Types.ObjectId, default: null },
   purchasedPackage: {
     type: String,
@@ -31,6 +35,6 @@ const userSchema = new mongoose.Schema({
   sadtalkerVideoLimit: { type: Number, default: 0 },
   // Optional: remember the first face image hash for non-ultimate plans
   sadtalkerPrimaryImageHash: { type: String, default: null },
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);

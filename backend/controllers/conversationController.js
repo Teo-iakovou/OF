@@ -2,10 +2,11 @@ const Conversation = require("../models/conversation");
 const User = require("../models/user");
 const OpenAI = require("openai");
 const mongoose = require("mongoose");
+const { sendErr } = require("../utils/sendErr");
 // Get all conversations for a user (sidebar/history)
 const getConversations = async (req, res) => {
   try {
-    if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
+    if (!req.user || !req.user.id) return sendErr(req, res, 401, "Unauthorized");
 
     // Find conversations by user._id
     const conversations = await Conversation.find({ user: req.user.id })
@@ -13,7 +14,7 @@ const getConversations = async (req, res) => {
       .select("-messages");
     res.json(conversations);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch conversations." });
+    return sendErr(req, res, 500, "Failed to fetch conversations.");
   }
 };
 
@@ -22,11 +23,10 @@ const getConversationById = async (req, res) => {
   try {
     const { id } = req.params;
     const conversation = await Conversation.findById(id);
-    if (!conversation)
-      return res.status(404).json({ error: "Conversation not found" });
+    if (!conversation) return sendErr(req, res, 404, "Conversation not found");
     res.json(conversation);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch conversation." });
+    return sendErr(req, res, 500, "Failed to fetch conversation.");
   }
 };
 
@@ -37,11 +37,21 @@ const deleteConversation = async (req, res) => {
     await Conversation.findByIdAndDelete(id);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: "Failed to delete conversation." });
+    return sendErr(req, res, 500, "Failed to delete conversation.");
   }
 };
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const cleanTitle = (t = "") => t.replace(/^["'\s]+|["'\s]+$/g, "").slice(0, 60);
+const DEFAULT_CONTEXT_LIMIT = Number(process.env.CHAT_CONTEXT_TOKENS_LIMIT || "128000");
+
+function estimateTokensFromText(text = "") {
+  if (!text) return 0;
+  return Math.max(1, Math.ceil(text.length / 4));
+}
+
+function estimateTokensForMessages(messages = []) {
+  return messages.reduce((sum, msg) => sum + estimateTokensFromText(msg?.content || ""), 0);
+}
 
 const generateTitle = async (req, res) => {
   const t0 = Date.now();
@@ -50,21 +60,21 @@ const generateTitle = async (req, res) => {
     const { firstUserMessage } = req.body || {};
 
     // --- input validation ---
-    if (!id) return res.status(400).json({ error: "Missing conversation id" });
+    if (!id) return sendErr(req, res, 400, "Missing conversation id");
     if (!mongoose.Types.ObjectId.isValid(id)) {
       console.error("[genTitle] Invalid ObjectId:", id);
-      return res.status(400).json({ error: "Invalid conversation id" });
+      return sendErr(req, res, 400, "Invalid conversation id");
     }
     if (!firstUserMessage || typeof firstUserMessage !== "string") {
       console.error("[genTitle] Missing firstUserMessage");
-      return res.status(400).json({ error: "firstUserMessage is required" });
+      return sendErr(req, res, 400, "firstUserMessage is required");
     }
 
     // --- ensure conversation exists ---
     const convo = await Conversation.findById(id).lean();
     if (!convo) {
       console.error("[genTitle] Conversation not found:", id);
-      return res.status(404).json({ error: "Conversation not found" });
+      return sendErr(req, res, 404, "Conversation not found");
     }
 
     // --- build prompt/messages ---
@@ -129,13 +139,13 @@ const generateTitle = async (req, res) => {
     });
   } catch (err) {
     console.error("[genTitle] ERROR", err);
-    return res.status(500).json({ error: "Failed to generate title" });
+    return sendErr(req, res, 500, "Failed to generate title");
   }
 };
 
 const createConversation = async (req, res) => {
   try {
-    if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
+    if (!req.user || !req.user.id) return sendErr(req, res, 401, "Unauthorized");
 
     // Create a new empty conversation for this user
     const conversation = await Conversation.create({
@@ -148,7 +158,86 @@ const createConversation = async (req, res) => {
     res.status(201).json(conversation);
   } catch (err) {
     console.error("Error creating conversation:", err);
-    res.status(500).json({ error: "Failed to create conversation" });
+    return sendErr(req, res, 500, "Failed to create conversation");
+  }
+};
+
+const summarizeConversation = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) return sendErr(req, res, 401, "Unauthorized");
+    const { id } = req.params;
+    if (!id) return sendErr(req, res, 400, "Missing conversation id");
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return sendErr(req, res, 400, "Invalid conversation id");
+    }
+
+    const conversation = await Conversation.findById(id);
+    if (!conversation) return sendErr(req, res, 404, "Conversation not found");
+    if (conversation.user.toString() !== req.user.id) {
+      return sendErr(req, res, 403, "Conversation not owned by user");
+    }
+
+    const transcript = (conversation.messages || [])
+      .filter((m) => m.role !== "system")
+      .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+      .join("\n");
+    const systemMsg =
+      "Return JSON only with keys: summary (string), keyFacts (string[]), userPreferences (string[]). Keep it concise.";
+
+    const chatResponse = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemMsg },
+        { role: "user", content: transcript.slice(0, 12000) },
+      ],
+      max_tokens: 300,
+      temperature: 0.3,
+    });
+
+    const raw = chatResponse?.choices?.[0]?.message?.content?.trim() || "";
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = null;
+    }
+    const summaryPayload = {
+      v: 1,
+      summary: typeof parsed?.summary === "string" ? parsed.summary : raw || "Summary unavailable.",
+      keyFacts: Array.isArray(parsed?.keyFacts) ? parsed.keyFacts.filter((v) => typeof v === "string") : [],
+      userPreferences: Array.isArray(parsed?.userPreferences)
+        ? parsed.userPreferences.filter((v) => typeof v === "string")
+        : [],
+    };
+    if (!summaryPayload.summary || typeof summaryPayload.summary !== "string") {
+      return sendErr(req, res, 500, "Failed to generate summary");
+    }
+    const summaryJson = JSON.stringify(summaryPayload);
+    const summaryMessage = { role: "system", content: summaryJson };
+    const tokensUsed = estimateTokensForMessages([summaryMessage]);
+
+    const newConversation = await Conversation.create({
+      user: req.user.id,
+      title: `${conversation.title || "Untitled conversation"} (continued)`,
+      messages: [summaryMessage],
+      tokensUsed,
+      tokensLimit: DEFAULT_CONTEXT_LIMIT,
+      nearLimit: tokensUsed >= Math.round(DEFAULT_CONTEXT_LIMIT * 0.85),
+      continuedFromConversationId: conversation._id,
+    });
+    await Conversation.updateOne(
+      { _id: conversation._id },
+      { $set: { continuedToConversationId: newConversation._id } }
+    );
+
+    return res.json({
+      ok: true,
+      newConversationId: newConversation._id.toString(),
+      summary: summaryPayload,
+    });
+  } catch (err) {
+    console.error("Error summarizing conversation:", err);
+    return sendErr(req, res, 500, "Failed to summarize conversation");
   }
 };
 
@@ -158,4 +247,5 @@ module.exports = {
   deleteConversation,
   createConversation,
   generateTitle,
+  summarizeConversation,
 };

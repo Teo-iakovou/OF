@@ -7,9 +7,12 @@ const {
   deleteAnalysisResult,
 updateAnalysisResult
 } = require("../controllers/analyzeController");
+const { guardActiveInstanceAndFace } = require("../middleware/guardActiveInstanceAndFace");
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
+
+router.use(guardActiveInstanceAndFace({ requireFaceEnrolled: true }));
 
 // Upload an image (supports ?captions=false)
 router.post("/", upload.single("image"), analyzeImage);

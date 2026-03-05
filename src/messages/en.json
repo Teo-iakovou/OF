@@ -1,0 +1,41 @@
+{
+  "navbar": {
+    "links": {
+      "features": "Features",
+      "howItWorks": "How it works",
+      "pricing": "Pricing",
+      "faq": "FAQ"
+    },
+    "language": "Language",
+    "signIn": "Sign in",
+    "getStarted": "Get started",
+    "languages": {
+      "en": "EN",
+      "el": "EL",
+      "es": "ES",
+      "it": "IT"
+    }
+  },
+  "landing": {
+    "hero": {
+      "eyebrow": "Creator AI Platform",
+      "title": "Create winning content faster with one AI workflow",
+      "subtitle": "Upload a photo, get platform strategy, captions, hashtags, and talking-head output from one place."
+    },
+    "faq": {
+      "eyebrow": "FAQ",
+      "title": "Answers before you start"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Pricing",
+    "title": "Plans that scale with you",
+    "subtitle": "Choose the plan that fits your content creation needs. Upgrade or downgrade anytime."
+  },
+  "dashboardNav": {
+    "overview": "Overview",
+    "upload": "Upload Content",
+    "aiChat": "AI Chat",
+    "talkingHead": "Talking Head"
+  }
+}

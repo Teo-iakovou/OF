@@ -13,8 +13,17 @@ function getPolicies() {
     const base = path.resolve(__dirname);
     const platforms = loadJSON(path.join(base, "platforms.json"));
     const niches = loadJSON(path.join(base, "niches.json"));
-    ver = String(platforms.version || niches.version || Date.now());
-    cache = { platforms, niches };
+    const recommendationPools = loadJSON(path.join(base, "recommendationPools.json"));
+    const sources = loadJSON(path.join(base, "sources.json"));
+    ver = String(
+      recommendationPools.version ||
+        sources.version ||
+        sources.lastUpdated ||
+        platforms.version ||
+        niches.version ||
+        Date.now()
+    );
+    cache = { platforms, niches, recommendationPools, sources };
   }
   return { ...cache, version: ver };
 }

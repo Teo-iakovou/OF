@@ -6,6 +6,8 @@ const PackageInstance = require("../models/packageInstance");
 const { sendQuotaError } = require("../utils/quotaError");
 const { buildChatContext } = require("../services/chatContext"); // <-- used directly
 const { log } = require("../utils/logger"); // <-- make sure this file exists (see note below)
+const { sendErr } = require("../utils/sendErr");
+const { ensureCycle, planLimit } = require("../middleware/chatLimits");
 
 // Helper: simple keyword check for premium features
 const premiumKeywords = [
@@ -25,18 +27,15 @@ function isPremiumRequest(question = "") {
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-async function resolveActivePackageInstance(user) {
-  if (!user) return null;
-  if (user.activePackageInstanceId) {
-    const selected = await PackageInstance.findOne({
-      _id: user.activePackageInstanceId,
-      userId: user._id,
-      status: "active",
-    });
-    if (selected) return selected;
-  }
-  const instances = await PackageInstance.getActiveByUserId(user._id);
-  return instances[0] || null;
+const DEFAULT_CONTEXT_LIMIT = Number(process.env.CHAT_CONTEXT_TOKENS_LIMIT || "128000");
+
+function estimateTokensFromText(text = "") {
+  if (!text) return 0;
+  return Math.max(1, Math.ceil(text.length / 4));
+}
+
+function estimateTokensForMessages(messages = []) {
+  return messages.reduce((sum, msg) => sum + estimateTokensFromText(msg?.content || ""), 0);
 }
 
 const coachChatHandler = async (req, res) => {
@@ -55,30 +54,75 @@ const coachChatHandler = async (req, res) => {
       (req.user?.id ? await User.findById(req.user.id) : email ? await User.findOne({ email }) : null);
     if (!user) {
       log(rid, "chat_user_not_found", { email });
-      return res.status(403).json({ error: "User not found." });
+      return sendErr(req, res, 403, "User not found.");
     }
 
-    const plan = user.purchasedPackage || "lite";
-
-    // --- Your current limit logic (simple per-plan) ---
-    user.chatsUsed = user.chatsUsed || 0;
-    let chatLimit = 3;
-    if (plan === "pro") chatLimit = 20;
-    if (plan === "ultimate") chatLimit = 1000;
-
-    if (user.chatsUsed >= chatLimit) {
-      log(rid, "chat_limit_hit", {
-        plan,
-        used: user.chatsUsed,
-        limit: chatLimit,
+    const instance =
+      user.activePackageInstanceId
+        ? await PackageInstance.findOne({
+            _id: user.activePackageInstanceId,
+            userId: user._id,
+            status: "active",
+          })
+        : null;
+    if (!instance) {
+      return sendErr(req, res, 409, "No active package instance.", {
+        errorCode: "ACTIVE_INSTANCE_REQUIRED",
+        message: "No active package instance.",
       });
-      // TIP: return 402 so the frontend can show the Upgrade UI automatically
-      return res.status(402).json({
-        error: "You’ve reached your chat limit for this plan.",
-        action: "upgrade",
-        quota: { used: user.chatsUsed, limit: chatLimit },
+    }
+
+    await ensureCycle(instance);
+    const plan = instance.planKey || "lite";
+    const addonsChatTokens =
+      typeof instance.addons?.chatTokens === "number"
+        ? instance.addons.chatTokens
+        : typeof instance.addons?.chat === "number"
+          ? instance.addons.chat
+          : 0;
+    const baseChatLimit =
+      typeof instance.chatMonthlyLimit === "number" ? instance.chatMonthlyLimit : planLimit(plan);
+    const effectiveChatLimit =
+      typeof req.chatQuota?.effectiveChatLimit === "number"
+        ? req.chatQuota.effectiveChatLimit
+        : baseChatLimit === 0
+          ? 0
+          : baseChatLimit + addonsChatTokens;
+    // effectiveChatLimit === 0 means unlimited; never enforce plan quota.
+
+    let conversation = null;
+    if (conversationId) {
+      conversation = await Conversation.findById(conversationId);
+      if (!conversation) {
+        log(rid, "chat_convo_not_found", { conversationId });
+        return sendErr(req, res, 404, "Conversation not found");
+      }
+      if (conversation.user && conversation.user.toString() !== user._id.toString()) {
+        return sendErr(req, res, 403, "Conversation not owned by user");
+      }
+    }
+
+    const tokensLimit =
+      conversation && typeof conversation.tokensLimit === "number" && conversation.tokensLimit > 0
+        ? conversation.tokensLimit
+        : DEFAULT_CONTEXT_LIMIT;
+    const preSendTokens = estimateTokensForMessages([
+      ...(conversation?.messages || []),
+      { role: "user", content: question || "" },
+    ]);
+
+    if (preSendTokens >= tokensLimit) {
+      if (conversation) {
+        conversation.tokensUsed = preSendTokens;
+        conversation.tokensLimit = tokensLimit;
+        conversation.nearLimit = preSendTokens >= Math.round(tokensLimit * 0.85);
+        await conversation.save();
+      }
+      return res.status(409).json({
+        error: "CONTEXT_LIMIT_REACHED",
+        tokensUsed: preSendTokens,
+        tokensLimit,
       });
-      // If you prefer old behavior: return res.json({ ai: "You’ve reached..." })
     }
 
     if (plan === "lite" && isPremiumRequest(question)) {
@@ -124,14 +168,21 @@ Always be clear and direct about what features are available for each plan.
 
     // --- Increment usage on success (per active package instance, atomic) ---
     try {
-      const instance = await resolveActivePackageInstance(user);
-      if (instance) {
+      if (effectiveChatLimit === 0) {
+        const trackUnlimited = process.env.TRACK_UNLIMITED_CHAT_USAGE === "true";
+        if (trackUnlimited) {
+          await PackageInstance.updateOne(
+            { _id: instance._id, userId: user._id, status: "active" },
+            { $inc: { chatUsedThisCycle: 1 } }
+          );
+        }
+      } else {
         const updated = await PackageInstance.findOneAndUpdate(
           {
             _id: instance._id,
             userId: user._id,
             status: "active",
-            $expr: { $lt: ["$chatUsedThisCycle", "$chatMonthlyLimit"] },
+            $expr: { $lt: ["$chatUsedThisCycle", effectiveChatLimit] },
           },
           { $inc: { chatUsedThisCycle: 1 } },
           { new: true }
@@ -142,7 +193,7 @@ Always be clear and direct about what features are available for each plan.
             feature: "ai_chat",
             plan: instance.planKey,
             remaining: 0,
-            limit: instance.chatMonthlyLimit,
+            limit: effectiveChatLimit,
             requestId: rid,
           });
         }
@@ -152,20 +203,22 @@ Always be clear and direct about what features are available for each plan.
     }
 
     // --- Conversation persistence ---
-    let conversation;
-    if (conversationId) {
-      conversation = await Conversation.findById(conversationId);
-      if (!conversation) {
-        log(rid, "chat_convo_not_found", { conversationId });
-        return res.status(404).json({ error: "Conversation not found" });
-      }
+    if (conversationId && conversation) {
       conversation.messages.push(
         { role: "user", content: question || "" },
         { role: "assistant", content: aiMessage }
       );
+      const postTokens = estimateTokensForMessages(conversation.messages);
+      conversation.tokensUsed = postTokens;
+      conversation.tokensLimit = tokensLimit;
+      conversation.nearLimit = postTokens >= Math.round(tokensLimit * 0.85);
       conversation.updatedAt = Date.now();
       await conversation.save();
     } else {
+      const postTokens = estimateTokensForMessages([
+        { role: "user", content: question || "" },
+        { role: "assistant", content: aiMessage },
+      ]);
       conversation = await Conversation.create({
         user: user._id,
         title: title || "Untitled conversation",
@@ -173,6 +226,9 @@ Always be clear and direct about what features are available for each plan.
           { role: "user", content: question || "" },
           { role: "assistant", content: aiMessage },
         ],
+        tokensUsed: postTokens,
+        tokensLimit,
+        nearLimit: postTokens >= Math.round(tokensLimit * 0.85),
       });
     }
     log(rid, "chat_saved", { conversationId: conversation._id.toString() });
@@ -183,20 +239,23 @@ Always be clear and direct about what features are available for each plan.
       usedContextIds,
       requestId: rid,
       latencyMs: Date.now() - t0,
+      nearContextLimit: Boolean(conversation?.nearLimit),
+      tokensUsed: conversation?.tokensUsed ?? null,
+      tokensLimit: conversation?.tokensLimit ?? tokensLimit,
     });
   } catch (err) {
     log(rid, "chat_error", { message: err?.message });
     console.error("AI Coach Error:", err);
-    return res.status(500).json({ error: "AI coach failed to respond." });
+    return sendErr(req, res, 500, "AI coach failed to respond.");
   }
 };
 
 // --- NEW: quick prompts endpoint (personalized; no token cost) ---
 async function suggestPrompts(req, res) {
   try {
-    if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
+    if (!req.user || !req.user.id) return sendErr(req, res, 401, "Unauthorized");
     const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) return sendErr(req, res, 404, "User not found");
 
     const plan = user.purchasedPackage || "lite";
 
@@ -226,7 +285,7 @@ async function suggestPrompts(req, res) {
     return res.json({ prompts, meta: { plan, niche, tz } });
   } catch (e) {
     console.error("suggestPrompts error:", e?.message);
-    return res.status(500).json({ error: "Failed to suggest prompts" });
+    return sendErr(req, res, 500, "Failed to suggest prompts");
   }
 }
 

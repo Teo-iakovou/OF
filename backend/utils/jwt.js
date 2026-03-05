@@ -32,44 +32,25 @@ function verifyToken(token) {
 }
 
 function getCookieOptions() {
-  const isProd = process.env.NODE_ENV === "production";
-  // Allow overriding SameSite via env for cross-site XHR (e.g., UI hosted on a different domain)
-  // If CROSS_SITE_COOKIES=true or COOKIE_SAMESITE=none, use SameSite=None + Secure in prod
-  const crossSite = String(process.env.CROSS_SITE_COOKIES || "").toLowerCase() === "true";
-  const envSameSite = (process.env.COOKIE_SAMESITE || "").toLowerCase();
-  let sameSite = envSameSite
-    ? envSameSite
-    : crossSite
-      ? "none"
-      : "lax";
-
-  // In development over http:// (non-secure), browsers reject SameSite=None
-  // unless the cookie is also Secure. Since we do not use Secure in dev,
-  // force Lax to ensure the session cookie is stored and sent.
-  if (process.env.NODE_ENV !== "production" && sameSite === "none") {
-    sameSite = "lax";
-    try {
-      console.warn("[cookies] Forcing SameSite=Lax in dev (None requires Secure).");
-    } catch {}
-  }
+  const uiBase = String(process.env.PUBLIC_URL || "");
+  const isLocal =
+    uiBase.includes("localhost") ||
+    uiBase.includes("127.0.0.1") ||
+    process.env.NODE_ENV !== "production";
 
   const base = {
     httpOnly: true,
-    sameSite,
+    sameSite: "lax",
     path: "/",
-    maxAge: TOKEN_TTL_MIN * 60 * 1000,
+    maxAge: 60 * 60 * 24 * 30 * 1000,
+    secure: !isLocal,
   };
 
-  if (isProd) {
-    // SameSite=None requires Secure
-    const secure = sameSite === "none" ? true : true; // always secure in prod
-    return {
-      ...base,
-      secure,
-      domain: process.env.COOKIE_DOMAIN || undefined,
-    };
+  if (!isLocal && process.env.COOKIE_DOMAIN) {
+    return { ...base, domain: process.env.COOKIE_DOMAIN };
   }
-  return { ...base, secure: false };
+
+  return base;
 }
 
 module.exports = {
