@@ -7,7 +7,7 @@ import 'server-only';
 import { headers } from 'next/headers';
 
 export const SERVER_BASE_URL =
-  process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+  process.env.API_URL || 'http://localhost:5001';
 
 type JsonResult = { ok: boolean; status: number; data: unknown };
 

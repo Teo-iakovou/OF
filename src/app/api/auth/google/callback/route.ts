@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const SERVER_BASE_URL =
-  process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+  process.env.API_URL || "http://localhost:5001";
 const OAUTH_STATE_COOKIE = "oauth_google_state";
 const OAUTH_NEXT_COOKIE = "oauth_google_next";
 const OAUTH_INTENT_COOKIE = "oauth_google_intent";

@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const HISTORY_LIMIT = Number(process.env.SADTALKER_HISTORY_LIMIT || 50);
-const SERVER_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+const SERVER_BASE_URL = process.env.API_URL || "http://localhost:5001";
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "ai_session";
 
 async function getCurrentUserId(req: NextRequest): Promise<string | null> {

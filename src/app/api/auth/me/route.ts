@@ -4,7 +4,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const SERVER_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+const SERVER_BASE_URL = process.env.API_URL || "http://localhost:5001";
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "ai_session";
 
 export async function GET(req: NextRequest) {

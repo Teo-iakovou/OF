@@ -1,5 +1,5 @@
 const SERVER_BASE_URL =
-  process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+  process.env.API_URL || "http://localhost:5001";
 
 export async function POST(request: Request) {
   const cookie = request.headers.get("cookie");
