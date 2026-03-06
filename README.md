@@ -23,6 +23,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 ## Backend CORS env example
 
 ```env
+PUBLIC_URL=https://echo-fy.com
 ALLOWED_ORIGINS=https://echo-fy.com,https://www.echo-fy.com,http://localhost:3000,http://127.0.0.1:3000
 CORS_ALLOW_ALL=false
 ```
