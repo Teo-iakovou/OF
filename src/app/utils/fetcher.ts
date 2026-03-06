@@ -1,5 +1,6 @@
 // src/app/utils/fetcher.ts
-export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+const useBFF = process.env.NEXT_PUBLIC_USE_BFF === "true";
+export const BASE_URL = useBFF ? "" : process.env.NEXT_PUBLIC_API_URL || "";
 
 const AUTH_EVENT = "ai-auth-changed";
 
