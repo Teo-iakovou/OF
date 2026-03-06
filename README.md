@@ -20,6 +20,13 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Backend CORS env example
+
+```env
+ALLOWED_ORIGINS=https://echo-fy.com,https://www.echo-fy.com,http://localhost:3000,http://127.0.0.1:3000
+CORS_ALLOW_ALL=false
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

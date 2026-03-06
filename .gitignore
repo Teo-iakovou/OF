@@ -3,3 +3,4 @@ backend/.env
 .env
 .env.local
 .next/
+tsconfig.tsbuildinfo

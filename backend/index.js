@@ -54,15 +54,30 @@ const allowedOrigins = String(process.env.ALLOWED_ORIGINS || "http://localhost:3
   .map((s) => s.trim())
   .filter(Boolean);
 const allowAllCors = String(process.env.CORS_ALLOW_ALL || "").toLowerCase() === "true";
+const shouldDebugCors =
+  String(process.env.AUTH_DEBUG || "").toLowerCase() === "true" ||
+  process.env.NODE_ENV !== "production";
 if (process.env.NODE_ENV !== "test") {
-  console.log("[cors] allowAll=", allowAllCors, "allowedOrigins=", allowedOrigins);
+  console.log("[cors] resolved", {
+    nodeEnv: process.env.NODE_ENV || "development",
+    allowAllCors,
+    allowedOrigins,
+  });
 }
 const corsOptions = {
   origin: allowAllCors
     ? true // reflect request origin (needed when credentials are used)
     : function (origin, callback) {
         // Allow no-origin requests (curl, mobile apps) and allowed origins
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        const matched = !origin || allowedOrigins.includes(origin);
+        if (shouldDebugCors) {
+          console.log("[cors] origin-check", {
+            origin: origin || null,
+            matched,
+            allowAllCors,
+          });
+        }
+        if (matched) return callback(null, true);
         return callback(new Error("Not allowed by CORS"));
       },
   credentials: true,
