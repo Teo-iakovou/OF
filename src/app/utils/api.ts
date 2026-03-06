@@ -36,10 +36,10 @@ export async function fetchAnalysisHistory(
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
-    ts: String(Date.now()),
+    includeLegacy: "false",
   });
   if (options.packageInstanceId) params.set("packageInstanceId", options.packageInstanceId);
-  const url = `${BASE_URL}/api/analyze?${params.toString()}`;
+  const url = `${BASE_URL}/api/user/results?${params.toString()}`;
   const r = await fetchJson(url, { method: "GET", cache: "no-store" });
   if (!r.ok) throw new Error("Fetch analysis history failed");
   return r.data as { results: ResultDoc[]; total: number };
