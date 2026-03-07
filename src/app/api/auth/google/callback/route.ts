@@ -4,8 +4,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const SERVER_BASE_URL =
-  process.env.API_URL || "http://localhost:5001";
 const OAUTH_STATE_COOKIE = "oauth_google_state";
 const OAUTH_NEXT_COOKIE = "oauth_google_next";
 const OAUTH_INTENT_COOKIE = "oauth_google_intent";
@@ -77,6 +75,25 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
     return JSON.parse(json) as Record<string, unknown>;
   } catch {
     return null;
+  }
+}
+
+function getSetCookieList(from: Response) {
+  const headerBag = from.headers as unknown as { getSetCookie?: () => string[] };
+  const viaMethod = headerBag.getSetCookie?.();
+  if (Array.isArray(viaMethod) && viaMethod.length > 0) return viaMethod;
+  const raw = from.headers.get("set-cookie");
+  return raw
+    ? raw
+        .split(/,(?=\s*[^;,\s]+=)/g)
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : [];
+}
+
+function appendSetCookies(to: NextResponse, setCookieList: string[]) {
+  for (const value of setCookieList) {
+    to.headers.append("set-cookie", value);
   }
 }
 
@@ -224,23 +241,38 @@ export async function GET(req: NextRequest) {
       return redirectError(req, requestId);
     }
 
-    const params = new URLSearchParams({
-      email: googleUser.email,
-      redirect: "/dashboard",
-      provider: "google",
-      googleId: googleUser.sub,
+    const bffLoginRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: googleUser.email,
+        name: googleUser.name || "",
+        provider: "google",
+        googleId: googleUser.sub,
+      }),
+      cache: "no-store",
     });
-    if (googleUser.name) {
-      params.set("name", googleUser.name);
+    const loginText = await bffLoginRes.text();
+    if (!bffLoginRes.ok) {
+      console.log("[oauth-google-callback]", {
+        requestId,
+        stage: "bff_login_failed",
+        status: bffLoginRes.status,
+        body: truncate(loginText || ""),
+      });
+      return redirectError(req, requestId);
     }
-    const to = `${SERVER_BASE_URL}/api/auth/login?${params.toString()}`;
-    const redirectResponse = NextResponse.redirect(to, 302);
+
+    const setCookieList = getSetCookieList(bffLoginRes);
+    const redirectResponse = NextResponse.redirect(new URL("/dashboard", req.url), 302);
+    appendSetCookies(redirectResponse, setCookieList);
     clearOauthCookies(req, redirectResponse);
 
     console.log("[oauth-google-callback]", {
       requestId,
       stage: "success",
-      destination: to,
+      destination: "/dashboard",
+      setCookieCount: setCookieList.length,
     });
     return redirectResponse;
   } catch (error) {
