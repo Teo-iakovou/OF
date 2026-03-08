@@ -2,7 +2,9 @@ const { S3Client, PutObjectCommand, HeadObjectCommand } = require("@aws-sdk/clie
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 const endpoint = process.env.S3_ENDPOINT;
-const region = process.env.S3_REGION || "auto";
+const rawRegion = process.env.S3_REGION || "auto";
+const useAwsDefaultRegion = !endpoint && rawRegion === "auto";
+const region = useAwsDefaultRegion ? "us-east-1" : rawRegion;
 const bucket = process.env.S3_BUCKET;
 const publicAssetBaseUrl = process.env.PUBLIC_ASSET_BASE_URL;
 const accessKeyId = process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
@@ -13,7 +15,12 @@ if (process.env.NODE_ENV !== "production") {
     accessLen: accessKeyId?.length || 0,
     endpoint: process.env.S3_ENDPOINT,
     bucket: process.env.S3_BUCKET,
+    region,
   });
+}
+
+if (useAwsDefaultRegion) {
+  console.warn("[s3] S3_REGION=auto without S3_ENDPOINT detected; defaulting region to us-east-1 for AWS S3 signing.");
 }
 
 if (!bucket) {
