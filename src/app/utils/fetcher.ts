@@ -10,19 +10,19 @@ type FetchJsonOptions = RequestInit & {
 
 export async function fetchJson(input: string, init: FetchJsonOptions = {}) {
   const { onUnauthorized, ...requestInit } = init;
-  const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === 'true';
-  const BFF_PREFIXES = ['/api/auth/', '/api/checkout/', '/api/user/'];
+  const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === "true";
+  const BFF_PREFIXES = ["/api/auth/", "/api/checkout/", "/api/user/"];
   // If using the in-app BFF, route auth calls to relative /api/auth/*
   let url = input;
   try {
-    if (USE_BFF && typeof input === 'string') {
+    if (USE_BFF && typeof input === "string") {
       for (const prefix of BFF_PREFIXES) {
         if (input.startsWith(BASE_URL + prefix)) {
           url = input.slice(BASE_URL.length);
           break;
         }
         const idx = input.indexOf(prefix);
-        if (input.startsWith('http') && idx !== -1) {
+        if (input.startsWith("http") && idx !== -1) {
           url = input.slice(idx);
           break;
         }
@@ -30,19 +30,36 @@ export async function fetchJson(input: string, init: FetchJsonOptions = {}) {
     }
     // Always force auth routes through the BFF to avoid cookie/domain issues.
     if (typeof input === 'string') {
-      const authPrefix = '/api/auth/';
+      const authPrefix = "/api/auth/";
       if (input.startsWith(BASE_URL + authPrefix)) {
         url = input.slice(BASE_URL.length);
       } else {
         const idx = input.indexOf(authPrefix);
-        if (input.startsWith('http') && idx !== -1) {
+        if (input.startsWith("http") && idx !== -1) {
           url = input.slice(idx);
         }
       }
     }
+    // In BFF mode, never call absolute API hosts from the browser.
+    if (USE_BFF && typeof url === "string" && url.startsWith("http")) {
+      const apiIdx = url.indexOf("/api/");
+      if (apiIdx !== -1) {
+        url = url.slice(apiIdx);
+      }
+    }
   } catch {}
   const headers = new Headers(requestInit.headers as HeadersInit | undefined);
-  if (!headers.has('content-type')) headers.set('Content-Type', 'application/json');
+  if (!headers.has("content-type")) headers.set("Content-Type", "application/json");
+
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      console.log("[fetchJson]", {
+        method: requestInit.method || "GET",
+        url,
+        useBFF: USE_BFF,
+      });
+    } catch {}
+  }
 
   const res = await fetch(url, {
     ...requestInit,

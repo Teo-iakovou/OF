@@ -5,10 +5,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function PATCH(req: NextRequest) {
-  return proxyToBackend(req, {
-    path: "/api/user/profile",
-    method: "PATCH",
-    includeBody: true,
-  });
+export async function GET(request: NextRequest) {
+  return proxyToBackend(request, { path: "/api/billing/addons/verify", method: "GET" });
 }
