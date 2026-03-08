@@ -136,7 +136,7 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
   return (
     <div className={embedded ? "w-full" : "min-h-screen flex flex-col text-white"}>
       {!embedded ? (
-        <header className="shrink-0 pt-12 md:pt-20 px-4 md:px-12 lg:px-20 max-w-6xl mx-auto w-full">
+        <header className="shrink-0 px-4 pt-3 md:px-12 md:pt-20 lg:px-20 max-w-6xl mx-auto w-full">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Upload History</h1>
@@ -151,8 +151,8 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
       <main>
         <div className={embedded ? "w-full" : "px-4 md:px-12 lg:px-20 w-full"}>
           <div className={embedded ? "w-full" : "max-w-6xl mx-auto w-full pb-10 space-y-6"}>
-            <section className={embedded ? "min-h-[280px]" : "p-4 md:p-6 min-h-[280px]"}>
-              <div className="mb-5 inline-flex rounded-xl border border-[var(--hg-border)] bg-[rgba(255,255,255,0.03)] p-1">
+            <section className={embedded ? "min-h-[280px]" : "p-2 sm:p-4 md:p-6 min-h-[280px]"}>
+              <div className="mb-5 inline-flex flex-wrap rounded-xl border border-[var(--hg-border)] bg-[rgba(255,255,255,0.03)] p-1">
                 <button
                   type="button"
                   onClick={() => setActiveTab("uploads")}

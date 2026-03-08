@@ -137,7 +137,7 @@ export default function AiCoachChatPage() {
   return (
     <div className="min-h-screen flex flex-col text-white">
       {/* Header */}
-      <header className="sticky top-0 z-40 shrink-0 pt-4 md:pt-12 pl-16 pr-4 md:px-12 lg:px-20 max-w-6xl mx-auto w-full bg-transparent">
+      <header className="sticky top-0 z-40 shrink-0 px-3 pt-2 md:px-12 md:pt-12 lg:px-20 max-w-6xl mx-auto w-full bg-transparent">
         <div className="relative">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">AI Chat</h1>
@@ -175,7 +175,7 @@ export default function AiCoachChatPage() {
 
           {/* History popover */}
           {historyOpen && (
-            <div ref={historyRef} className="absolute right-0 mt-2 z-50 w-[340px]">
+            <div ref={historyRef} className="absolute right-0 mt-2 z-50 w-[min(92vw,340px)]">
               <CoachChatHistory
                 onSelect={handleSelectHistory}
                 selectedId={selectedConvoId}

@@ -62,11 +62,12 @@ const verifyPersonaFace = async (req, res, next) => {
     }
     if (!instance.faceEnrolled || !instance.rekognitionFaceId) {
       logStage("sadtalker_face_gate_blocked", {
-        reason: "FACE_ENROLLMENT_REQUIRED",
+        reason: "FACE_NOT_ENROLLED",
         packageInstanceId: instance?._id?.toString?.() || null,
       });
       return sendErr(req, res, 409, "Face enrollment required.", {
-        errorCode: "FACE_ENROLLMENT_REQUIRED",
+        errorCode: "FACE_NOT_ENROLLED",
+        code: "FACE_NOT_ENROLLED",
         message: "Face enrollment required.",
       });
     }
@@ -129,7 +130,20 @@ const verifyPersonaFace = async (req, res, next) => {
       packageInstanceId: instance?._id?.toString?.() || null,
     });
     const enrolledFaceId = instance.rekognitionFaceId || null;
-    const { matched, similarity, matchedFaceId, threshold, reason } = await verifyFaceMatches(
+    const {
+      matched,
+      similarity,
+      matchedFaceId,
+      threshold,
+      reason,
+      topSimilarity,
+      topFaceId,
+      topExternalImageId,
+      matchCount,
+      acceptedBy,
+      foreignTopSkipped,
+      allMatchExternalImageIdsSample,
+    } = await verifyFaceMatches(
       imageBuffer,
       enrolledFaceId,
       { requestId, expectedExternalImageId: instance._id?.toString?.() || null }
@@ -140,14 +154,37 @@ const verifyPersonaFace = async (req, res, next) => {
       matchedFaceId: matchedFaceId || null,
       similarity: typeof similarity === "number" ? similarity : null,
       threshold: typeof threshold === "number" ? threshold : null,
+      topFaceId: topFaceId || null,
+      topSimilarity: typeof topSimilarity === "number" ? topSimilarity : null,
+      topExternalImageId: topExternalImageId || null,
+      expectedExternalImageId: instance?._id?.toString?.() || null,
+      matchCount: typeof matchCount === "number" ? matchCount : null,
+      acceptedBy: acceptedBy || null,
+      foreignTopSkipped: !!foreignTopSkipped,
+      allMatchExternalImageIdsSample: allMatchExternalImageIdsSample || [],
+      collection: process.env.REKOGNITION_COLLECTION_ID || null,
     });
     if (matched !== true) {
-      const code = reason === "NO_FACE_DETECTED" ? "FACE_REQUIRED_FOR_ENROLLMENT" : "FACE_MISMATCH";
+      const code =
+        reason === "NO_FACE_FOUND"
+          ? "NO_FACE_FOUND"
+          : reason === "FACE_MISMATCH_BELOW_THRESHOLD"
+            ? "FACE_MISMATCH_BELOW_THRESHOLD"
+            : "FACE_MATCH_NOT_FOUND";
       logStage("sadtalker_face_gate_blocked", {
         reason: code,
         packageInstanceId: instance?._id?.toString?.() || null,
       });
-      return sendErr(req, res, 409, code === "FACE_MISMATCH" ? "Face mismatch." : "No face detected.", {
+      return sendErr(
+        req,
+        res,
+        409,
+        code === "NO_FACE_FOUND"
+          ? "No face found in image."
+          : code === "FACE_MISMATCH_BELOW_THRESHOLD"
+            ? "Face mismatch (below threshold)."
+            : "No matching enrolled face found.",
+        {
         errorCode: code,
         code,
         ...(process.env.NODE_ENV !== "production"
@@ -156,11 +193,21 @@ const verifyPersonaFace = async (req, res, next) => {
                 expectedFaceId: enrolledFaceId,
                 matchedFaceId: matchedFaceId || null,
                 similarity: typeof similarity === "number" ? similarity : null,
+                topFaceId: topFaceId || null,
+                topSimilarity: typeof topSimilarity === "number" ? topSimilarity : null,
+                topExternalImageId: topExternalImageId || null,
+                expectedExternalImageId: instance?._id?.toString?.() || null,
+                acceptedBy: acceptedBy || null,
+                matchCount: typeof matchCount === "number" ? matchCount : null,
+                foreignTopSkipped: !!foreignTopSkipped,
+                allMatchExternalImageIdsSample: allMatchExternalImageIdsSample || [],
                 threshold: typeof threshold === "number" ? threshold : null,
+                reason: reason || null,
               },
             }
           : {}),
-      });
+      }
+      );
     }
 
     logStage("sadtalker_face_verified", {

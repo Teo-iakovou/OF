@@ -30,8 +30,9 @@ type Ctx = {
 const ConsentCtx = createContext<Ctx | null>(null);
 
 export function ConsentProvider({ children }: { children: React.ReactNode }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [rawIsOpen, setRawIsOpen] = useState(false);
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
+  const [introBlocking, setIntroBlocking] = useState(false);
 
   // On mount: read stored consent; honor GPC if present and no stored consent
   useEffect(() => {
@@ -54,11 +55,34 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
       gpc,
     };
     setConsent(base);
-    setIsOpen(true); // show banner
+        setRawIsOpen(true); // show banner (unless intro blocks it)
   }, []);
 
-  const open = useCallback(() => setIsOpen(true), []);
-  const close = useCallback(() => setIsOpen(false), []);
+  useEffect(() => {
+    const syncFromStorage = () => {
+      try {
+        setIntroBlocking(sessionStorage.getItem("landingIntroPlaying") === "1");
+      } catch {
+        setIntroBlocking(false);
+      }
+    };
+    const onIntroState = (event: Event) => {
+      const custom = event as CustomEvent<{ playing?: boolean }>;
+      if (typeof custom.detail?.playing === "boolean") {
+        setIntroBlocking(custom.detail.playing);
+        return;
+      }
+      syncFromStorage();
+    };
+    syncFromStorage();
+    window.addEventListener("landing:intro-state", onIntroState as EventListener);
+    return () => {
+      window.removeEventListener("landing:intro-state", onIntroState as EventListener);
+    };
+  }, []);
+
+  const open = useCallback(() => setRawIsOpen(true), []);
+  const close = useCallback(() => setRawIsOpen(false), []);
 
   const save = useCallback(async (cats: Omit<ConsentCategories, "necessary">) => {
     const gpc = typeof navigator !== "undefined" && (navigator as any).globalPrivacyControl === true;
@@ -77,9 +101,10 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
       fetch("/api/consent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rec) });
     } catch {}
 
-    setIsOpen(false);
+    setRawIsOpen(false);
   }, []);
 
+  const isOpen = rawIsOpen && !introBlocking;
   const value = useMemo(() => ({ consent, open, close, save, isOpen }), [consent, open, close, save, isOpen]);
   return <ConsentCtx.Provider value={value}>{children}</ConsentCtx.Provider>;
 }
@@ -89,4 +114,3 @@ export function useConsent() {
   if (!v) throw new Error("useConsent must be used within ConsentProvider");
   return v;
 }
-

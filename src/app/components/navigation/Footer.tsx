@@ -1,7 +1,6 @@
 "use client";
 import { Link } from "@/i18n/navigation";
 import { FaTwitter, FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
-import { useConsent } from "@/app/components/consent/ConsentContext";
 const Footer = () => (
   <footer className="bg-gradient-to-r from-[#050819] via-[#030411] to-[#010208] text-gray-300 py-8 text-center border-t border-white/10">
     <div className="container mx-auto">
@@ -44,13 +43,11 @@ const Footer = () => (
 export default Footer;
 
 function FooterLinks() {
-  const { open } = useConsent();
   return (
     <div className="flex justify-center flex-wrap gap-6 mt-4">
       <Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link>
       <Link href="/terms" className="hover:text-white transition">Terms of Service</Link>
       <Link href="/cookies" className="hover:text-white transition">Cookie Policy</Link>
-      <button onClick={open} className="hover:text-white transition underline underline-offset-2">Cookie preferences</button>
     </div>
   );
 }

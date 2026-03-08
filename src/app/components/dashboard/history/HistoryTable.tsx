@@ -100,7 +100,64 @@ const HistoryTable = ({ history, onDeleteClick, onOpenClick }: Props) => {
 
   return (
     <>
-      <div className="overflow-x-auto rounded-2xl hg-surface">
+      <div className="space-y-3 md:hidden">
+        {history.map((item) => {
+          const thumbnailUrl = extractThumbnailUrl(item) || resolvedThumbs[item._id] || null;
+          const created = item.createdAt
+            ? new Intl.DateTimeFormat(undefined, {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+                .format(new Date(item.createdAt))
+                .replace(",", " •")
+            : "—";
+
+          return (
+            <article
+              key={`mobile-${item._id}`}
+              onClick={() => onOpenClick(item._id)}
+              className="flex items-center gap-3 rounded-xl border border-[var(--hg-border-2)] bg-[var(--hg-surface)] px-3 py-3"
+            >
+              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-[var(--hg-border)] bg-[var(--hg-surface-2)]">
+                {thumbnailUrl && !failedThumbs[item._id] ? (
+                  <img
+                    src={thumbnailUrl}
+                    alt="preview"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    onError={() =>
+                      setFailedThumbs((prev) => ({
+                        ...prev,
+                        [item._id]: true,
+                      }))
+                    }
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-xs hg-muted-2">—</div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm text-white">Analysis</p>
+                <p className="text-xs hg-muted">{created}</p>
+              </div>
+              <button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openConfirmModal(item._id);
+                }}
+                className="rounded-lg border border-rose-400/30 hg-surface-soft px-2.5 py-1.5 text-xs font-medium text-rose-200 hover:bg-[var(--hg-surface-2)]"
+              >
+                Delete
+              </button>
+            </article>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-2xl hg-surface md:block">
         <table className="min-w-[420px] w-full text-left">
           <thead className="border-b border-[var(--hg-border-2)] bg-[var(--hg-surface-2)]">
             <tr className="text-xs uppercase tracking-wide hg-muted-2">

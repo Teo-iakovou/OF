@@ -19,7 +19,7 @@ import { useRouter } from "@/i18n/navigation";
 function OverviewSkeleton() {
   return (
     <div className="min-h-screen text-white">
-      <header className="mx-auto w-full max-w-6xl px-4 pt-12 md:px-8 md:pt-16">
+      <header className="mx-auto w-full max-w-6xl px-4 pt-3 md:px-8 md:pt-16">
         <div className="flex flex-col gap-3">
           <p className="text-xs uppercase tracking-[0.14em] hg-muted-2">Overview</p>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Dashboard</h1>
@@ -176,7 +176,7 @@ export default function DashboardPage() {
   if (showGetStarted) {
     return (
       <div className="min-h-screen text-white">
-        <header className="mx-auto w-full max-w-6xl px-4 pt-12 md:px-8 md:pt-16">
+        <header className="mx-auto w-full max-w-6xl px-4 pt-3 md:px-8 md:pt-16">
           <div className="flex flex-col gap-3">
             <p className="text-xs uppercase tracking-[0.14em] hg-muted-2">Overview</p>
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Dashboard</h1>
@@ -208,7 +208,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen text-white">
-      <header className="mx-auto w-full max-w-6xl px-4 pt-12 md:px-8 md:pt-16">
+      <header className="mx-auto w-full max-w-6xl px-4 pt-3 md:px-8 md:pt-16">
         <div className="flex flex-col gap-3">
           <p className="text-xs uppercase tracking-[0.14em] hg-muted-2">Overview</p>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Dashboard</h1>

@@ -55,6 +55,16 @@ export default function Page() {
   const featureIcons = [BrainCircuit, Sparkles, MessageCircle, Video, Bot, Camera];
 
   useEffect(() => {
+    const publishIntroState = (playing: boolean) => {
+      try {
+        if (playing) sessionStorage.setItem("landingIntroPlaying", "1");
+        else sessionStorage.removeItem("landingIntroPlaying");
+      } catch {}
+      try {
+        window.dispatchEvent(new CustomEvent("landing:intro-state", { detail: { playing } }));
+      } catch {}
+    };
+
     const resolveIntroPlayback = () => {
       try {
         const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
@@ -65,18 +75,25 @@ export default function Page() {
         setShouldPlayIntro(shouldPlay);
         if (shouldPlay) {
           sessionStorage.setItem("introPlayed", "1");
+          publishIntroState(true);
           setShowLanding(false);
           return;
         }
+        publishIntroState(false);
         setShowLanding(true);
       } catch {
         // Safe fallback: avoid blocking render if storage/perf APIs are unavailable.
+        publishIntroState(false);
         setShouldPlayIntro(false);
         setShowLanding(true);
       }
     };
 
     resolveIntroPlayback();
+
+    return () => {
+      publishIntroState(false);
+    };
   }, []);
 
   const workflowItems = asStringArray(t.raw("hero.workflow.items"));
@@ -94,7 +111,19 @@ export default function Page() {
   }
 
   if (shouldPlayIntro && !showLanding) {
-    return <VideoIntro onComplete={() => setShowLanding(true)} />;
+    return (
+      <VideoIntro
+        onComplete={() => {
+          try {
+            sessionStorage.removeItem("landingIntroPlaying");
+          } catch {}
+          try {
+            window.dispatchEvent(new CustomEvent("landing:intro-state", { detail: { playing: false } }));
+          } catch {}
+          setShowLanding(true);
+        }}
+      />
+    );
   }
 
   return (
@@ -103,9 +132,9 @@ export default function Page() {
         <LandingNavbar />
 
         <main>
-          <SectionReveal as="section" id="hero" className="relative overflow-hidden border-b border-[var(--hg-border)]">
+          <SectionReveal as="section" id="hero" className="relative overflow-hidden border-b border-[var(--hg-border)] scroll-mt-32 md:scroll-mt-28">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_540px_at_20%_-10%,rgba(80,192,240,0.18),transparent_62%),radial-gradient(900px_420px_at_80%_0%,rgba(80,192,240,0.08),transparent_70%)]" />
-            <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-16 md:grid-cols-2 md:items-center md:px-8 md:py-24">
+            <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 pb-16 pt-28 md:grid-cols-2 md:items-center md:px-8 md:py-24">
               <div className="space-y-6">
                 <p className="text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("hero.eyebrow")}</p>
                 <h1 className="text-4xl font-semibold leading-tight text-white md:text-5xl">
@@ -154,7 +183,7 @@ export default function Page() {
             </div>
           </SectionReveal>
 
-          <SectionReveal as="section" className="border-b border-[var(--hg-border)]">
+          <SectionReveal as="section" id="brands" className="border-b border-[var(--hg-border)] scroll-mt-32 md:scroll-mt-28">
             <div className="mx-auto w-full max-w-6xl px-4 py-8 md:px-8">
               <div className="mb-6 space-y-2 text-center">
                 <p className="text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("brands.eyebrow")}</p>
@@ -170,7 +199,7 @@ export default function Page() {
             </div>
           </SectionReveal>
 
-          <SectionReveal as="section" id="how" className="mx-auto w-full max-w-6xl px-4 py-16 md:px-8 md:py-24">
+          <SectionReveal as="section" id="how" className="mx-auto w-full max-w-6xl px-4 py-16 md:px-8 md:py-24 scroll-mt-32 md:scroll-mt-28">
             <div className="mb-10 space-y-3 text-center">
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("how.eyebrow")}</p>
               <h2 className="text-3xl font-semibold text-white md:text-4xl">{t("how.title")}</h2>
@@ -188,7 +217,7 @@ export default function Page() {
             </div>
           </SectionReveal>
 
-          <SectionReveal as="section" id="features" className="border-y border-[var(--hg-border)] bg-[var(--hg-surface)]/40">
+          <SectionReveal as="section" id="features" className="border-y border-[var(--hg-border)] bg-[var(--hg-surface)]/40 scroll-mt-32 md:scroll-mt-28">
             <div className="mx-auto w-full max-w-6xl px-4 py-16 md:px-8 md:py-24">
               <div className="mb-10 space-y-3 text-center">
                 <p className="text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("features.eyebrow")}</p>
@@ -224,13 +253,13 @@ export default function Page() {
             </div>
           </SectionReveal>
 
-          <SectionReveal as="section" id="pricing" className="border-y border-[var(--hg-border)] bg-[var(--hg-surface)]/25 px-4 py-16 md:px-8 md:py-24">
+          <SectionReveal as="section" id="pricing" className="border-y border-[var(--hg-border)] bg-[var(--hg-surface)]/25 px-4 py-16 md:px-8 md:py-24 scroll-mt-32 md:scroll-mt-28">
             <div className="mx-auto w-full max-w-6xl">
               <Packages />
             </div>
           </SectionReveal>
 
-          <SectionReveal as="section" id="faq" className="mx-auto w-full max-w-4xl px-4 py-16 md:px-8 md:py-24">
+          <SectionReveal as="section" id="faq" className="mx-auto w-full max-w-4xl px-4 py-16 md:px-8 md:py-24 scroll-mt-32 md:scroll-mt-28">
             <div className="mb-8 space-y-3 text-center">
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("faq.eyebrow")}</p>
               <h2 className="text-3xl font-semibold text-white md:text-4xl">{t("faq.title")}</h2>

@@ -60,6 +60,19 @@ async function resolveActivePackageInstance(user) {
   });
 }
 
+async function resolvePackageInstanceForAnalyze(user, requestedPackageInstanceId) {
+  if (!user) return null;
+  if (requestedPackageInstanceId && mongoose.Types.ObjectId.isValid(requestedPackageInstanceId)) {
+    const requested = await PackageInstance.findOne({
+      _id: requestedPackageInstanceId,
+      userId: user._id,
+      status: "active",
+    });
+    if (requested) return requested;
+  }
+  return resolveActivePackageInstance(user);
+}
+
 function normalizeCaptionText(value) {
   return String(value || "")
     .toLowerCase()
@@ -243,24 +256,37 @@ const analyzeImage = async (req, res) => {
   try {
     // 0) User checks
     try {
+      const requestedPackageInstanceId =
+        typeof req.body?.packageInstanceId === "string" ? req.body.packageInstanceId : null;
       if (!req.user || !req.user.id) return respondErr(401, "Unauthorized");
       user = await User.findById(req.user.id);
       if (!user) return respondErr(403, "User not found.");
-      selectedInstance = await resolveActivePackageInstance(user);
+      selectedInstance = await resolvePackageInstanceForAnalyze(user, requestedPackageInstanceId);
       if (!selectedInstance) {
+        log(requestId, "face_verify_resolution", {
+          requestedPackageInstanceId: requestedPackageInstanceId || null,
+          activePackageInstanceId: user?.activePackageInstanceId?.toString?.() || null,
+          resolvedPackageInstanceId: null,
+        });
         return sendErr(req, res, 409, "No active package instance.", {
           errorCode: "ACTIVE_INSTANCE_REQUIRED",
           message: "No active package instance.",
         });
       }
+      log(requestId, "face_verify_resolution", {
+        requestedPackageInstanceId: requestedPackageInstanceId || null,
+        activePackageInstanceId: user?.activePackageInstanceId?.toString?.() || null,
+        resolvedPackageInstanceId: selectedInstance?._id?.toString?.() || null,
+      });
       if (!selectedInstance.faceEnrolled || !selectedInstance.rekognitionFaceId) {
-        if (process.env.NODE_ENV !== "production") {
-          log(requestId, "enroll_gate_blocked", {
-            packageInstanceId: selectedInstance?._id?.toString?.() || null,
-          });
-        }
+        log(requestId, "enroll_gate_blocked", {
+          packageInstanceId: selectedInstance?._id?.toString?.() || null,
+          faceEnrolled: !!selectedInstance?.faceEnrolled,
+          rekognitionFaceId: selectedInstance?.rekognitionFaceId || null,
+        });
         return res.status(409).json({
-          errorCode: "FACE_ENROLLMENT_REQUIRED",
+          errorCode: "FACE_NOT_ENROLLED",
+          code: "FACE_NOT_ENROLLED",
           message: "Face enrollment required.",
           requestId,
         });
@@ -457,7 +483,15 @@ const analyzeImage = async (req, res) => {
       packageInstanceId: selectedInstance?._id?.toString?.() || null,
       activeInstanceId: selectedInstance?._id?.toString?.() || null,
     });
-    if (selectedInstance?.faceEnrolled === true && visionData?.hasFace === false) {
+    const detectedFaceCount =
+      typeof visionData?.faceCount === "number"
+        ? visionData.faceCount
+        : Array.isArray(visionData?.faces)
+          ? visionData.faces.length
+          : visionData?.hasFace
+            ? 1
+            : 0;
+    if (selectedInstance?.faceEnrolled === true && detectedFaceCount <= 0) {
       console.log(
         JSON.stringify({
           requestId,
@@ -466,10 +500,21 @@ const analyzeImage = async (req, res) => {
           activeInstanceId: selectedInstance?._id?.toString?.() || null,
           faceEnrolled: true,
           hasFace: false,
+          faceCount: detectedFaceCount,
         })
       );
       await releaseReservedQuota();
-      return sendErr(req, res, 403, "No face detected.", { code: "FACE_NOT_DETECTED" });
+      return sendErr(req, res, 403, "No face found in image.", { code: "NO_FACE_FOUND" });
+    }
+    if (detectedFaceCount > 1) {
+      log(requestId, "face_gate_multiple_faces", {
+        packageInstanceId: selectedInstance?._id?.toString?.() || null,
+        faceCount: detectedFaceCount,
+      });
+      await releaseReservedQuota();
+      return sendErr(req, res, 403, "Multiple faces are not allowed.", {
+        code: "MULTIPLE_FACES_NOT_ALLOWED",
+      });
     }
 
     if (selectedInstance?.rekognitionFaceId && visionData.hasFace) {
@@ -498,24 +543,49 @@ const analyzeImage = async (req, res) => {
               typeof inputBuffer?.byteLength === "number" ? inputBuffer.byteLength : null,
           })
         );
-        const { similarity, matchedFaceId, threshold, matched, reason } = await verifyFaceMatches(
+        const {
+          similarity,
+          matchedFaceId,
+          threshold,
+          matched,
+          reason,
+          topSimilarity,
+          topFaceId,
+          topExternalImageId,
+          matchCount,
+          acceptedBy,
+          foreignTopSkipped,
+          allMatchExternalImageIdsSample,
+        } = await verifyFaceMatches(
           inputBuffer,
           expectedFaceId,
           { requestId, expectedExternalImageId: selectedInstance._id?.toString?.() || null }
         );
         stage = "face_verify_return";
-        const topSimilarity = typeof similarity === "number" ? similarity : null;
+        const exactSimilarity = typeof similarity === "number" ? similarity : null;
         console.log(
           JSON.stringify({
             requestId,
             stage: "face_verify_return",
             packageInstanceId: selectedInstance?._id?.toString?.() || null,
             activeInstanceId: selectedInstance?._id?.toString?.() || null,
-            similarity: topSimilarity,
+            similarity: exactSimilarity,
             matchedFaceId: matchedFaceId || null,
+            topFaceId: topFaceId || null,
+            topSimilarity: typeof topSimilarity === "number" ? topSimilarity : null,
+            topExternalImageId: topExternalImageId || null,
+            expectedExternalImageId: selectedInstance?._id?.toString?.() || null,
+            matchCount: typeof matchCount === "number" ? matchCount : null,
+            allMatchExternalImageIdsSample: allMatchExternalImageIdsSample || [],
             threshold: typeof threshold === "number" ? threshold : null,
             expectedFaceId,
             matched,
+            acceptedBy: acceptedBy || null,
+            foreignTopSkipped: !!foreignTopSkipped,
+            reason: reason || null,
+            faceEnrolled: !!selectedInstance?.faceEnrolled,
+            rekognitionFaceId: selectedInstance?.rekognitionFaceId || null,
+            collection: process.env.REKOGNITION_COLLECTION_ID || null,
           })
         );
         const shouldBlock = matched !== true;
@@ -527,7 +597,7 @@ const analyzeImage = async (req, res) => {
             activeInstanceId: selectedInstance?._id?.toString?.() || null,
             expectedFaceId,
             matchedFaceId: matchedFaceId || null,
-            similarity: topSimilarity,
+            similarity: exactSimilarity,
             threshold: typeof threshold === "number" ? threshold : null,
             matched: matched === true,
             decision: shouldBlock ? "BLOCK" : "ALLOW",
@@ -535,58 +605,61 @@ const analyzeImage = async (req, res) => {
         );
         stage = "face_verify_decision";
         if (shouldBlock) {
-          const isFaceIdDrift =
-            typeof topSimilarity === "number" &&
-            typeof threshold === "number" &&
-            topSimilarity >= threshold &&
-            !!matchedFaceId &&
-            matchedFaceId !== expectedFaceId;
           console.log(
             JSON.stringify({
               requestId,
               stage: "face_verify_mismatch",
-              similarity: topSimilarity,
+              similarity: exactSimilarity,
               matchedFaceId: matchedFaceId || null,
+              topFaceId: topFaceId || null,
+              topSimilarity: typeof topSimilarity === "number" ? topSimilarity : null,
+              topExternalImageId: topExternalImageId || null,
+              expectedExternalImageId: selectedInstance?._id?.toString?.() || null,
+              matchCount: typeof matchCount === "number" ? matchCount : null,
+              allMatchExternalImageIdsSample: allMatchExternalImageIdsSample || [],
+              foreignTopSkipped: !!foreignTopSkipped,
               expectedFaceId,
               threshold: typeof threshold === "number" ? threshold : null,
-              reason:
-                topSimilarity === null || typeof topSimilarity === "undefined"
-                  ? "NO_MATCH"
-                  : "LOW_SIMILARITY_OR_DIFFERENT_FACEID",
+              reason: reason || "FACE_MATCH_NOT_FOUND",
             })
           );
           await releaseReservedQuota();
-          if (reason === "NO_FACE_DETECTED") {
-            return sendErr(req, res, 403, "No face detected.", {
-              code: "FACE_NOT_DETECTED",
-            });
-          }
-          if (isFaceIdDrift) {
-            return sendErr(req, res, 403, "Face ID drift detected.", {
-              code: "FACE_ID_DRIFT",
-              similarity: topSimilarity,
-              ...(process.env.NODE_ENV !== "production"
-                ? {
-                    debug: {
-                      expectedFaceId,
-                      matchedFaceId: matchedFaceId || null,
-                      similarity: topSimilarity,
-                      threshold: typeof threshold === "number" ? threshold : null,
-                    },
-                  }
-                  : {}),
-            });
-          }
-          return sendErr(req, res, 403, "Face mismatch.", {
-            code: "FACE_MISMATCH",
-            similarity: topSimilarity,
+          const errorCode =
+            reason === "NO_FACE_FOUND"
+              ? "NO_FACE_FOUND"
+              : reason === "FACE_MISMATCH_BELOW_THRESHOLD"
+                ? "FACE_MISMATCH_BELOW_THRESHOLD"
+                : "FACE_MATCH_NOT_FOUND";
+          const message =
+            errorCode === "NO_FACE_FOUND"
+              ? "No face found in image."
+              : errorCode === "FACE_MISMATCH_BELOW_THRESHOLD"
+                ? "Face mismatch (below threshold)."
+                : "No matching enrolled face found.";
+          return sendErr(req, res, 403, message, {
+            code: errorCode,
+            similarity:
+              errorCode === "FACE_MISMATCH_BELOW_THRESHOLD"
+                ? exactSimilarity
+                : typeof topSimilarity === "number"
+                  ? topSimilarity
+                  : null,
             ...(process.env.NODE_ENV !== "production"
               ? {
                   debug: {
                     expectedFaceId,
                     matchedFaceId: matchedFaceId || null,
-                    similarity: topSimilarity,
+                    topFaceId: topFaceId || null,
+                    similarity: exactSimilarity,
+                    topSimilarity: typeof topSimilarity === "number" ? topSimilarity : null,
+                    topExternalImageId: topExternalImageId || null,
+                    expectedExternalImageId: selectedInstance?._id?.toString?.() || null,
+                    acceptedBy: acceptedBy || null,
+                    matchCount: typeof matchCount === "number" ? matchCount : null,
+                    allMatchExternalImageIdsSample: allMatchExternalImageIdsSample || [],
+                    foreignTopSkipped: !!foreignTopSkipped,
                     threshold: typeof threshold === "number" ? threshold : null,
+                    reason: reason || null,
                   },
                 }
               : {}),

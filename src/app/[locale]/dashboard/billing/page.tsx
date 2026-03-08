@@ -74,7 +74,7 @@ export default function BillingPage() {
 
   return (
     <div className="min-h-screen flex flex-col text-white">
-      <header className="shrink-0 pt-12 md:pt-20 px-4 md:px-12 lg:px-20 max-w-6xl mx-auto w-full">
+      <header className="shrink-0 px-4 pt-3 md:px-12 md:pt-20 lg:px-20 max-w-6xl mx-auto w-full">
         <div className="flex flex-col gap-3">
           <div>
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Plan &amp; Billing</h1>

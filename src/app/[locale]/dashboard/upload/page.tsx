@@ -68,7 +68,7 @@ export default function UploadPage() {
   return (
     <div className="relative min-h-screen flex flex-col text-white">
       <main>
-        <div className="relative w-full px-4 pb-24 pt-8 md:pt-12">
+        <div className="relative w-full px-4 pb-24 pt-2 md:pt-12">
           <div className="mx-auto w-full max-w-[960px] space-y-8 md:space-y-10">
             <section className="mx-auto max-w-2xl text-center">
               <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">

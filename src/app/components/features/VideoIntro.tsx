@@ -68,7 +68,7 @@ export default function VideoIntro({ onComplete }: VideoIntroProps) {
         <video
           id="landing-intro-video"
           ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full scale-[0.88] object-contain md:scale-100 md:object-cover"
           autoPlay
           playsInline
           muted
@@ -86,6 +86,7 @@ export default function VideoIntro({ onComplete }: VideoIntroProps) {
         >
           <source src="/intro.mp4" type="video/mp4" />
         </video>
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(100%_70%_at_50%_50%,transparent_58%,rgba(0,0,0,0.35)_100%)] md:bg-transparent" />
 
         {/* Skip Button */}
         <AnimatePresence>
