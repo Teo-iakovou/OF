@@ -60,6 +60,9 @@ export async function GET(req: NextRequest) {
   // Support GET /api/auth/login?email=...&redirect=/... as a top-level flow
   const email = req.nextUrl.searchParams.get("email");
   const redirect = req.nextUrl.searchParams.get("redirect") || "/";
+  const provider = req.nextUrl.searchParams.get("provider");
+  const googleId = req.nextUrl.searchParams.get("googleId");
+  const name = req.nextUrl.searchParams.get("name");
   if (!email) {
     return NextResponse.json({ error: "email is required" }, { status: 400 });
   }
@@ -68,14 +71,19 @@ export async function GET(req: NextRequest) {
       console.log('[auth-bff] GET /api/auth/login start', {
         email,
         redirect,
+        provider: provider || undefined,
         ua: req.headers.get('user-agent') || undefined,
       });
     }
   } catch {}
+  const payload: Record<string, string> = { email };
+  if (provider) payload.provider = provider;
+  if (googleId) payload.googleId = googleId;
+  if (name) payload.name = name;
   const res = await fetch(`${SERVER_BASE_URL}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify(payload),
   });
   const text = await res.text();
   let data: any;

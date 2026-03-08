@@ -78,25 +78,6 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
-function getSetCookieList(from: Response) {
-  const headerBag = from.headers as unknown as { getSetCookie?: () => string[] };
-  const viaMethod = headerBag.getSetCookie?.();
-  if (Array.isArray(viaMethod) && viaMethod.length > 0) return viaMethod;
-  const raw = from.headers.get("set-cookie");
-  return raw
-    ? raw
-        .split(/,(?=\s*[^;,\s]+=)/g)
-        .map((value) => value.trim())
-        .filter(Boolean)
-    : [];
-}
-
-function appendSetCookies(to: NextResponse, setCookieList: string[]) {
-  for (const value of setCookieList) {
-    to.headers.append("set-cookie", value);
-  }
-}
-
 function clearOauthCookies(req: NextRequest, res: NextResponse) {
   const host = req.headers.get("host") || req.nextUrl.host || "";
   const isLocalhost = host.includes("localhost") || host.startsWith("127.0.0.1");
@@ -241,38 +222,23 @@ export async function GET(req: NextRequest) {
       return redirectError(req, requestId);
     }
 
-    const bffLoginRes = await fetch(`${baseUrl}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: googleUser.email,
-        name: googleUser.name || "",
-        provider: "google",
-        googleId: googleUser.sub,
-      }),
-      cache: "no-store",
+    const params = new URLSearchParams({
+      email: googleUser.email,
+      redirect: "/dashboard",
+      provider: "google",
+      googleId: googleUser.sub,
     });
-    const loginText = await bffLoginRes.text();
-    if (!bffLoginRes.ok) {
-      console.log("[oauth-google-callback]", {
-        requestId,
-        stage: "bff_login_failed",
-        status: bffLoginRes.status,
-        body: truncate(loginText || ""),
-      });
-      return redirectError(req, requestId);
+    if (googleUser.name) {
+      params.set("name", googleUser.name);
     }
-
-    const setCookieList = getSetCookieList(bffLoginRes);
-    const redirectResponse = NextResponse.redirect(new URL("/dashboard", req.url), 302);
-    appendSetCookies(redirectResponse, setCookieList);
+    const loginUrl = new URL(`/api/auth/login?${params.toString()}`, baseUrl);
+    const redirectResponse = NextResponse.redirect(loginUrl, 302);
     clearOauthCookies(req, redirectResponse);
 
     console.log("[oauth-google-callback]", {
       requestId,
       stage: "success",
-      destination: "/dashboard",
-      setCookieCount: setCookieList.length,
+      destination: loginUrl.toString(),
     });
     return redirectResponse;
   } catch (error) {
