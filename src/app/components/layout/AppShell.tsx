@@ -51,7 +51,7 @@ export default function AppShell({ children }: AppShellProps) {
           <main className="flex-grow">{children}</main>
 
           <RouteTransitionOverlay />
-          {!isAiDashboardRoute && !useLandingShell && <Footer />}
+          {!isDashboardRoute && !isAiDashboardRoute && !useLandingShell && <Footer />}
 
           <ConsentBanner />
           <ConsentModal />

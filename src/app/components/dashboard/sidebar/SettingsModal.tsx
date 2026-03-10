@@ -3,14 +3,16 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { createPortal } from "react-dom";
 import { X, User, BarChart3, CreditCard, History } from "lucide-react";
+import { useRouter } from "@/i18n/navigation";
 import { useUser } from "@/app/hooks/useUser";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import HistoryPanel from "@/app/components/dashboard/history/HistoryPanel";
 import BillingPanel from "@/app/components/dashboard/billing/BillingPanel";
 import { toast } from "sonner";
 import { updateUserProfile } from "@/app/utils/api";
+import { logoutClient } from "@/app/utils/authClient";
 
-type SettingsSection = "account" | "usage" | "billing" | "history";
+export type SettingsSection = "account" | "usage" | "billing" | "history";
 
 type SettingsModalProps = {
   open: boolean;
@@ -63,6 +65,7 @@ function UsageBar({
 }
 
 export default function SettingsModal({ open, onOpenChange, initialSection = "account" }: SettingsModalProps) {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [section, setSection] = useState<SettingsSection>("account");
   const { user } = useUser({ required: false });
@@ -76,6 +79,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
   const [initialFirstName, setInitialFirstName] = useState("");
   const [initialLastName, setInitialLastName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [saveError, setSaveError] = useState<{ message: string; requestId?: string | null } | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saveSupportId, setSaveSupportId] = useState<string | null>(null);
@@ -203,7 +207,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
         </div>
 
         <div className="grid h-[calc(100%-58px)] grid-cols-1 overflow-hidden md:grid-cols-[240px_1fr]">
-          <aside className="border-b border-[var(--hg-border-2)] p-3 md:border-b-0 md:border-r">
+          <aside className="flex flex-col border-b border-[var(--hg-border-2)] p-3 md:border-b-0 md:border-r">
             <nav className="space-y-1">
               {sections.map((item) => {
                 const Icon = item.icon;
@@ -225,6 +229,36 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                 );
               })}
             </nav>
+            <div className="mt-4 border-t border-[var(--hg-border-2)] pt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenChange(false);
+                  router.push("/");
+                }}
+                className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm text-[var(--hg-muted)] transition hover:bg-[var(--hg-surface-2)] hover:text-white"
+              >
+                Exit dashboard
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (loggingOut) return;
+                  setLoggingOut(true);
+                  try {
+                    await logoutClient();
+                    onOpenChange(false);
+                    router.replace("/login");
+                  } finally {
+                    setLoggingOut(false);
+                  }
+                }}
+                disabled={loggingOut}
+                className="mt-1 flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-60"
+              >
+                {loggingOut ? "Signing out..." : "Sign out"}
+              </button>
+            </div>
           </aside>
 
           <section className="h-full overflow-y-auto p-4 md:p-6">

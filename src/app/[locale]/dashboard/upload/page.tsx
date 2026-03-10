@@ -68,13 +68,14 @@ export default function UploadPage() {
   return (
     <div className="relative min-h-screen flex flex-col text-white">
       <main>
-        <div className="relative w-full px-4 pb-24 pt-2 md:pt-12">
-          <div className="mx-auto w-full max-w-[960px] space-y-8 md:space-y-10">
+        <div className="relative w-full px-4 pb-20 pt-1 md:pt-10">
+          <div className="mx-auto w-full max-w-[980px] space-y-7 md:space-y-9">
             <section className="mx-auto max-w-2xl text-center">
-              <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)] md:text-xs">AI Content Studio</p>
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl">
                 Create your next strategy
               </h1>
-              <p className="mt-2 text-sm hg-muted md:text-base">
+              <p className="mt-2 text-sm text-[var(--hg-muted)] md:text-base">
                 Upload one image and get platform-ready content ideas in seconds.
               </p>
             </section>
@@ -82,7 +83,7 @@ export default function UploadPage() {
               <Reveal
                 as="section"
                 id="upload-card"
-                className="mx-auto w-full max-w-xl rounded-2xl hg-surface p-5"
+                className="mx-auto w-full max-w-xl rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5"
               >
                 <Skeleton className="h-6 w-40 mb-3" />
                 <Skeleton className="h-4 w-64 mb-6" />
@@ -98,7 +99,7 @@ export default function UploadPage() {
               <Reveal
                 as="section"
                 id="upload-card"
-                className="mx-auto w-full max-w-xl rounded-2xl hg-surface p-5"
+                className="mx-auto w-full max-w-xl rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5"
               >
                 <h2 className="text-xl font-semibold text-white">Upload content</h2>
                 <div className="mt-3 rounded-xl hg-surface-soft px-3 py-2 text-sm hg-muted">
@@ -115,7 +116,7 @@ export default function UploadPage() {
               <Reveal
                 as="section"
                 id="upload-card"
-                className="mx-auto w-full max-w-xl rounded-2xl hg-surface p-5"
+                className="mx-auto w-full max-w-xl rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5"
               >
                 <h2 className="text-xl font-semibold text-white">Upload content</h2>
                 <div className="mt-3 rounded-xl hg-surface-soft px-3 py-2 text-sm hg-muted">
@@ -129,7 +130,7 @@ export default function UploadPage() {
                 </Link>
               </Reveal>
             ) : (
-              <div className="space-y-8">
+              <div className="space-y-7 md:space-y-8">
                 <div id="upload-panel" className="mx-auto w-full max-w-xl">
                   <div id="upload-stage">
                     <UploadStage
@@ -138,12 +139,14 @@ export default function UploadPage() {
                       statusLabel="Ready to upload"
                       showHeader={false}
                     >
-                      <p className="text-sm hg-muted">
-                        Uploads remaining:{" "}
-                        <span className="font-semibold text-white">
+                      <div className="flex items-center justify-between rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/55 px-3.5 py-2.5">
+                        <span className="text-xs uppercase tracking-[0.1em] text-[var(--hg-muted-2)]">
+                          Upload quota
+                        </span>
+                        <span className="text-sm font-semibold text-white">
                           {formatRemaining(uploadsLeft)}
                         </span>
-                      </p>
+                      </div>
                       <div className="mt-4">
                         <FileUpload
                           onUploadSuccess={handleUploadSuccess}

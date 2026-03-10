@@ -101,9 +101,9 @@ export default function CreationCard({
     <button
       type="button"
       onClick={() => onOpenCreation?.(id)}
-      className="group w-full text-left rounded-2xl hg-surface p-4 hover:shadow-md transition motion-reduce:transition-none"
+      className="group w-full rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 text-left shadow-[0_10px_26px_rgba(0,0,0,0.16)] transition duration-200 hover:-translate-y-0.5 hover:border-[var(--hg-accent)]/28 hover:shadow-[0_16px_34px_rgba(0,0,0,0.22)] motion-reduce:transition-none"
     >
-      <div className="relative h-32 w-full overflow-hidden rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface-2)]">
+      <div className="relative h-32 w-full overflow-hidden rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] sm:h-36">
         {!showFallback ? (
           <img
             src={previewUrl}
@@ -111,7 +111,7 @@ export default function CreationCard({
             loading="lazy"
             referrerPolicy="no-referrer"
             onError={() => setImgFailed(true)}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-[var(--hg-muted-2)] text-sm">
@@ -119,19 +119,19 @@ export default function CreationCard({
           </div>
         )}
         {normalizedType ? (
-          <div className="absolute top-2 left-2 rounded-full border border-[var(--hg-border)] bg-[rgba(255,255,255,0.08)] px-2 py-0.5 text-[10px] text-[var(--hg-muted)]">
+          <div className="absolute left-2.5 top-2.5 rounded-full border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface)_78%,transparent)] px-2 py-0.5 text-[10px] font-medium text-[var(--hg-muted)]">
             {displayMap[normalizedLower] || normalizedType}
           </div>
         ) : null}
       </div>
-      <div className="mt-3 space-y-1">
+      <div className="mt-3.5 space-y-1.5">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-base font-semibold text-white truncate">{titleText}</p>
-          <span className="inline-flex items-center rounded-full border border-[var(--hg-border)] bg-[rgba(255,255,255,0.08)] px-2 py-0.5 text-[11px] text-[var(--hg-muted)]">
+          <p className="truncate text-[15px] font-semibold tracking-tight text-white">{titleText}</p>
+          <span className="inline-flex items-center rounded-full border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface-2)_88%,transparent)] px-2 py-0.5 text-[11px] text-[var(--hg-muted)]">
             {pill}
           </span>
         </div>
-        <p className="text-xs hg-muted">{dateLabel}</p>
+        <p className="text-xs text-[var(--hg-muted)]">{dateLabel}</p>
       </div>
     </button>
   );

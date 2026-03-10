@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Spinner from "@/app/components/dashboard/loading spinner/page";
 import DashboardSidebar from "@/app/components/dashboard/sidebar/DashboardSidebar";
@@ -8,23 +8,15 @@ import FloatingChatWidget from "@/app/components/AIchat/FloatingChatWidget";
 import MobileProjectNavDrawer from "@/app/components/dashboard/buttons/MobileProjectNavDrawer";
 import FaceEnrollModal from "@/app/components/dashboard/FaceEnrollModal";
 import DashboardGlow from "@/app/components/dashboard/DashboardGlow";
-import { ChevronDown, Globe, Menu } from "lucide-react";
-import Image from "next/image";
 import { useConsent } from "@/app/components/consent/ConsentContext";
 import { useUser } from "@/app/hooks/useUser";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
-import SettingsModal from "@/app/components/dashboard/sidebar/SettingsModal";
-import { useLocale } from "next-intl";
+import SettingsModal, { type SettingsSection } from "@/app/components/dashboard/sidebar/SettingsModal";
 import { usePathname, useRouter } from "@/i18n/navigation";
-
+import DashboardTopBar from "@/app/components/dashboard/navigation/DashboardTopBar";
+import { DASHBOARD_LAYOUT } from "@/app/dashboard/dashboardLayout.constants";
+import { SESSION_EXPIRED_EVENT } from "@/app/utils/sessionExpiry";
 type User = { id: string; email: string; plan?: string | null } | null;
-const LOCALES = [
-  { key: "en", label: "EN" },
-  { key: "el", label: "ΕΛ" },
-  { key: "es", label: "ES" },
-  { key: "it", label: "IT" },
-] as const;
-type SupportedLocale = (typeof LOCALES)[number]["key"];
 
 export default function LayoutClient({
   children,
@@ -36,47 +28,89 @@ export default function LayoutClient({
   const [expanded, setExpanded] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
-  const [mobileLangOpen, setMobileLangOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>("account");
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const redirectingRef = useRef(false);
   const { open: openConsent } = useConsent();
-  // Hydrate auth client-side using server-provided user to avoid first-paint 401
-  const { user, loading: userLoading } = useUser({ required: true, initialUser });
-  const { data: planData, hasActiveInstance, refresh: refreshPlan } = usePlanInfo();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const locale = useLocale() as SupportedLocale;
-
   const pathname = usePathname();
-  const currentLocale = LOCALES.find((item) => item.key === locale) || LOCALES[0];
-  const mobileSectionTitle = (() => {
-    if (!pathname) return "Dashboard";
-    if (pathname.includes("/dashboard/upload")) return "Upload";
-    if (pathname.includes("/dashboard/history")) return "Settings";
-    if (pathname.includes("/dashboard/ai-chat")) return "AI Chat";
-    if (pathname.includes("/dashboard/talking-head")) return "Talking Head";
-    if (pathname.includes("/dashboard/billing")) return "Settings";
-    if (pathname.includes("/dashboard/account")) return "Settings";
-    return "Dashboard";
-  })();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const nextTarget = useMemo(() => {
+    const q = searchParams.toString();
+    return `${pathname}${q ? `?${q}` : ""}`;
+  }, [pathname, searchParams]);
+  const loginHref = useMemo(
+    () => `/login?next=${encodeURIComponent(nextTarget)}`,
+    [nextTarget]
+  );
+  // Hydrate auth client-side using server-provided user to avoid first-paint 401
+  const { user, loading: userLoading } = useUser({
+    required: true,
+    initialUser,
+    redirectTo: loginHref,
+  });
+  const { data: planData, hasActiveInstance, refresh: refreshPlan } = usePlanInfo();
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
   useEffect(() => {
-    setMobileLangOpen(false);
-  }, [pathname]);
+    const onSessionExpired = () => {
+      setSessionExpired(true);
+      setMobileNavOpen(false);
+      setSettingsOpen(false);
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+      }
+    };
+  }, []);
 
-  const changeLocale = (nextLocale: SupportedLocale) => {
-    const query = searchParams.toString();
-    const target = `${pathname}${query ? `?${query}` : ""}`;
-    router.replace(target, { locale: nextLocale, scroll: false });
-    setMobileLangOpen(false);
+  useEffect(() => {
+    if (!sessionExpired) return;
+    if (redirectingRef.current) return;
+    redirectingRef.current = true;
+    const timer = window.setTimeout(() => {
+      router.replace(loginHref);
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [loginHref, router, sessionExpired]);
+
+  useEffect(() => {
+    const modal = searchParams.get("modal");
+    const settings = searchParams.get("settings");
+    const tab = searchParams.get("tab");
+    const shouldOpen = modal === "settings" || settings === "1";
+    if (!shouldOpen) return;
+
+    const nextSection: SettingsSection =
+      tab === "history" || tab === "billing" || tab === "usage" || tab === "account"
+        ? tab
+        : "account";
+    setSettingsSection(nextSection);
+    setSettingsOpen(true);
+
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("modal");
+    next.delete("settings");
+    next.delete("tab");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
+
+  const sidebarWidth = expanded
+    ? DASHBOARD_LAYOUT.sidebarExpandedWidth
+    : DASHBOARD_LAYOUT.sidebarCollapsedWidth;
+  const openSettings = (section: SettingsSection = "account") => {
+    setSettingsSection(section);
+    setSettingsOpen(true);
   };
-
-  const SIDEBAR_COLLAPSED = 64;
-  const SIDEBAR_EXPANDED = 256;
-  const sidebarWidth = expanded ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED;
 
   // routes where we DON'T want the bottom spacer (no footer UI)
   const noBottomSpacerRoutes = [
@@ -93,38 +127,60 @@ export default function LayoutClient({
     forceEnroll ||
     (Boolean(hasActiveInstance) && Boolean(planData) && planData?.faceEnrolled === false);
 
-  if (!hasMounted || userLoading || !user)
+  if (!hasMounted || userLoading)
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
         <Spinner />
       </div>
     );
 
+  if (!user) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-[var(--hg-bg)] px-4 text-white">
+        <div className="w-full max-w-md rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-6 text-center shadow-[0_16px_36px_rgba(0,0,0,0.25)]">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)]">Session</p>
+          <h2 className="mt-2 text-xl font-semibold text-white">Your session expired</h2>
+          <p className="mt-2 text-sm text-[var(--hg-muted)]">
+            Please sign in again to continue where you left off.
+          </p>
+          <button
+            type="button"
+            onClick={() => router.replace(loginHref)}
+            className="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-[var(--hg-accent)] px-4 text-sm font-semibold text-[#07141d] hover:opacity-90"
+          >
+            Sign in again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <FloatingChatProvider>
         {/* allow natural page scroll; sidebar remains fixed */}
-        <div className="relative min-h-screen overflow-x-hidden bg-[var(--hg-bg)] flex">
+        <div className="relative flex min-h-screen overflow-x-hidden bg-[var(--hg-bg)]">
           <DashboardGlow />
           {/* Sidebar */}
           <div
-            className="hidden md:flex fixed top-6 left-6 z-30 transition-all duration-200"
-            style={{ width: sidebarWidth, height: "calc(100svh - 3rem)", padding: "0.5rem 0" }}
+            className={`hidden md:flex fixed ${DASHBOARD_LAYOUT.sidebarTopOffset} ${DASHBOARD_LAYOUT.sidebarLeftOffset} z-30 transition-all duration-200`}
+            style={{ width: sidebarWidth, height: "calc(100svh - 2rem)", padding: "0.25rem 0" }}
           >
             <DashboardSidebar
               expanded={expanded}
               setExpanded={setExpanded}
               onOpenCookiePreferences={openConsent}
+              onOpenSettings={openSettings}
             />
           </div>
 
           {/* Content column */}
-          <div className={`flex-1 flex flex-col transition-all duration-200 ${expanded ? "md:ml-64" : "md:ml-16"}`}>
-            <main className="px-3 pt-[calc(env(safe-area-inset-top,0px)+6.25rem)] sm:px-5 md:px-6 md:pt-2">
+          <div className={`flex-1 flex flex-col transition-all duration-300 ${expanded ? DASHBOARD_LAYOUT.desktopExpandedMarginClass : DASHBOARD_LAYOUT.desktopCollapsedMarginClass}`}>
+            <main className={`px-3 ${DASHBOARD_LAYOUT.mobileMainTopPaddingClass} sm:px-5 md:px-7 ${DASHBOARD_LAYOUT.desktopMainTopPaddingClass}`}>
               {children}
             </main>
 
-            {showBottomSpacer ? <div className="h-4 shrink-0" /> : null}
+            {showBottomSpacer ? <div className="hidden h-4 shrink-0 md:block" /> : null}
           </div>
 
           {/* Paint-only safe-area filler when spacer is hidden */}
@@ -136,68 +192,21 @@ export default function LayoutClient({
             />
           )}
 
-          {showFloating && <FloatingChatWidget />}
+          {showFloating ? (
+            <div className="hidden md:block">
+              <FloatingChatWidget />
+            </div>
+          ) : null}
 
-          {/* Mobile app bar */}
-          <div className="md:hidden fixed left-0 right-0 top-6 z-40 flex justify-center px-4">
-            <div className="w-full max-w-6xl rounded-full border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface)_82%,transparent)] shadow-lg shadow-black/20 backdrop-blur-md">
-            <div className="mx-auto flex h-[calc(env(safe-area-inset-top,0px)+3.15rem)] w-full items-end justify-between px-4 pb-2">
-              <button
-                aria-label="Open dashboard menu"
-                onClick={() => setMobileNavOpen(true)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--hg-border)] bg-[var(--hg-surface-2)] text-white"
-              >
-                <Menu size={18} />
-              </button>
-              <div className="flex min-w-0 items-center gap-2">
-                <Image
-                  src="/echofy-removebg-preview.png"
-                  alt="Echofy"
-                  width={28}
-                  height={28}
-                  className="rounded-full object-cover"
-                />
-                <span className="truncate text-sm font-semibold text-white/95">{mobileSectionTitle}</span>
-              </div>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setMobileLangOpen((v) => !v)}
-                  aria-label="Change language"
-                  className="inline-flex h-10 items-center gap-1 rounded-full border border-[var(--hg-border)] bg-[var(--hg-surface)] px-2.5 text-xs font-medium text-[var(--hg-muted)] hover:text-[var(--hg-text)]"
-                >
-                  <Globe className="h-3.5 w-3.5" />
-                  {currentLocale.label}
-                  <ChevronDown className="h-3.5 w-3.5" />
-                </button>
-                {mobileLangOpen ? (
-                  <div className="absolute right-0 top-11 z-50 w-24 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-1 shadow-lg shadow-black/20">
-                    {LOCALES.map((item) => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => changeLocale(item.key)}
-                        className={`flex w-full items-center justify-center rounded-lg px-2 py-1.5 text-xs font-medium ${
-                          item.key === locale
-                            ? "bg-[var(--hg-surface-2)] text-[var(--hg-text)]"
-                            : "text-[var(--hg-muted)] hover:bg-[var(--hg-surface-2)] hover:text-[var(--hg-text)]"
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-            </div>
-          </div>
+          <DashboardTopBar
+            onOpenMenu={() => setMobileNavOpen(true)}
+          />
 
           {/* Mobile Project Navigation Drawer */}
           <MobileProjectNavDrawer
             open={mobileNavOpen}
             onClose={() => setMobileNavOpen(false)}
-            onOpenSettings={() => setMobileSettingsOpen(true)}
+            onOpenSettings={openSettings}
           />
 
         </div>
@@ -217,9 +226,9 @@ export default function LayoutClient({
           }}
         />
         <SettingsModal
-          open={mobileSettingsOpen}
-          onOpenChange={setMobileSettingsOpen}
-          initialSection="account"
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          initialSection={settingsSection}
         />
       </FloatingChatProvider>
     </>

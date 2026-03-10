@@ -356,11 +356,11 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
 
   return (
     <div className="w-full max-w-none">
-      <div className="rounded-2xl hg-surface p-4 backdrop-blur">
+      <div className="rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 backdrop-blur">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <h3 className="text-base font-semibold tracking-tight text-white">Upload image</h3>
-            <p className="text-xs hg-muted">Drag & drop or click to browse</p>
+            <p className="text-xs text-[var(--hg-muted)]">Drag & drop or click to browse</p>
           </div>
         </div>
         <div
@@ -378,8 +378,8 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
           role="button"
           tabIndex={0}
           onKeyDown={(e) => (e.key === "Enter" ? onSelectClick() : null)}
-          className={`relative h-32 md:h-[150px] rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition
-            ${dragActive ? "border-[#50C0F0] bg-[rgba(80,192,240,0.14)]" : "border-[var(--hg-border-2)] bg-[var(--hg-surface-2)] hover:border-[var(--hg-border)]"}`}
+          className={`relative h-[142px] md:h-[158px] rounded-2xl border-2 border-dashed p-4 text-center cursor-pointer transition
+            ${dragActive ? "border-[#50C0F0] bg-[color:color-mix(in_oklab,var(--hg-accent)_16%,transparent)]" : "border-[var(--hg-border-2)] bg-[var(--hg-surface-2)]/85 hover:border-[var(--hg-border)]"}`}
         >
           <input
             ref={inputRef}
@@ -390,8 +390,8 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
           />
           <div className="flex h-full flex-col items-center justify-center gap-2 hg-text">
             <div
-              className={`grid place-items-center rounded-full w-9 h-9
-              ${dragActive ? "bg-[rgba(80,192,240,0.24)]" : "bg-[rgba(255,255,255,0.06)]"}`}
+              className={`grid place-items-center rounded-full w-9 h-9 border border-[var(--hg-border)]
+              ${dragActive ? "bg-[color:color-mix(in_oklab,var(--hg-accent)_20%,transparent)]" : "bg-[rgba(255,255,255,0.04)]"}`}
             >
               <UploadCloud className="w-5 h-5" />
             </div>
@@ -399,7 +399,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
               <span className="font-semibold text-white">Click to choose</span>{" "}
               or drag & drop
             </div>
-            <div className="text-[11px] hg-muted-2">Max {MAX_MB}MB • PNG/JPG/WebP/AVIF</div>
+            <div className="text-[11px] text-[var(--hg-muted-2)]">Max {MAX_MB}MB • PNG/JPG/WebP/AVIF</div>
           </div>
           {dragActive && (
             <div className="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-[rgba(80,192,240,0.45)]" />
@@ -407,7 +407,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
         </div>
 
         {file ? (
-          <div className="mt-3 rounded-xl hg-surface-soft p-3">
+          <div className="mt-3 rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/55 p-3">
             <div className="flex items-center gap-3">
               {previewURL ? (
                 <Image
@@ -547,14 +547,14 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
           </div>
         )}
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => onSubmit()}
             disabled={!file || status === "uploading"}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition
+            className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition
               ${
                 file && status !== "uploading"
-                  ? "bg-[#50C0F0] text-[#07141d] hover:opacity-90 shadow"
+                  ? "bg-[#50C0F0] text-[#07141d] hover:opacity-90 shadow-[0_10px_24px_rgba(80,192,240,0.24)]"
                   : "bg-[rgba(255,255,255,0.10)] cursor-not-allowed"
               }`}
           >
@@ -571,7 +571,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
           {status === "uploading" ? (
             <button
               onClick={onCancel}
-              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] border border-[var(--hg-border)]"
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--hg-border)] bg-[rgba(255,255,255,0.05)] px-3 py-2 text-sm text-white/90 hover:bg-[rgba(255,255,255,0.08)]"
             >
               <X className="w-4 h-4" />
               Cancel
@@ -579,7 +579,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
           ) : (
             <button
               onClick={reset}
-              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/90 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] border border-[var(--hg-border)]"
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--hg-border)] bg-[rgba(255,255,255,0.05)] px-3 py-2 text-sm text-white/90 hover:bg-[rgba(255,255,255,0.08)]"
             >
               <X className="w-4 h-4" />
               Reset

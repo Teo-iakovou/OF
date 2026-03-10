@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BASE_URL, fetchJson } from "@/app/utils/fetcher";
 import { useRouter } from "next/navigation";
+import { AUTH_EVENT } from "@/app/utils/sessionExpiry";
 
 type User = {
   id: string;
@@ -18,8 +19,6 @@ let cachedUser: User | undefined = undefined; // undefined = unknown, null = una
 let inFlight: Promise<User> | null = null;
 let lastFetched = 0;
 const STALE_TTL_MS = 5000;
-const AUTH_EVENT = "ai-auth-changed";
-
 async function fetchUserOnce(): Promise<User> {
   if (inFlight) return inFlight;
   inFlight = (async () => {
@@ -52,9 +51,15 @@ export function useUser(opts: { redirectTo?: string; required?: boolean; initial
       (async () => {
         try {
           const u = await fetchUserOnce();
-          if (!cancelled) setUser(u);
+          if (cancelled) return;
+          setUser(u);
+          setLoading(false);
+          if (!u && required) router.replace(redirectTo);
         } catch {
-          if (!cancelled) setUser(null);
+          if (cancelled) return;
+          setUser(null);
+          setLoading(false);
+          if (required) router.replace(redirectTo);
         }
       })();
     }
@@ -107,7 +112,6 @@ export function useUser(opts: { redirectTo?: string; required?: boolean; initial
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
     return () => {
       cancelled = true;
       if (typeof window !== "undefined") {

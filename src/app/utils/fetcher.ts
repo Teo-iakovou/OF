@@ -1,8 +1,8 @@
 // src/app/utils/fetcher.ts
+import { notifySessionExpired } from "@/app/utils/sessionExpiry";
+
 const useBFF = process.env.NEXT_PUBLIC_USE_BFF === "true";
 export const BASE_URL = useBFF ? "" : process.env.NEXT_PUBLIC_API_URL || "";
-
-const AUTH_EVENT = "ai-auth-changed";
 
 type FetchJsonOptions = RequestInit & {
   onUnauthorized?: () => void;
@@ -70,11 +70,7 @@ export async function fetchJson(input: string, init: FetchJsonOptions = {}) {
   let data: unknown = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   if (res.status === 401) {
-    try {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event(AUTH_EVENT));
-      }
-    } catch {}
+    notifySessionExpired();
     try {
       onUnauthorized?.();
     } catch {}

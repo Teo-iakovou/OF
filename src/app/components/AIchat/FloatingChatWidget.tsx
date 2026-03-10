@@ -85,6 +85,8 @@ export default function FloatingChatWidget() {
   // Drag via React pointerdown + global move/up + rAF
   const dragState = useRef({
     dragging: false,
+    moved: false,
+    suppressClick: false,
     startX: 0,
     startY: 0,
     startAnchor: { x: 0, y: 0 },
@@ -96,6 +98,7 @@ export default function FloatingChatWidget() {
     (e: React.PointerEvent<HTMLButtonElement>) => {
       const el = e.currentTarget;
       dragState.current.dragging = true;
+      dragState.current.moved = false;
       dragState.current.startX = e.clientX;
       dragState.current.startY = e.clientY;
       dragState.current.startAnchor = { ...anchorRef.current };
@@ -112,6 +115,9 @@ export default function FloatingChatWidget() {
         if (!dragState.current.dragging) return;
         const dx = ev.clientX - dragState.current.startX;
         const dy = ev.clientY - dragState.current.startY;
+        if (Math.abs(dx) + Math.abs(dy) > 5) {
+          dragState.current.moved = true;
+        }
         const next = clamp(
           dragState.current.startAnchor.x + dx,
           dragState.current.startAnchor.y + dy,
@@ -133,6 +139,9 @@ export default function FloatingChatWidget() {
       const onUp = (ev: PointerEvent) => {
         if (!dragState.current.dragging) return;
         dragState.current.dragging = false;
+        if (dragState.current.moved) {
+          dragState.current.suppressClick = true;
+        }
         try {
           el.releasePointerCapture?.(ev.pointerId);
         } catch {}
@@ -164,9 +173,10 @@ export default function FloatingChatWidget() {
   useEffect(() => {
     if (!isOpen) return;
     const onDocClick = (e: MouseEvent) => {
-      if (!panelRef.current || !fabRef.current) return;
+      if (!panelRef.current) return;
       const t = e.target as Node;
-      if (panelRef.current.contains(t) || fabRef.current.contains(t)) return;
+      if (panelRef.current.contains(t)) return;
+      if (fabRef.current?.contains(t)) return;
       close();
       setHistoryOpen(false);
     };
@@ -212,34 +222,33 @@ export default function FloatingChatWidget() {
   return createPortal(
     <>
       {/* Floating, draggable button */}
-     <button
-  ref={fabRef}
-  aria-label="AI Coach"
-  onPointerDown={onFabPointerDown}
-  onClick={() => {
-    // ignore click if we were dragging
-    if (dragState.current.dragging) return;
-
-    if (isOpen) {
-      close();
-      setHistoryOpen(false);
-    } else {
-      open();
-    }
-  }}
-  style={{
-    position: "fixed",
-    left: 0,
-    top: 0,
-    transform: `translate3d(${anchor.x}px, ${anchor.y}px, 0)`,
-    zIndex: 2147483647,
-    touchAction: "none",
-    willChange: "transform",
-  }}
-  className="h-12 w-12 rounded-full shadow-lg border border-gray-700 bg-gray-900 text-white flex items-center justify-center cursor-grab active:cursor-grabbing active:scale-95"
->
-  <MessageCircle className="h-6 w-6" />
-</button>
+      {!isOpen ? (
+        <button
+          ref={fabRef}
+          aria-label="AI Coach"
+          onPointerDown={onFabPointerDown}
+          onClick={() => {
+            // ignore click when pointer interaction was a drag/drop
+            if (dragState.current.dragging || dragState.current.suppressClick) {
+              dragState.current.suppressClick = false;
+              return;
+            }
+            open();
+          }}
+          style={{
+            position: "fixed",
+            left: 0,
+            top: 0,
+            transform: `translate3d(${anchor.x}px, ${anchor.y}px, 0)`,
+            zIndex: 2147483647,
+            touchAction: "none",
+            willChange: "transform",
+          }}
+          className="h-12 w-12 rounded-full shadow-lg border border-gray-700 bg-gray-900 text-white flex items-center justify-center cursor-grab active:cursor-grabbing active:scale-95"
+        >
+          <MessageCircle className="h-6 w-6" />
+        </button>
+      ) : null}
 
       {/* Overlay + centered chat panel */}
       <AnimatePresence>

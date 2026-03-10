@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, ChevronUp, Link2, X } from "lucide-react";
 import { toast } from "sonner";
 import type { ResultDoc } from "@/app/types/analysis";
-import { getUserResultById, postRecommendationFeedback } from "@/app/utils/api";
+import { getUserResultById, getUserResultImageUrl, postRecommendationFeedback } from "@/app/utils/api";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 
 type ReportDrawerProps = {
@@ -47,6 +47,8 @@ export default function ReportDrawer({
   >({});
   const [feedbackLoading, setFeedbackLoading] = useState<Record<string, boolean>>({});
   const [feedbackSaved, setFeedbackSaved] = useState<Record<string, boolean>>({});
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFailed, setPreviewFailed] = useState(false);
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === "undefined" || !window.matchMedia) return false;
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -65,6 +67,8 @@ export default function ReportDrawer({
     setFeedbackValues({});
     setFeedbackLoading({});
     setFeedbackSaved({});
+    setPreviewUrl(null);
+    setPreviewFailed(false);
 
     getUserResultById({ id: resultId })
       .then((data) => {
@@ -86,6 +90,23 @@ export default function ReportDrawer({
       cancelled = true;
     };
   }, [open, reloadToken, result?._id, resultId]);
+
+  useEffect(() => {
+    if (!open || !resultId) return;
+    let cancelled = false;
+    getUserResultImageUrl({ id: resultId })
+      .then((payload) => {
+        if (cancelled) return;
+        setPreviewUrl(payload.url);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPreviewUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, resultId]);
 
   useEffect(() => {
     if (!open) {
@@ -183,11 +204,11 @@ export default function ReportDrawer({
         onClick={() => onOpenChange(false)}
       />
 
-      <aside className="absolute right-0 top-0 h-full w-full max-w-2xl overflow-y-auto border-l border-white/10 bg-[var(--hg-surface)] p-5 shadow-2xl md:p-6">
-        <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+      <aside className="absolute right-0 top-0 h-full w-full max-w-3xl overflow-y-auto border-l border-white/10 bg-[var(--hg-surface)] p-5 shadow-2xl md:p-6">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--hg-border)] pb-4">
           <div>
-            <p className="text-xs uppercase tracking-wide text-[var(--hg-muted)]">Promotion Plan</p>
-            <h2 className="mt-1 text-xl font-semibold text-[var(--hg-text)]">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)]">AI Analysis Report</p>
+            <h2 className="mt-1 text-xl font-semibold text-[var(--hg-text)] md:text-2xl">
               {topPlatform?.platform ? `${topPlatform.platform} Strategy` : "Promotion Plan"}
             </h2>
             <p className="mt-1 text-xs text-[var(--hg-muted)]">
@@ -198,7 +219,7 @@ export default function ReportDrawer({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/70 px-2.5 py-1 text-sm text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
               onClick={() => void handleCopyLink()}
               disabled={!resultId}
             >
@@ -207,7 +228,7 @@ export default function ReportDrawer({
             </button>
             <button
               type="button"
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-[var(--hg-muted)] hover:text-white"
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/70 px-2 py-1 text-sm text-[var(--hg-muted)] transition hover:text-white"
               onClick={() => onOpenChange(false)}
             >
               <X className="h-4 w-4" />
@@ -228,8 +249,37 @@ export default function ReportDrawer({
           </div>
         ) : result ? (
           <div className="mt-6 space-y-4">
-            <section className={`rounded-xl border border-white/10 bg-[var(--hg-surface-2)] p-4 ${sectionClass(stage >= 1)}`}>
-              <h3 className="text-sm font-semibold text-white">Where to promote this photo</h3>
+            <section className={`rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/75 p-4 ${sectionClass(stage >= 1)}`}>
+              <div className="grid gap-4 md:grid-cols-[1fr_220px] md:items-start">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">Summary</p>
+                  <h3 className="mt-1 text-base font-semibold text-white">AI analyzed your image and generated a strategy</h3>
+                  <p className="mt-1 text-sm text-[var(--hg-muted)]">
+                    {recommendedPlatforms.length > 0
+                      ? `${recommendedPlatforms.length} platform recommendation${recommendedPlatforms.length === 1 ? "" : "s"} with captions, hashtags, and posting windows.`
+                      : "No platform recommendations were returned for this image yet."}
+                  </p>
+                </div>
+                <div className="overflow-hidden rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)]">
+                  {!previewUrl || previewFailed ? (
+                    <div className="flex h-32 items-center justify-center text-xs text-[var(--hg-muted-2)] md:h-36">
+                      No image preview
+                    </div>
+                  ) : (
+                    <img
+                      src={previewUrl}
+                      alt="Uploaded content"
+                      className="h-32 w-full object-cover md:h-36"
+                      onError={() => setPreviewFailed(true)}
+                    />
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <section className={`rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/75 p-4 ${sectionClass(stage >= 2)}`}>
+              <h3 className="text-sm font-semibold text-white">Platform Recommendations</h3>
+              <p className="mt-1 text-xs text-[var(--hg-muted)]">Best channels, captions, hashtags, and posting hints.</p>
 
               {recommendedPlatforms.length === 0 ? (
                 <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-4">
@@ -347,7 +397,7 @@ export default function ReportDrawer({
                     };
 
                     return (
-                      <div key={key} className="rounded-lg border border-white/10 bg-black/10 p-3">
+                      <article key={key} className="rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)]/72 p-3.5 shadow-[0_8px_18px_rgba(0,0,0,0.16)]">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-sm font-medium text-white">{platform.platform}</p>
                           {platform.bestTimesLocal?.length ? (
@@ -365,11 +415,11 @@ export default function ReportDrawer({
                         </div>
 
                         {platform.caption?.trim() ? (
-                          <div className="mt-3 rounded-md border border-white/10 bg-white/5 p-2">
+                          <div className="mt-3 rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/65 p-2.5">
                             <p className="line-clamp-3 text-sm text-[var(--hg-text)]">{platform.caption}</p>
                             <button
                               type="button"
-                              className="mt-2 text-xs text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
+                              className="mt-2 inline-flex rounded-md border border-[var(--hg-border)] px-2 py-1 text-xs text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                               onClick={() => {
                                 void copyText(platform.caption || "");
                                 toast("Caption copied");
@@ -400,7 +450,7 @@ export default function ReportDrawer({
                           {hashtagsText ? (
                             <button
                               type="button"
-                              className="text-xs text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
+                              className="text-xs text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                               onClick={() => {
                                 void copyText(hashtagsText);
                                 toast("Hashtags copied");
@@ -413,7 +463,7 @@ export default function ReportDrawer({
                           {hiddenCount > 0 ? (
                             <button
                               type="button"
-                              className="text-xs text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
+                              className="text-xs text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                               onClick={() =>
                                 setExpandedHashtags((prev) => ({
                                   ...prev,
@@ -446,10 +496,10 @@ export default function ReportDrawer({
                           </p>
                         ) : null}
 
-                        <div className="mt-3 border-t border-white/10 pt-3">
+                        <div className="mt-3 border-t border-[var(--hg-border)]/80 pt-3">
                           <button
                             type="button"
-                            className="inline-flex items-center gap-1 text-xs text-[var(--hg-muted)] hover:text-[var(--hg-accent)] disabled:opacity-70"
+                            className="inline-flex items-center gap-1 text-xs text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)] disabled:opacity-70"
                             onClick={() => {
                               if (isSaved) return;
                               setFeedbackOpen((prev) => ({
@@ -470,7 +520,7 @@ export default function ReportDrawer({
                           </button>
 
                           {isFeedbackOpen ? (
-                            <div className="mt-2 rounded-md border border-white/10 bg-white/5 p-2">
+                            <div className="mt-2 rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/65 p-2.5">
                               <div className="mb-2">
                                 <p className="text-xs font-medium text-white">
                                   Help the AI learn from this post
@@ -487,7 +537,7 @@ export default function ReportDrawer({
                                     <input
                                       type="text"
                                       inputMode="numeric"
-                                      className="w-full rounded-md border border-white/10 bg-black/20 px-2 py-1.5 pr-8 text-xs text-white outline-none focus:border-[var(--hg-accent)]"
+                                      className="w-full rounded-md border border-[var(--hg-border)] bg-black/20 px-2 py-1.5 pr-8 text-xs text-white outline-none focus:border-[var(--hg-accent)]"
                                       value={values.impressions}
                                       onChange={(event) =>
                                         setFeedbackValues((prev) => ({
@@ -502,7 +552,7 @@ export default function ReportDrawer({
                                     <div className="absolute right-1 top-1/2 flex -translate-y-1/2 flex-col">
                                       <button
                                         type="button"
-                                        className="rounded p-0.5 text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
+                                      className="rounded p-0.5 text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                                         onClick={() => bumpMetric("impressions", 1)}
                                         aria-label="Increase impressions"
                                       >
@@ -510,7 +560,7 @@ export default function ReportDrawer({
                                       </button>
                                       <button
                                         type="button"
-                                        className="rounded p-0.5 text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
+                                      className="rounded p-0.5 text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                                         onClick={() => bumpMetric("impressions", -1)}
                                         aria-label="Decrease impressions"
                                       >
@@ -528,7 +578,7 @@ export default function ReportDrawer({
                                     <input
                                       type="text"
                                       inputMode="numeric"
-                                      className="w-full rounded-md border border-white/10 bg-black/20 px-2 py-1.5 pr-8 text-xs text-white outline-none focus:border-[var(--hg-accent)]"
+                                      className="w-full rounded-md border border-[var(--hg-border)] bg-black/20 px-2 py-1.5 pr-8 text-xs text-white outline-none focus:border-[var(--hg-accent)]"
                                       value={values.engagements}
                                       onChange={(event) =>
                                         setFeedbackValues((prev) => ({
@@ -543,7 +593,7 @@ export default function ReportDrawer({
                                     <div className="absolute right-1 top-1/2 flex -translate-y-1/2 flex-col">
                                       <button
                                         type="button"
-                                        className="rounded p-0.5 text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
+                                      className="rounded p-0.5 text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                                         onClick={() => bumpMetric("engagements", 1)}
                                         aria-label="Increase engagements"
                                       >
@@ -551,7 +601,7 @@ export default function ReportDrawer({
                                       </button>
                                       <button
                                         type="button"
-                                        className="rounded p-0.5 text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
+                                      className="rounded p-0.5 text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                                         onClick={() => bumpMetric("engagements", -1)}
                                         aria-label="Decrease engagements"
                                       >
@@ -574,7 +624,7 @@ export default function ReportDrawer({
                               <div className="mt-2 flex flex-wrap justify-end gap-2">
                                 <button
                                   type="button"
-                                  className="rounded-md border border-white/15 px-2.5 py-1.5 text-xs text-[var(--hg-muted)] hover:border-[var(--hg-accent)] hover:text-[var(--hg-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="rounded-md border border-[var(--hg-border)] px-2.5 py-1.5 text-xs text-[var(--hg-muted)] transition hover:border-[var(--hg-accent)] hover:text-[var(--hg-accent)] disabled:cursor-not-allowed disabled:opacity-60"
                                   disabled={isSubmitting || !result?._id || isSaved}
                                   onClick={() => submitFeedback(false)}
                                 >
@@ -582,7 +632,7 @@ export default function ReportDrawer({
                                 </button>
                                 <button
                                   type="button"
-                                  className="rounded-md border border-white/15 px-2.5 py-1.5 text-xs text-white hover:border-[var(--hg-accent)] hover:text-[var(--hg-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="rounded-md border border-[var(--hg-border)] px-2.5 py-1.5 text-xs text-white transition hover:border-[var(--hg-accent)] hover:text-[var(--hg-accent)] disabled:cursor-not-allowed disabled:opacity-60"
                                   disabled={isSubmitting || !result?._id || isSaved}
                                   onClick={() => submitFeedback(true)}
                                 >
@@ -592,7 +642,7 @@ export default function ReportDrawer({
                             </div>
                           ) : null}
                         </div>
-                      </div>
+                      </article>
                     );
                   })}
                 </div>
@@ -600,7 +650,7 @@ export default function ReportDrawer({
             </section>
 
             {Array.isArray(result?.promotion?.riskFlags) && result.promotion.riskFlags.length > 0 ? (
-              <section className={`rounded-xl border border-white/10 bg-[var(--hg-surface-2)] p-4 ${sectionClass(stage >= 2)}`}>
+              <section className={`rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/75 p-4 ${sectionClass(stage >= 3)}`}>
                 <h3 className="text-sm font-semibold text-white">Posting Safety Tips</h3>
                 <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-[var(--hg-muted)]">
                   {result.promotion.riskFlags.map((tip, idx) => (
