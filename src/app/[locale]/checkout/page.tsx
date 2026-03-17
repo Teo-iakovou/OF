@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect, useSyncExternalStore } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   startCheckout,
   subscribeCheckoutInFlight,
@@ -13,9 +13,11 @@ import { packages } from "@/app/components/packages/Packages";
 
 const CheckoutContent = () => {
   const router = useRouter();
+  const params = useParams();
   const searchParams = useSearchParams();
   const packageId = searchParams.get("packageId");
   const personaKey = searchParams.get("personaKey");
+  const locale = typeof params?.locale === "string" ? params.locale : "en";
 
   const selectedPackage = packages.find((pkg) => pkg.id === packageId);
 
@@ -36,7 +38,7 @@ const CheckoutContent = () => {
     if (!packageId || loading || checkoutInFlight) return;
     setLoading(true);
     try {
-      await startCheckout(packageId, personaKey); // redirects to Stripe
+      await startCheckout(packageId, personaKey, locale); // redirects to Stripe
     } catch (error) {
       console.error("Stripe checkout error:", error);
       setLoading(false);

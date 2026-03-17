@@ -10,7 +10,7 @@ export default function LandingFooter() {
     <footer className="border-t border-[var(--hg-border)] bg-[var(--hg-surface)]">
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 md:grid-cols-4 md:px-8">
         <div className="space-y-3 md:col-span-1">
-          <h3 className="text-base font-semibold text-[var(--hg-text)]">Echofy AI</h3>
+          <h3 className="text-base font-semibold text-[var(--hg-text)]">Echofy</h3>
           <p className="text-sm text-[var(--hg-muted)]">
             AI content platform for creators: strategy, captions, reports, chat, and talking-head generation.
           </p>
@@ -45,7 +45,7 @@ export default function LandingFooter() {
 
       <div className="border-t border-[var(--hg-border)]">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-5 text-sm text-[var(--hg-muted)] md:flex-row md:items-center md:justify-between md:px-8">
-          <p>© {new Date().getFullYear()} Echofy AI. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Echofy. All rights reserved.</p>
           <button
             type="button"
             onClick={open}

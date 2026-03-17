@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { ChevronDown, Globe, Menu, X } from "lucide-react";
+import { ChevronDown, Globe, Menu, ShoppingCart, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { useCart } from "@/app/components/cart/CartContext";
 
 const LOCALES = [
   { key: "en", label: "EN" },
@@ -27,16 +28,21 @@ function stripLocalePrefix(pathname: string): string {
   return pathname;
 }
 
+const previewHrefs = ["#preview-ai-strategy", "#preview-creator-workflow", "#preview-avatar-content"] as const;
+
 export default function LandingNavbar() {
   const t = useTranslations("navbar");
+  const tLanding = useTranslations("landing");
   const [open, setOpen] = useState(false);
   const [desktopLangOpen, setDesktopLangOpen] = useState(false);
   const [mobileLangOpen, setMobileLangOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
   const locale = useLocale() as SupportedLocale;
   const currentLocale = LOCALES.find((item) => item.key === locale) || LOCALES[0];
+  const { cartCount, openCart } = useCart();
 
   const links = useMemo(
     () => [
@@ -47,6 +53,15 @@ export default function LandingNavbar() {
     ],
     [t]
   );
+
+  const previewLinks = useMemo(() => {
+    const raw = tLanding.raw("livePreview.sections");
+    if (!Array.isArray(raw)) return previewHrefs.map((href) => ({ label: "", sub: "", href }));
+    return previewHrefs.map((href, i) => {
+      const s = raw[i] as Record<string, string> | undefined;
+      return { label: s?.eyebrow ?? "", sub: s?.title ?? "", href };
+    });
+  }, [tLanding]);
 
   const basePath = useMemo(() => stripLocalePrefix(pathname), [pathname]);
   const isLandingPath = basePath === "/";
@@ -71,7 +86,18 @@ export default function LandingNavbar() {
   useEffect(() => {
     setDesktopLangOpen(false);
     setMobileLangOpen(false);
+    setPreviewOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!previewOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-preview-dropdown]")) setPreviewOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [previewOpen]);
 
   return (
     <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
@@ -91,9 +117,47 @@ export default function LandingNavbar() {
                 {link.label}
               </a>
             ))}
+            <div className="relative" data-preview-dropdown>
+              <button
+                type="button"
+                onClick={() => setPreviewOpen((v) => !v)}
+                className="inline-flex items-center gap-1 text-sm text-[var(--hg-muted)] transition hover:text-[var(--hg-text)]"
+              >
+                {t("livePreview")}
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${previewOpen ? "rotate-180" : ""}`} />
+              </button>
+              {previewOpen && (
+                <div className="absolute left-1/2 top-8 z-30 w-72 -translate-x-1/2 rounded-2xl border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface)_95%,transparent)] p-2 shadow-xl shadow-black/30 backdrop-blur-md">
+                  {previewLinks.map((item) => (
+                    <a
+                      key={item.href}
+                      href={sectionHref(item.href)}
+                      onClick={() => setPreviewOpen(false)}
+                      className="flex flex-col gap-0.5 rounded-xl px-4 py-3 transition hover:bg-[var(--hg-surface-2)]"
+                    >
+                      <span className="text-sm font-medium text-white">{item.label}</span>
+                      <span className="text-xs text-[var(--hg-muted)]">{item.sub}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="hidden items-center gap-2 md:flex">
+            <button
+              type="button"
+              onClick={openCart}
+              aria-label="Open cart"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--hg-border)] bg-[var(--hg-surface)] text-[var(--hg-muted)] hover:text-[var(--hg-text)]"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--hg-accent)] text-[9px] font-bold text-[#07131d]">
+                  {cartCount > 9 ? "9+" : cartCount}
+                </span>
+              )}
+            </button>
             <div className="relative">
               <button
                 type="button"
@@ -156,7 +220,44 @@ export default function LandingNavbar() {
                 {link.label}
               </a>
             ))}
+            <div className="rounded-lg">
+              <button
+                type="button"
+                onClick={() => setPreviewOpen((v) => !v)}
+                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-[var(--hg-muted)] hover:bg-[var(--hg-surface-2)] hover:text-[var(--hg-text)]"
+              >
+                {t("livePreview")}
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${previewOpen ? "rotate-180" : ""}`} />
+              </button>
+              {previewOpen && (
+                <div className="mt-1 flex flex-col gap-1 pl-3">
+                  {previewLinks.map((item) => (
+                    <a
+                      key={item.href}
+                      href={sectionHref(item.href)}
+                      onClick={() => { setPreviewOpen(false); setOpen(false); }}
+                      className="rounded-lg px-3 py-2 text-sm text-[var(--hg-muted)] hover:bg-[var(--hg-surface-2)] hover:text-[var(--hg-text)]"
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => { openCart(); setOpen(false); }}
+                aria-label="Open cart"
+                className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--hg-border)] bg-[var(--hg-surface)] text-[var(--hg-muted)]"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--hg-accent)] text-[9px] font-bold text-[#07131d]">
+                    {cartCount > 9 ? "9+" : cartCount}
+                  </span>
+                )}
+              </button>
               <div className="relative">
                 <button
                   type="button"

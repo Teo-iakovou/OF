@@ -7,6 +7,7 @@
       "faq": "FAQ"
     },
     "language": "Lingua",
+    "livePreview": "Anteprima live",
     "signIn": "Accedi",
     "getStarted": "Inizia",
     "languages": {
@@ -27,17 +28,23 @@
     "continueWithEmail": "Continua con Email",
     "createAccount": "Crea account",
     "oauthComingSoon": "Accesso con Google, Apple e SSO in arrivo.",
+    "nameLabel": "Nome completo",
+    "namePlaceholder": "Il tuo nome",
     "emailLabel": "Email",
     "emailPlaceholder": "you@example.com",
-    "emailFootnote": "Nessuna password richiesta. Ti facciamo accedere via email.",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Min. 8 caratteri",
+    "emailFootnote": "La tua password è crittografata e non viene condivisa.",
     "signingIn": "Accesso in corso...",
+    "creatingAccount": "Creazione account in corso...",
     "goToSignup": "Ti serve un account? Registrati",
     "goToLogin": "Hai già un account? Accedi",
     "termsLine": "Continuando, accetti i nostri",
     "terms": "Termini",
     "privacy": "Privacy",
     "errors": {
-      "signInFailed": "Accesso non riuscito",
+      "signInFailed": "Accesso non riuscito. Controlla email e password.",
+      "signUpFailed": "Registrazione non riuscita. Riprova.",
       "verifyFailed": "Impossibile verificare la sessione. Abilita i cookie e riprova."
     }
   },
@@ -122,6 +129,31 @@
         {
           "q": "Dove posso rivedere gli output precedenti?",
           "a": "Lo storico dashboard conserva analisi e report precedenti così puoi riaprirli in qualsiasi momento."
+        }
+      ]
+    },
+    "livePreview": {
+      "eyebrow": "Anteprima live del prodotto",
+      "title": "Scopri come Echofy trasforma la produzione di contenuti in un sistema",
+      "subtitle": "Ogni blocco evidenzia una parte diversa del flusso: strategia, velocità di esecuzione e consegna coerente pronta per avatar.",
+      "sections": [
+        {
+          "eyebrow": "Motore di Strategia AI",
+          "title": "Trasforma un solo upload in un sistema di strategia ripetibile.",
+          "body": "Ottieni angoli di posizionamento, direzione per caption e priorità per piattaforma da un singolo input. Sostituisci le supposizioni con un playbook che il tuo team può eseguire ogni settimana.",
+          "cta": "Vedi piani"
+        },
+        {
+          "eyebrow": "Flusso Creatore",
+          "title": "Passa dall'idea all'output pronto per la pubblicazione più velocemente.",
+          "body": "Genera opzioni di messaggistica, direzione di pubblicazione e prossimi passi eseguibili in un flusso focalizzato per creator e team snelli.",
+          "cta": "Vedi flusso"
+        },
+        {
+          "eyebrow": "Contenuto Avatar",
+          "title": "Mantieni l'avatar e l'output della campagna sempre on-brand.",
+          "body": "Collega la pianificazione basata su insight con l'esecuzione di contenuti pronti per avatar, così la tua voce rimane coerente tra personas, campagne e canali.",
+          "cta": "Esplora funzionalità"
         }
       ]
     },

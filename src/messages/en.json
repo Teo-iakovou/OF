@@ -7,6 +7,7 @@
       "faq": "FAQ"
     },
     "language": "Language",
+    "livePreview": "Live preview",
     "signIn": "Sign in",
     "getStarted": "Get started",
     "languages": {
@@ -27,17 +28,23 @@
     "continueWithEmail": "Continue with Email",
     "createAccount": "Create account",
     "oauthComingSoon": "Google, Apple, and SSO login are coming soon.",
+    "nameLabel": "Full name",
+    "namePlaceholder": "Your name",
     "emailLabel": "Email address",
     "emailPlaceholder": "you@example.com",
-    "emailFootnote": "No password needed. We'll sign you in with your email.",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Min. 8 characters",
+    "emailFootnote": "Your password is encrypted and never shared.",
     "signingIn": "Signing you in...",
+    "creatingAccount": "Creating your account...",
     "goToSignup": "Need an account? Sign up",
     "goToLogin": "Already have an account? Sign in",
     "termsLine": "By continuing, you agree to our",
     "terms": "Terms",
     "privacy": "Privacy",
     "errors": {
-      "signInFailed": "Sign in failed",
+      "signInFailed": "Sign in failed. Check your email and password.",
+      "signUpFailed": "Sign up failed. Please try again.",
       "verifyFailed": "Could not verify your session. Please enable cookies and try again."
     }
   },
@@ -122,6 +129,31 @@
         {
           "q": "Where can I review old outputs?",
           "a": "Your dashboard history keeps prior analyses and reports so you can reopen them at any time."
+        }
+      ]
+    },
+    "livePreview": {
+      "eyebrow": "Live product preview",
+      "title": "See how Echofy turns content production into a system",
+      "subtitle": "Each block highlights a different part of the workflow: strategy, execution speed, and consistent avatar-ready delivery.",
+      "sections": [
+        {
+          "eyebrow": "AI Strategy Engine",
+          "title": "Turn one upload into a repeatable strategy system.",
+          "body": "Get positioning angles, caption direction, and platform-specific priorities from a single input. Replace guesswork with a playbook your team can run every week.",
+          "cta": "See plans"
+        },
+        {
+          "eyebrow": "Creator Workflow",
+          "title": "Move from idea to publish-ready output faster.",
+          "body": "Generate messaging options, posting direction, and execution-ready next steps in one focused flow built for creators and lean teams.",
+          "cta": "View workflow"
+        },
+        {
+          "eyebrow": "Avatar Content",
+          "title": "Keep avatar and campaign output consistently on-brand.",
+          "body": "Connect insight-driven planning with avatar-ready content execution so your voice stays consistent across personas, campaigns, and channels.",
+          "cta": "Explore features"
         }
       ]
     },

@@ -7,6 +7,7 @@
       "faq": "Preguntas frecuentes"
     },
     "language": "Idioma",
+    "livePreview": "Vista previa en vivo",
     "signIn": "Iniciar sesión",
     "getStarted": "Empezar",
     "languages": {
@@ -27,17 +28,23 @@
     "continueWithEmail": "Continuar con Email",
     "createAccount": "Crear cuenta",
     "oauthComingSoon": "Google, Apple y SSO estarán disponibles pronto.",
+    "nameLabel": "Nombre completo",
+    "namePlaceholder": "Tu nombre",
     "emailLabel": "Correo electrónico",
     "emailPlaceholder": "you@example.com",
-    "emailFootnote": "No necesitas contraseña. Te iniciaremos sesión con tu correo.",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "Mín. 8 caracteres",
+    "emailFootnote": "Tu contraseña está cifrada y nunca se comparte.",
     "signingIn": "Iniciando sesión...",
+    "creatingAccount": "Creando tu cuenta...",
     "goToSignup": "¿Necesitas cuenta? Regístrate",
     "goToLogin": "¿Ya tienes cuenta? Inicia sesión",
     "termsLine": "Al continuar, aceptas nuestros",
     "terms": "Términos",
     "privacy": "Privacidad",
     "errors": {
-      "signInFailed": "Error al iniciar sesión",
+      "signInFailed": "Error al iniciar sesión. Verifica tu correo y contraseña.",
+      "signUpFailed": "Error al crear cuenta. Inténtalo de nuevo.",
       "verifyFailed": "No se pudo verificar tu sesión. Activa cookies e inténtalo de nuevo."
     }
   },
@@ -122,6 +129,31 @@
         {
           "q": "¿Dónde reviso resultados anteriores?",
           "a": "El historial del dashboard guarda análisis e informes previos para que puedas reabrirlos en cualquier momento."
+        }
+      ]
+    },
+    "livePreview": {
+      "eyebrow": "Vista previa del producto en vivo",
+      "title": "Descubre cómo Echofy convierte la producción de contenido en un sistema",
+      "subtitle": "Cada bloque destaca una parte diferente del flujo: estrategia, velocidad de ejecución y entrega consistente lista para avatar.",
+      "sections": [
+        {
+          "eyebrow": "Motor de Estrategia IA",
+          "title": "Convierte una sola carga en un sistema de estrategia repetible.",
+          "body": "Obtén ángulos de posicionamiento, dirección de captions y prioridades por plataforma desde una única entrada. Reemplaza las suposiciones con un playbook que tu equipo puede ejecutar cada semana.",
+          "cta": "Ver planes"
+        },
+        {
+          "eyebrow": "Flujo del Creador",
+          "title": "Pasa de idea a resultado listo para publicar más rápido.",
+          "body": "Genera opciones de mensajes, dirección de publicación y próximos pasos ejecutables en un flujo enfocado para creadores y equipos ágiles.",
+          "cta": "Ver flujo"
+        },
+        {
+          "eyebrow": "Contenido Avatar",
+          "title": "Mantén el avatar y el resultado de campaña siempre on-brand.",
+          "body": "Conecta la planificación basada en insights con la ejecución de contenido listo para avatar para que tu voz sea consistente en personas, campañas y canales.",
+          "cta": "Explorar funciones"
         }
       ]
     },

@@ -14,11 +14,18 @@ interface CartContextType {
   changeQty: (id: string, qty: number) => void;
   clearCart: () => void;
   cartCount: number;
+  isCartOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
+
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -81,6 +88,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         changeQty,
         clearCart,
         cartCount,
+        isCartOpen,
+        openCart,
+        closeCart,
       }}
     >
       {children}

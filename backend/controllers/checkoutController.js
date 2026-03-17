@@ -23,6 +23,69 @@ const PACKAGES = { lite: 500, pro: 1500, ultimate: 3000 }; // cents
 const UPLOAD_LIMITS = { lite: 5, pro: 20, ultimate: 100 };
 
 const ALLOWED_ADDON_TYPES = new Set(["uploads", "chat", "sadtalkerVideos"]);
+const SUPPORTED_LOCALES = new Set(["en", "el", "es", "it"]);
+
+function normalizeLocale(value) {
+  if (typeof value !== "string") return null;
+  const locale = value.trim().toLowerCase();
+  return SUPPORTED_LOCALES.has(locale) ? locale : null;
+}
+
+function localeFromReferer(req) {
+  const referer = req.get("referer");
+  if (!referer) return null;
+  try {
+    const path = new URL(referer).pathname;
+    const first = path.split("/").filter(Boolean)[0] || "";
+    return normalizeLocale(first);
+  } catch {
+    return null;
+  }
+}
+
+function resolveLocale(req) {
+  return normalizeLocale(req.body?.locale) || localeFromReferer(req) || "en";
+}
+
+function parseRequestOrigin(req) {
+  const raw = req.get("origin") || req.get("referer") || "";
+  if (!raw) return "";
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return "";
+  }
+}
+
+function isLocalOrigin(origin) {
+  if (!origin) return false;
+  try {
+    const host = new URL(origin).hostname;
+    return host === "localhost" || host === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
+function resolveSafeOrigin(req) {
+  const requestOrigin = parseRequestOrigin(req);
+  if (process.env.NODE_ENV === "development") {
+    if (requestOrigin && (ALLOWED_ORIGINS.includes(requestOrigin) || isLocalOrigin(requestOrigin))) {
+      return requestOrigin;
+    }
+    return process.env.PUBLIC_URL || "http://localhost:3000";
+  }
+  if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+  return process.env.PUBLIC_URL;
+}
+
+function withLocalePath(origin, locale, path) {
+  const base = String(origin || "").replace(/\/+$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${base}/${locale}${normalizedPath}`;
+}
 
 // POST /api/checkout/create-checkout-session
 const createCheckoutSession = async (req, res) => {
@@ -32,20 +95,14 @@ const createCheckoutSession = async (req, res) => {
     if (!email || !packageId || !PACKAGES[packageId]) {
       return sendErr(req, res, 400, "Invalid user or packageId");
     }
+    const locale = resolveLocale(req);
     const normalizedPersonaKey =
       typeof personaKey === "string" && personaKey.trim().length > 0 ? personaKey.trim() : null;
     if (personaKey !== undefined && normalizedPersonaKey === null) {
       return sendErr(req, res, 400, "personaKey must be a non-empty string");
     }
 
-    // Pick safe origin (local or prod) based on caller
-    const origin = req.get("origin") || req.get("referer") || "";
-  const safeOrigin =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:3000"
-    : (ALLOWED_ORIGINS.includes(origin)
-        ? origin
-        : process.env.PUBLIC_URL);
+    const safeOrigin = resolveSafeOrigin(req);
 
     try {
       console.log("[addon-checkout:create]", {
@@ -78,10 +135,10 @@ const createCheckoutSession = async (req, res) => {
         ...(normalizedPersonaKey ? { personaKey: normalizedPersonaKey } : {}),
       },
       client_reference_id: email,
-      success_url: `${safeOrigin}/dashboard?status=success&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${withLocalePath(safeOrigin, locale, "/dashboard")}?status=success&session_id={CHECKOUT_SESSION_ID}`,
       // If the user cancels or clicks "go back" in Stripe Checkout,
       // return them to the public homepage instead of dashboard.
-      cancel_url: `${safeOrigin}/`,
+      cancel_url: withLocalePath(safeOrigin, locale, "/"),
     });
 
     return res.json({ url: session.url });
@@ -99,6 +156,7 @@ const createAddonCheckoutSession = async (req, res) => {
     const userId = req.user?.id;
     const email = req.user?.email;
     const requestId = req.requestId || req.get("x-request-id") || null;
+    const locale = resolveLocale(req);
     if (!userId || !email) {
       return res.status(401).json({ error: "UNAUTHORIZED", requestId });
     }
@@ -143,13 +201,7 @@ const createAddonCheckoutSession = async (req, res) => {
       return res.status(403).json({ error: "PACKAGE_INSTANCE_NOT_FOUND", requestId });
     }
 
-    const origin = req.get("origin") || req.get("referer") || "";
-    const safeOrigin =
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:3000"
-        : (ALLOWED_ORIGINS.includes(origin)
-            ? origin
-            : process.env.PUBLIC_URL);
+    const safeOrigin = resolveSafeOrigin(req);
 
     const metadata = {
       kind: "addon",
@@ -172,8 +224,8 @@ const createAddonCheckoutSession = async (req, res) => {
       line_items: [{ price: priceId, quantity: 1 }],
       metadata,
       client_reference_id: email,
-      success_url: `${safeOrigin}/dashboard/billing?status=success&kind=addon&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${safeOrigin}/dashboard/billing?status=cancel&kind=addon`,
+      success_url: `${withLocalePath(safeOrigin, locale, "/dashboard/billing")}?status=success&kind=addon&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${withLocalePath(safeOrigin, locale, "/dashboard/billing")}?status=cancel&kind=addon`,
     });
 
     return res.json({ url: session.url, requestId });
@@ -543,7 +595,57 @@ const verifyAddonSession = async (req, res) => {
       return sendErr(req, res, 400, "Invalid packageInstanceId");
     }
     const instance = await PackageInstance.findById(packageInstanceId);
-    const applied = Boolean(instance && instance.lastAddonSessionId === session.id);
+    let applied = Boolean(instance && instance.lastAddonSessionId === session.id);
+
+    if (!applied && session.payment_status === "paid") {
+      const pack = addonType && addonPack ? getAddonPack(addonType, addonPack) : null;
+      const hasUserId = typeof meta.userId === "string" && meta.userId.length > 0;
+      if (pack && (!hasUserId || mongoose.Types.ObjectId.isValid(meta.userId))) {
+        const fallbackEventId = `verify:${session.id}`;
+        try {
+          const upserted = await WebhookEvent.updateOne(
+            { eventId: fallbackEventId },
+            {
+              $setOnInsert: {
+                eventId: fallbackEventId,
+                type: "checkout.session.completed.verify_fallback",
+                kind: "addon",
+                sessionId: session.id,
+                processedAt: null,
+                metadata: meta,
+              },
+            },
+            { upsert: true }
+          );
+
+          if (upserted?.upsertedCount) {
+            const inc = {};
+            if (addonType === "uploads") inc["addons.uploads"] = Number(pack.qty);
+            if (addonType === "chat") inc["addons.chat"] = Number(pack.qty);
+            if (addonType === "sadtalkerVideos") inc["addons.sadtalkerVideos"] = Number(pack.qty);
+
+            const filter = hasUserId
+              ? { _id: packageInstanceId, status: "active", userId: meta.userId }
+              : { _id: packageInstanceId, status: "active" };
+            const updated = await PackageInstance.findOneAndUpdate(
+              filter,
+              { $inc: inc, $set: { lastAddonAppliedAt: new Date(), lastAddonSessionId: session.id } },
+              { new: true }
+            );
+
+            applied = Boolean(updated && updated.lastAddonSessionId === session.id);
+            await WebhookEvent.updateOne(
+              { eventId: fallbackEventId },
+              { $set: { error: applied ? null : "package_instance_not_found", processedAt: new Date() } }
+            );
+          }
+        } catch (err) {
+          if (err?.code !== 11000) {
+            console.error("Verify addon fallback apply error:", err);
+          }
+        }
+      }
+    }
 
     return res.json({
       applied,

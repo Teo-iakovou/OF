@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { usePathname } from "@/i18n/navigation";
 import RouteTransitionOverlay from "../navigation/RouteTransitionOverlay";
 import Navbar from "../navigation/Navbar";
@@ -9,17 +9,16 @@ import { ConsentProvider } from "../consent/ConsentContext";
 import ConsentBanner from "../consent/ConsentBanner";
 import ConsentModal from "../consent/ConsentModal";
 import CartDrawer from "../cart/CartDrawer";
-import { CartProvider } from "../cart/CartContext";
+import { CartProvider, useCart } from "../cart/CartContext";
 import { AuthModalProvider } from "../auth/AuthModalContext";
 
 type AppShellProps = {
   children: ReactNode;
 };
 
-export default function AppShell({ children }: AppShellProps) {
+function AppShellInner({ children }: AppShellProps) {
   const pathname = usePathname();
-  const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
-  const handleCartClick = () => setCartDrawerOpen(true);
+  const { isCartOpen, openCart, closeCart } = useCart();
   const pathWithoutLocale = (() => {
     const parts = pathname.split("/").filter(Boolean);
     if (parts.length === 0) return "/";
@@ -41,27 +40,33 @@ export default function AppShell({ children }: AppShellProps) {
   const isAiDashboardRoute = pathWithoutLocale.startsWith("/dashboard/ai");
 
   return (
+    <AuthModalProvider>
+      {!isDashboardRoute && !useLandingShell && (
+        <Navbar onCartClick={openCart} />
+      )}
+
+      <main className="flex-grow">{children}</main>
+
+      <RouteTransitionOverlay />
+      {!isDashboardRoute && !isAiDashboardRoute && !useLandingShell && <Footer />}
+
+      <ConsentBanner />
+      <ConsentModal />
+
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={closeCart}
+        onCheckout={() => {}}
+      />
+    </AuthModalProvider>
+  );
+}
+
+export default function AppShell({ children }: AppShellProps) {
+  return (
     <ConsentProvider>
       <CartProvider>
-        <AuthModalProvider>
-          {!isDashboardRoute && !useLandingShell && (
-            <Navbar onCartClick={handleCartClick} />
-          )}
-
-          <main className="flex-grow">{children}</main>
-
-          <RouteTransitionOverlay />
-          {!isDashboardRoute && !isAiDashboardRoute && !useLandingShell && <Footer />}
-
-          <ConsentBanner />
-          <ConsentModal />
-
-          <CartDrawer
-            isOpen={cartDrawerOpen}
-            onClose={() => setCartDrawerOpen(false)}
-            onCheckout={() => {}}
-          />
-        </AuthModalProvider>
+        <AppShellInner>{children}</AppShellInner>
       </CartProvider>
     </ConsentProvider>
   );

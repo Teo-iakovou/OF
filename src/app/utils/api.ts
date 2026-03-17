@@ -284,7 +284,7 @@ export function getCheckoutInFlightServerSnapshot() {
   return false;
 }
 
-export async function startCheckout(packageId: string, personaKey?: string | null) {
+export async function startCheckout(packageId: string, personaKey?: string | null, locale?: string | null) {
   if (checkoutInFlightPromise) return;
   setCheckoutInFlight(true);
   const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === 'true';
@@ -294,7 +294,7 @@ export async function startCheckout(packageId: string, personaKey?: string | nul
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ packageId, personaKey }),
+      body: JSON.stringify({ packageId, personaKey, locale }),
     });
     const { ok, data } = await readJsonOrText(res);
     if (!ok)
@@ -535,6 +535,7 @@ export async function createAddonCheckoutSession(params: {
   addonType: AddonType;
   addonPack: string;
   packageInstanceId: string;
+  locale?: string | null;
 }): Promise<{ url: string; requestId?: string | null }> {
   const qtyMap: Record<string, number> = {
     pack_1: 1,

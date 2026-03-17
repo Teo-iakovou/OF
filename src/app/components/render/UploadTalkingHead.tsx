@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useLocale } from "next-intl";
 import { Copy, Sparkles } from "lucide-react";
 
 import { useUser } from "@/app/hooks/useUser";
@@ -74,6 +75,7 @@ function toRecentStatus(state: JobState): TalkingHeadRecentItem["status"] {
 
 export default function UploadTalkingHead() {
   const { user } = useUser({ required: true });
+  const locale = useLocale();
   const historyUserId = user?.id || HISTORY_USER_FALLBACK;
   const { data: planData, refresh: refreshPlan, hasActiveInstance } = usePlanInfo();
   const router = useRouter();
@@ -402,6 +404,7 @@ export default function UploadTalkingHead() {
                       addonType: "sadtalkerVideos",
                       addonPack: pack.pack,
                       packageInstanceId,
+                      locale,
                     });
                     if (res?.url) window.location.href = res.url;
                   } catch (err: unknown) {

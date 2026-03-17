@@ -78,42 +78,110 @@ export default function DashboardPage() {
 
   const uploadsLimitRaw =
     typeof planData?.uploadLimit === "number" ? planData.uploadLimit : null;
+  const uploadsEffectiveLimitRaw =
+    typeof planData?.effectiveUploadLimit === "number"
+      ? Math.max(0, planData.effectiveUploadLimit || 0)
+      : null;
   const uploadsUsedRaw = typeof planData?.uploadsUsed === "number" ? planData.uploadsUsed : 0;
   const addonsUploadsRaw =
-    typeof planData?.addonsUploads === "number" ? planData.addonsUploads : 0;
-  const uploadsLimit = uploadsLimitRaw === 0 ? null : uploadsLimitRaw;
+    typeof planData?.addonsUploads === "number"
+      ? planData.addonsUploads
+      : typeof planData?.addons?.uploads === "number"
+        ? planData.addons.uploads
+        : 0;
+  const uploadsLimitComputed =
+    typeof uploadsLimitRaw === "number"
+      ? uploadsLimitRaw === 0
+        ? 0
+        : uploadsLimitRaw + addonsUploadsRaw
+      : null;
+  const uploadsLimitValue =
+    typeof uploadsEffectiveLimitRaw === "number" ? uploadsEffectiveLimitRaw : uploadsLimitComputed;
+  const uploadsLimit = uploadsLimitValue === 0 ? null : uploadsLimitValue;
   const uploadsUsed = Math.max(0, uploadsUsedRaw);
   const uploadsRemaining = getRemaining(uploadsLimitRaw, addonsUploadsRaw, uploadsUsed);
 
   const chatRemainingRaw =
     typeof planData?.chatRemaining === "number" ? Math.max(0, planData.chatRemaining || 0) : null;
   const chatLimitRaw =
-    typeof planData?.chatMonthlyLimit === "number"
-      ? Math.max(0, planData.chatMonthlyLimit || 0)
+    typeof planData?.chatTokenLimit === "number"
+      ? Math.max(0, planData.chatTokenLimit || 0)
+      : typeof planData?.chatMonthlyLimit === "number"
+        ? Math.max(0, planData.chatMonthlyLimit || 0)
+        : null;
+  const chatEffectiveLimitRaw =
+    typeof planData?.effectiveChatLimit === "number"
+      ? Math.max(0, planData.effectiveChatLimit || 0)
       : null;
   const chatUsedRaw =
     typeof planData?.chatUsedThisCycle === "number"
       ? Math.max(0, planData.chatUsedThisCycle || 0)
       : null;
-  const chatLimit = chatLimitRaw === 0 ? null : chatLimitRaw;
+  const addonsChatRaw =
+    typeof planData?.addonsChat === "number"
+      ? planData.addonsChat
+      : typeof planData?.addonsChatTokens === "number"
+        ? planData.addonsChatTokens
+        : typeof planData?.addons?.chatTokens === "number"
+          ? planData.addons.chatTokens
+          : typeof planData?.addons?.chat === "number"
+            ? planData.addons.chat
+            : 0;
+  const chatLimitComputed =
+    typeof chatLimitRaw === "number"
+      ? chatLimitRaw === 0
+        ? 0
+        : chatLimitRaw + addonsChatRaw
+      : null;
+  const chatLimitValue =
+    typeof chatEffectiveLimitRaw === "number" ? chatEffectiveLimitRaw : chatLimitComputed;
+  const chatLimit = chatLimitValue === 0 ? null : chatLimitValue;
   const chatUsed = typeof chatUsedRaw === "number" ? chatUsedRaw : null;
-  const chatRemaining = chatRemainingRaw ?? getRemaining(chatLimitRaw, 0, chatUsed);
+  const chatRemaining =
+    chatRemainingRaw ??
+    (typeof chatEffectiveLimitRaw === "number"
+      ? getRemaining(chatEffectiveLimitRaw, 0, chatUsed)
+      : getRemaining(chatLimitRaw, addonsChatRaw, chatUsed));
 
   const videoRemainingRaw =
     typeof planData?.sadtalkerVideosRemaining === "number"
       ? Math.max(0, planData.sadtalkerVideosRemaining || 0)
       : null;
   const videoLimitRaw =
-    typeof planData?.sadtalkerVideoLimit === "number"
-      ? Math.max(0, planData.sadtalkerVideoLimit || 0)
+    typeof planData?.sadtalkerVideosLimit === "number"
+      ? Math.max(0, planData.sadtalkerVideosLimit || 0)
+      : typeof planData?.sadtalkerVideoLimit === "number"
+        ? Math.max(0, planData.sadtalkerVideoLimit || 0)
+        : null;
+  const videoEffectiveLimitRaw =
+    typeof planData?.effectiveVideoLimit === "number"
+      ? Math.max(0, planData.effectiveVideoLimit || 0)
       : null;
   const videoUsedRaw =
     typeof planData?.sadtalkerVideosUsed === "number"
       ? Math.max(0, planData.sadtalkerVideosUsed || 0)
       : null;
-  const videoLimit = videoLimitRaw === 0 ? null : videoLimitRaw;
+  const addonsVideosRaw =
+    typeof planData?.addonsVideos === "number"
+      ? planData.addonsVideos
+      : typeof planData?.addons?.sadtalkerVideos === "number"
+        ? planData.addons.sadtalkerVideos
+        : 0;
+  const videoLimitComputed =
+    typeof videoLimitRaw === "number"
+      ? videoLimitRaw === 0
+        ? 0
+        : videoLimitRaw + addonsVideosRaw
+      : null;
+  const videoLimitValue =
+    typeof videoEffectiveLimitRaw === "number" ? videoEffectiveLimitRaw : videoLimitComputed;
+  const videoLimit = videoLimitValue === 0 ? null : videoLimitValue;
   const videoUsed = typeof videoUsedRaw === "number" ? videoUsedRaw : null;
-  const videoRemaining = videoRemainingRaw ?? getRemaining(videoLimitRaw, 0, videoUsed);
+  const videoRemaining =
+    videoRemainingRaw ??
+    (typeof videoEffectiveLimitRaw === "number"
+      ? getRemaining(videoEffectiveLimitRaw, 0, videoUsed)
+      : getRemaining(videoLimitRaw, addonsVideosRaw, videoUsed));
 
   useEffect(() => {
     setInstancesError(modelInstancesError);

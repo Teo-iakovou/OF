@@ -8,6 +8,7 @@ import { startCheckout } from "@/app/utils/api";
 import { useRouter } from "@/i18n/navigation";
 import { useUser } from "@/app/hooks/useUser";
 import { buildLoginHref } from "@/app/utils/authRedirect";
+import { useLocale } from "next-intl";
 
 type PackagesModalProps = {
   open: boolean;
@@ -68,6 +69,7 @@ const PLANS = [
 export default function PackagesModal({ open, onOpenChange }: PackagesModalProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const locale = useLocale();
   const { user, loading: userLoading } = useUser({ required: false });
   const [mounted, setMounted] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -183,7 +185,7 @@ export default function PackagesModal({ open, onOpenChange }: PackagesModalProps
                       }
                       try {
                         setLoadingPlan(plan.id);
-                        await startCheckout(plan.id);
+                        await startCheckout(plan.id, null, locale);
                       } finally {
                         setLoadingPlan(null);
                       }

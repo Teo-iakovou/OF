@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocale } from "next-intl";
 import Spinner from "@/app/components/dashboard/loading spinner/page";
 import SelectActiveInstance from "@/app/components/dashboard/SelectActiveInstance";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
@@ -62,6 +63,7 @@ type BillingPanelProps = {
 };
 
 export default function BillingPanel({ embedded = false, refreshToken = 0 }: BillingPanelProps) {
+  const locale = useLocale();
   const { data: planData, loading: planLoading, refresh: refreshPlan, hasActiveInstance } =
     usePlanInfo();
   const [instances, setInstances] = useState<PackageInstanceSummary[]>([]);
@@ -149,6 +151,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
         addonType,
         addonPack,
         packageInstanceId: instanceId,
+        locale,
       });
       if (res?.url) {
         window.location.href = res.url;

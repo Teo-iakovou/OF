@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Reveal from "@/app/components/common/Reveal";
+import { motion } from "framer-motion";
 import { Check, Crown, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { Outfit } from "next/font/google";
 import { useTranslations } from "next-intl";
@@ -169,119 +169,141 @@ export default function Packages() {
   return (
     <section id="packages" className="scroll-mt-32 space-y-10 text-white">
       {/* Header */}
-      <div className="space-y-4 text-center">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        className="space-y-4 text-center"
+      >
         <p className="text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("eyebrow")}</p>
         <h2 className="text-3xl md:text-4xl font-semibold text-white">{t("title")}</h2>
         <p className="text-base text-[var(--hg-muted)] max-w-2xl mx-auto">
           {t("subtitle")}
         </p>
-      </div>
+      </motion.div>
 
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 max-w-6xl mx-auto px-4">
-        {packages.map((pkg, i) => (
-          <Reveal
-            as="div"
-            key={pkg.id}
-            delay={i * 100}
-            className="flex"
-          >
-            {(() => {
-              const rawPlan = t.raw(`plans.${pkg.id}`);
-              const plan = isPlanCopy(rawPlan) ? rawPlan : fallbackPlans[pkg.id];
-              return (
-            <div
-              className={`
-                group relative isolate flex min-h-[400px] flex-col w-full rounded-3xl border p-4 md:p-5
-                transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--hg-accent)]/50 hover:shadow-[0_14px_30px_rgba(80,192,240,0.16)]
-                ${pkg.featured
-                  ? 'border-[var(--hg-border)] bg-[var(--hg-surface-2)] shadow-[0_18px_45px_rgba(0,0,0,0.38)]'
-                  : 'border-[var(--hg-border)] bg-[var(--hg-surface)] shadow-[0_18px_45px_rgba(0,0,0,0.35)]'
-                }
-              `}
+        {packages.map((pkg, i) => {
+          const rawPlan = t.raw(`plans.${pkg.id}`);
+          const plan = isPlanCopy(rawPlan) ? rawPlan : fallbackPlans[pkg.id];
+          return (
+            <motion.div
+              key={pkg.id}
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.1, ease: "easeOut" }}
+              className="flex"
             >
-              {pkg.featured ? (
-                <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(900px_circle_at_50%_-20%,rgba(80,192,240,0.14),transparent_55%)]" />
-              ) : null}
+              <motion.div
+                whileHover={{ y: -4, transition: { duration: 0.22 } }}
+                className={`
+                  group relative isolate flex min-h-[400px] flex-col w-full rounded-3xl border p-4 md:p-5
+                  transition-colors duration-200 hover:border-[var(--hg-accent)]/50 hover:shadow-[0_14px_30px_rgba(80,192,240,0.16)]
+                  ${pkg.featured
+                    ? 'border-[var(--hg-border)] bg-[var(--hg-surface-2)] shadow-[0_18px_45px_rgba(0,0,0,0.38)]'
+                    : 'border-[var(--hg-border)] bg-[var(--hg-surface)] shadow-[0_18px_45px_rgba(0,0,0,0.35)]'
+                  }
+                `}
+              >
+                {pkg.featured ? (
+                  <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(900px_circle_at_50%_-20%,rgba(80,192,240,0.14),transparent_55%)]" />
+                ) : null}
 
-              {/* Badge */}
-              {plan.badge ? (
-                <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2">
-                  <div
-                    className={`rounded-full px-2 ${
-                      pkg.featured ? "bg-[var(--hg-surface-2)]" : "bg-[var(--hg-surface)]"
-                    }`}
+                {/* Badge */}
+                {plan.badge ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: i * 0.1 + 0.2 }}
+                    className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2"
                   >
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-accent)_14%,transparent)] px-3 py-1 text-[11px] font-semibold tracking-wide text-[#9fd9f3] shadow-[0_10px_22px_rgba(80,192,240,0.14)]">
-                    <Zap className="h-3.5 w-3.5" />
-                    {plan.badge}
+                    <div
+                      className={`rounded-full px-2 ${
+                        pkg.featured ? "bg-[var(--hg-surface-2)]" : "bg-[var(--hg-surface)]"
+                      }`}
+                    >
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-accent)_14%,transparent)] px-3 py-1 text-[11px] font-semibold tracking-wide text-[#9fd9f3] shadow-[0_10px_22px_rgba(80,192,240,0.14)]">
+                        <Zap className="h-3.5 w-3.5" />
+                        {plan.badge}
+                      </span>
+                    </div>
+                  </motion.div>
+                ) : null}
+
+                <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--hg-border)] bg-white/[0.03]">
+                  <pkg.icon className={`h-6 w-6 ${pkg.featured ? "text-[var(--hg-accent)]" : "text-white/80"}`} />
+                </div>
+
+                {/* Plan Name */}
+                <div className="space-y-1.5">
+                  <h3 className="text-xl font-semibold text-white">{plan.title}</h3>
+                  <p className="text-sm text-[var(--hg-muted)]">{plan.outcome}</p>
+                </div>
+
+                {/* Pricing */}
+                <div className="mt-4 mb-6">
+                  <div className="flex items-baseline gap-1">
+                    <span className={`${priceFont.className} text-3xl md:text-4xl font-extrabold leading-none text-white`}>
+                      {plan.price}
                     </span>
+                    <span className="text-base text-[var(--hg-muted)]">{plan.period}</span>
                   </div>
                 </div>
-              ) : null}
 
-              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--hg-border)] bg-white/[0.03]">
-                <pkg.icon className={`h-6 w-6 ${pkg.featured ? "text-[var(--hg-accent)]" : "text-white/80"}`} />
-              </div>
+                <div className="mb-4 text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("includesLabel")}</div>
+                {/* Features List */}
+                <ul className="mb-6 space-y-3">
+                  {plan.includes.map((feature, idx) => (
+                    <motion.li
+                      key={idx}
+                      initial={{ opacity: 0, x: -8 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.35, delay: i * 0.1 + idx * 0.06 + 0.2 }}
+                      className="flex items-start gap-3.5 text-sm md:text-[15px] leading-6 text-[var(--hg-muted)]"
+                    >
+                      <Check className="h-5.5 w-5.5 shrink-0 text-[var(--hg-accent)] mt-0.5" />
+                      <span>{feature}</span>
+                    </motion.li>
+                  ))}
+                </ul>
 
-              {/* Plan Name */}
-              <div className="space-y-1.5">
-                <h3 className="text-xl font-semibold text-white">{plan.title}</h3>
-                <p className="text-sm text-[var(--hg-muted)]">{plan.outcome}</p>
-              </div>
-
-              {/* Pricing */}
-              <div className="mt-4 mb-6">
-                <div className="flex items-baseline gap-1">
-                  <span className={`${priceFont.className} text-3xl md:text-4xl font-extrabold leading-none text-white`}>
-                    {plan.price}
-                  </span>
-                  <span className="text-base text-[var(--hg-muted)]">{plan.period}</span>
+                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("highlightsLabel")}</div>
+                <div className="mb-8 flex flex-wrap gap-2">
+                  {plan.highlights.map((highlight) => (
+                    <span
+                      key={highlight}
+                      className="inline-flex items-center rounded-full border border-[var(--hg-border)] bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-white/90"
+                    >
+                      {highlight}
+                    </span>
+                  ))}
                 </div>
-              </div>
 
-              <div className="mb-4 text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("includesLabel")}</div>
-              {/* Features List */}
-              <ul className="mb-6 space-y-3">
-                {plan.includes.map((feature, idx) => (
-                  <li key={idx} className="flex items-start gap-3.5 text-sm md:text-[15px] leading-6 text-[var(--hg-muted)]">
-                    <Check className="h-5.5 w-5.5 shrink-0 text-[var(--hg-accent)] mt-0.5" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mb-3 text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("highlightsLabel")}</div>
-              <div className="mb-8 flex flex-wrap gap-2">
-                {plan.highlights.map((highlight) => (
-                  <span
-                    key={highlight}
-                    className="inline-flex items-center rounded-full border border-[var(--hg-border)] bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-white/90"
+                {/* CTA Button */}
+                <Link href={`/${pkg.id}`} className="mt-auto">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    className={`
+                      h-12 w-full rounded-2xl text-sm font-semibold transition-colors
+                      ${pkg.featured
+                        ? 'bg-[var(--hg-accent)] text-[#04131d] hover:opacity-90 shadow-[0_10px_26px_rgba(80,192,240,0.35)]'
+                        : 'bg-[var(--hg-surface-2)] text-white border border-[var(--hg-border)] hover:border-[var(--hg-accent)]/50 group-hover:shadow-[inset_0_0_0_1px_rgba(80,192,240,0.35)]'
+                      }
+                    `}
                   >
-                    {highlight}
-                  </span>
-                ))}
-              </div>
-
-              {/* CTA Button */}
-              <Link href={`/${pkg.id}`} className="mt-auto">
-                <button
-                  className={`
-                    h-12 w-full rounded-2xl text-sm font-semibold transition-all
-                    ${pkg.featured
-                      ? 'bg-[var(--hg-accent)] text-[#04131d] hover:opacity-90 shadow-[0_10px_26px_rgba(80,192,240,0.35)]'
-                      : 'bg-[var(--hg-surface-2)] text-white border border-[var(--hg-border)] hover:border-[var(--hg-accent)]/50 group-hover:shadow-[inset_0_0_0_1px_rgba(80,192,240,0.35)]'
-                    }
-                  `}
-                >
-                  {plan.cta}
-                </button>
-              </Link>
-            </div>
-              );
-            })()}
-          </Reveal>
-        ))}
+                    {plan.cta}
+                  </motion.button>
+                </Link>
+              </motion.div>
+            </motion.div>
+          );
+        })}
       </div>
     </section>
   );
