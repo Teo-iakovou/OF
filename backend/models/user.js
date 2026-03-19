@@ -35,6 +35,7 @@ const userSchema = new mongoose.Schema({
   sadtalkerVideoLimit: { type: Number, default: 0 },
   // Optional: remember the first face image hash for non-ultimate plans
   sadtalkerPrimaryImageHash: { type: String, default: null },
+  totalChatMessages: { type: Number, default: 0 },
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);

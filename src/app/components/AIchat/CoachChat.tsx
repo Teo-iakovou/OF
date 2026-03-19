@@ -7,7 +7,7 @@ import {
   summarizeConversation,
   createEmptyConversation,
 } from "@/app/utils/api";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
 import type {
   CoachChatResult,
   CoachChatResponse,
@@ -16,12 +16,129 @@ import type {
   CoachChatContextLimitData,
   CoachChatGenericError,
 } from "@/app/utils/api";
-import { fetchCoachChatPrompts } from "@/app/utils/api";
+import { fetchCoachChatPrompts, getUserResultById, formatContentInfo, submitMessageFeedback } from "@/app/utils/api";
+import { PACKAGES_URL } from "@/app/utils/urls";
+import { useFloatingChatSafe } from "@/app/components/AIchat/FloatingChatContext";
 import { QuickPromptsBar } from "../AIchat/QuickPromptsBar";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { AssistantFooter } from "../AIchat/AssistantFooter";
+import { ContextUsedPopover } from "../AIchat/ContextUsedPopover";
 import { CreditsChip } from "../AIchat/CreditsChip";
 import { UpgradeCta } from "../AIchat/UpgradeCta";
+
+// ---- Fallback quick prompts (used when /api/coach-chat/prompts fails) ----
+type PromptCategory = "Strategy" | "Captions" | "Hashtags" | "Posting Plan" | "Video" | "Platform";
+
+const FALLBACK_PROMPTS: Array<{ id: string; category: PromptCategory; label: string; prompt: string }> = [
+  // Strategy
+  {
+    id: "strategy-1",
+    category: "Strategy",
+    label: "Double down on what's working",
+    prompt: "Based on my last upload, what content angles should I double down on this month?",
+  },
+  {
+    id: "strategy-2",
+    category: "Strategy",
+    label: "4-week content calendar",
+    prompt: "Help me build a 4-week content calendar for my niche",
+  },
+  {
+    id: "strategy-3",
+    category: "Strategy",
+    label: "Platform content breakdown",
+    prompt: "What type of content performs best on Instagram vs. TikTok for my audience?",
+  },
+  // Captions
+  {
+    id: "captions-1",
+    category: "Captions",
+    label: "3 caption variations",
+    prompt: "Write 3 caption variations for my last upload — one punchy, one story-led, one question-based",
+  },
+  {
+    id: "captions-2",
+    category: "Captions",
+    label: "Scroll-stopping hook",
+    prompt: "Turn my last post concept into a hook that stops the scroll",
+  },
+  {
+    id: "captions-3",
+    category: "Captions",
+    label: "Trust-building caption",
+    prompt: "Give me a caption that builds trust and drives saves for my niche",
+  },
+  // Hashtags
+  {
+    id: "hashtags-1",
+    category: "Hashtags",
+    label: "15 tiered hashtags",
+    prompt: "Suggest 15 hashtags for my niche, split by tier — broad, mid-level, and niche-specific",
+  },
+  {
+    id: "hashtags-2",
+    category: "Hashtags",
+    label: "Platform hashtag strategy",
+    prompt: "What hashtag strategy should I use for Instagram vs. TikTok vs. LinkedIn?",
+  },
+  // Posting Plan
+  {
+    id: "posting-1",
+    category: "Posting Plan",
+    label: "Best times to post",
+    prompt: "What days and times should I be posting based on my niche and audience?",
+  },
+  {
+    id: "posting-2",
+    category: "Posting Plan",
+    label: "4× per week structure",
+    prompt: "I want to post 4 times per week — how should I structure my content mix?",
+  },
+  {
+    id: "posting-3",
+    category: "Posting Plan",
+    label: "Educational vs promotional balance",
+    prompt: "Create a posting rhythm that balances educational, promotional, and relatable content",
+  },
+  // Video
+  {
+    id: "video-1",
+    category: "Video",
+    label: "30-second talking head script",
+    prompt: "Write a 30-second talking head script based on my last upload",
+  },
+  {
+    id: "video-2",
+    category: "Video",
+    label: "Video opening hook",
+    prompt: "What is the strongest hook I can open my next video with?",
+  },
+  {
+    id: "video-3",
+    category: "Video",
+    label: "Tutorial video outline",
+    prompt: "Give me a 5-step video outline for my next tutorial in my niche",
+  },
+  // Platform
+  {
+    id: "platform-1",
+    category: "Platform",
+    label: "Repurpose across platforms",
+    prompt: "How should I repurpose my last upload across Instagram, TikTok, and LinkedIn?",
+  },
+  {
+    id: "platform-2",
+    category: "Platform",
+    label: "What's working on Reels",
+    prompt: "What content formats are working on Reels right now for creators in my niche?",
+  },
+  {
+    id: "platform-3",
+    category: "Platform",
+    label: "TikTok vs Instagram priority",
+    prompt: "Should I prioritize TikTok or Instagram growth given my content style?",
+  },
+];
 
 // Message with meta for requestId/latency/context
 interface Message {
@@ -73,6 +190,22 @@ function CoachChat({
   const [prompts, setPrompts] = useState<string[]>([]);
   const [promptsLoading, setPromptsLoading] = useState<boolean>(true);
   const [showPrompts, setShowPrompts] = useState(true);
+  const [showSuggestedPrompts, setShowSuggestedPrompts] = useState(false);
+  const [activePromptCategory, setActivePromptCategory] = useState<string>("Suggested");
+  const [contextContentInfo, setContextContentInfo] = useState<string | undefined>();
+  const [feedback, setFeedback] = useState<Record<number, "up" | "down">>({});
+
+  const floatingChat = useFloatingChatSafe();
+
+  // Consume resultId from FloatingChat context (set when user clicks "Ask Sage" on a result card)
+  const pendingResultId = floatingChat?.contextRef?.resultId;
+  useEffect(() => {
+    if (!pendingResultId) return;
+    floatingChat?.setContextRef(null);
+    getUserResultById({ id: pendingResultId })
+      .then((result) => setContextContentInfo(formatContentInfo(result)))
+      .catch(() => {});
+  }, [pendingResultId]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -214,12 +347,7 @@ function tokenizeWordsWithSpaces(s: string) {
         if (!ignore) setPrompts(r.prompts || []);
       })
       .catch(() => {
-        if (!ignore)
-          setPrompts([
-            "Give me a catchy caption for my last upload",
-            "Suggest 5 niche hashtags for my audience",
-            "What are my best times to post this week?",
-          ]);
+        if (!ignore) setPrompts(FALLBACK_PROMPTS.map((p) => p.prompt));
       })
       .finally(() => { if (!ignore) setPromptsLoading(false); });
 
@@ -283,6 +411,7 @@ function tokenizeWordsWithSpaces(s: string) {
     if (!text || isSending || isLimited || isContextLimited) return;
 
     setShowPrompts(false);
+    setShowSuggestedPrompts(false);
     setIsSending(true);
     setError(null);
     setContextNearLimit(false);
@@ -300,7 +429,7 @@ function tokenizeWordsWithSpaces(s: string) {
     try {
       const res: CoachChatResult = await coachChat({
         question: text,
-        latestContentInfo,
+        latestContentInfo: contextContentInfo ?? latestContentInfo,
         conversationId: conversation?._id,
         title: conversation?.title || "AI Coach Chat",
       });
@@ -449,6 +578,25 @@ function tokenizeWordsWithSpaces(s: string) {
 }
 
 
+  const promptCategories = (() => {
+    const cats: Array<{ id: string; label: string; items: Array<{ label: string; prompt: string }> }> = [];
+    if (prompts.length > 0) {
+      cats.push({ id: "Suggested", label: "Suggested", items: prompts.map((p) => ({ label: p, prompt: p })) });
+    }
+    const seen = new Set<string>();
+    FALLBACK_PROMPTS.forEach((p) => {
+      if (!seen.has(p.category)) {
+        seen.add(p.category);
+        cats.push({
+          id: p.category,
+          label: p.category,
+          items: FALLBACK_PROMPTS.filter((q) => q.category === p.category).map((q) => ({ label: q.label, prompt: q.prompt })),
+        });
+      }
+    });
+    return cats;
+  })();
+
   const isEmpty = !bootstrapping && !(conversation?.messages?.length);
   const isPageLayout = layout === "page";
 
@@ -485,9 +633,20 @@ function tokenizeWordsWithSpaces(s: string) {
     </p>
   ) : (
     <>
-  {conversation!.messages.map((msg, idx) => {
+  {(() => {
+    const msgs = conversation!.messages;
+    const lastAssistantIdx = msgs.reduce(
+      (last, m, i) => (m.role === "assistant" ? i : last),
+      -1
+    );
+    return msgs.map((msg, idx) => {
   if (msg.role === "system") return null;
   const isUser = msg.role === "user";
+  const isStreaming =
+    !!(streamRef.current &&
+      conversation &&
+      streamRef.current.convId === conversation._id &&
+      streamRef.current.msgIndex === idx);
   return (
     <div key={msg._id || idx} className={`mb-4 ${isUser ? "flex justify-end" : "block"}`}>
       {isUser ? (
@@ -503,20 +662,70 @@ function tokenizeWordsWithSpaces(s: string) {
           </div>
 
           {/* Toolbar under the answer */}
-          <div className="mt-2 flex items-center gap-3">
-            {/* Show tools only when this assistant message is not currently streaming */}
-            {!((streamRef.current && conversation && streamRef.current.convId === conversation._id && streamRef.current.msgIndex === idx)) && (
-              <>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {!isStreaming && (
                 <CopyButton text={msg.content} />
-              </>
+              )}
+              {!isStreaming && msg.meta?.usedContextIds?.length ? (
+                <ContextUsedPopover ids={msg.meta.usedContextIds} />
+              ) : null}
+            </div>
+            {/* Feedback buttons — every assistant message, after streaming */}
+            {!isStreaming && (
+              <div className="flex items-center gap-1">
+                {(["up", "down"] as const).map((vote) => {
+                  const voted = feedback[idx];
+                  const isSelected = voted === vote;
+                  const isOther = voted !== undefined && voted !== vote;
+                  return (
+                    <button
+                      key={vote}
+                      type="button"
+                      disabled={voted !== undefined}
+                      onClick={async () => {
+                        if (voted !== undefined) return;
+                        setFeedback((prev) => ({ ...prev, [idx]: vote }));
+                        try {
+                          await submitMessageFeedback(conversation!._id, idx, vote);
+                        } catch {
+                          setFeedback((prev) => {
+                            const next = { ...prev };
+                            delete next[idx];
+                            return next;
+                          });
+                        }
+                      }}
+                      className={`p-1 rounded transition ${
+                        isSelected
+                          ? "text-[var(--hg-accent)]"
+                          : isOther
+                          ? "text-gray-700 opacity-30 cursor-default"
+                          : "text-gray-600 hover:text-gray-400"
+                      }`}
+                      aria-label={vote === "up" ? "Helpful" : "Not helpful"}
+                    >
+                      {vote === "up"
+                        ? <ThumbsUp className="w-3.5 h-3.5" />
+                        : <ThumbsDown className="w-3.5 h-3.5" />
+                      }
+                    </button>
+                  );
+                })}
+              </div>
             )}
-            {msg.meta && <AssistantFooter meta={msg.meta} />}
           </div>
+
+          {/* Capability hints — only on the last assistant message, not while streaming/sending */}
+          {idx === lastAssistantIdx && !isStreaming && !isSending && (
+            <AssistantFooter meta={msg.meta} />
+          )}
         </div>
       )}
     </div>
   );
-})}
+  });
+  })()}
 
       {/* Typing indicator (assistant) — no bubble */}
       {isSending && (
@@ -590,6 +799,29 @@ function tokenizeWordsWithSpaces(s: string) {
           </div>
         ) : null}
 
+        {isEmpty && showPrompts && (
+          <div className="w-full max-w-2xl mx-auto px-0 mb-4 text-center">
+            <h2 className="text-lg font-semibold text-gray-100 mb-2">
+              Hi, I&apos;m your AI Creator Coach
+            </h2>
+            <ul className="text-sm text-gray-400 space-y-1 mb-3 text-left inline-block">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-[var(--hg-accent)]">✦</span>
+                Analyse your content strategy and suggest what to post next
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-[var(--hg-accent)]">✦</span>
+                Write captions, hashtags, and hooks tailored to your audience
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-[var(--hg-accent)]">✦</span>
+                Build posting plans and grow your reach across platforms
+              </li>
+            </ul>
+            <p className="text-xs text-gray-500">Choose a prompt below or ask me anything</p>
+          </div>
+        )}
+
         {showPrompts && (
           <div className="w-full max-w-2xl mx-auto px-0 mb-3">
             {promptsLoading ? (
@@ -611,12 +843,63 @@ function tokenizeWordsWithSpaces(s: string) {
           </div>
         )}
 
+        {isLimited && (
+          <div className="mb-3 rounded-xl border border-[var(--hg-accent)]/30 bg-[var(--hg-accent)]/10 px-3 py-2 text-xs text-[var(--hg-accent)]">
+            <span className="font-semibold">Monthly limit reached</span>
+            {" — "}
+            <a href={PACKAGES_URL} className="underline underline-offset-2 hover:opacity-80">
+              upgrade to keep coaching
+            </a>
+          </div>
+        )}
+
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {credits && <CreditsChip used={credits.used} limit={credits.limit} />}
             {isLimited && <UpgradeCta />}
           </div>
         </div>
+
+        {showSuggestedPrompts && (
+          <div className="mb-2 rounded-xl border border-gray-700/50 bg-[#141922] overflow-hidden">
+            {/* Tab bar */}
+            <div className="flex overflow-x-auto border-b border-gray-700/50 scrollbar-hide">
+              {promptCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setActivePromptCategory(cat.id)}
+                  className={`shrink-0 px-3 py-2 text-[11px] font-medium transition whitespace-nowrap ${
+                    activePromptCategory === cat.id
+                      ? "text-[var(--hg-accent)] border-b-2 border-[var(--hg-accent)] -mb-px"
+                      : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+            {/* Prompts for active category */}
+            <div className="max-h-[280px] overflow-y-auto p-2 space-y-1">
+              {promptCategories
+                .find((c) => c.id === activePromptCategory)
+                ?.items.map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      setInput(item.prompt);
+                      setShowSuggestedPrompts(false);
+                      textareaRef.current?.focus();
+                    }}
+                    className="w-full text-left rounded-lg border border-gray-700/60 bg-[#1a1f2b] px-3 py-2 text-xs text-gray-300 hover:border-gray-600 hover:bg-[#202636] hover:text-gray-100 transition"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center gap-3 bg-[#1a1f2b] border border-gray-700 rounded-xl px-3 py-2">
           <textarea
@@ -637,6 +920,24 @@ function tokenizeWordsWithSpaces(s: string) {
             rows={1}
             style={{ minHeight: 44 }}
           />
+
+          <button
+            type="button"
+            onClick={() => {
+              const next = !showSuggestedPrompts;
+              setShowSuggestedPrompts(next);
+              if (next) setActivePromptCategory(promptCategories[0]?.id ?? "Suggested");
+            }}
+            aria-label="Suggest prompts"
+            title="Suggest prompts"
+            className={`h-8 w-8 flex items-center justify-center rounded-lg transition ${
+              showSuggestedPrompts
+                ? "text-[var(--hg-accent)] bg-[var(--hg-accent)]/10"
+                : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+          </button>
 
           <button
             className="h-10 px-4 rounded-md bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition disabled:opacity-60"

@@ -8,12 +8,14 @@ const {
   generateTitle,
   createConversation,
   summarizeConversation,
+  submitFeedback,
 } = require("../controllers/conversationController");
 
 router.use(guardActiveInstanceAndFace({ requireFaceEnrolled: true }));
 
 router.post("/:id/generate-title", generateTitle);
 router.post("/:id/summarize", summarizeConversation);
+router.post("/:id/feedback", submitFeedback);
 router.post("/", createConversation); 
 router.get("/", getConversations);
 router.get("/:id", getConversationById);

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ResultDoc, RecommendedPlatform } from "@/app/types/analysis";
+import { useFloatingChatSafe } from "@/app/components/AIchat/FloatingChatContext";
 
 type CinematicResultsProps = {
   result: ResultDoc;
@@ -63,6 +64,7 @@ export default function CinematicResults({
   requestId,
   onViewHistoryHref,
 }: CinematicResultsProps) {
+  const floatingChat = useFloatingChatSafe();
   const steps = useMemo<Step[]>(() => {
     const list: Step[] = [{ type: "summary" }];
     const platforms = Array.isArray(result?.promotion?.recommendedPlatforms)
@@ -315,13 +317,22 @@ export default function CinematicResults({
 
         return null;
       })}
-      <div className="pt-1">
+      <div className="pt-1 flex items-center gap-4 flex-wrap">
         <a
           href={onViewHistoryHref}
           className="inline-flex text-sm text-cyan-700 underline underline-offset-2 hover:text-cyan-800"
         >
           View in Upload History →
         </a>
+        {floatingChat && result?._id ? (
+          <button
+            type="button"
+            onClick={() => floatingChat.open({ resultId: result._id })}
+            className="inline-flex items-center gap-1 rounded-full border border-cyan-700/40 px-3 py-1 text-xs font-medium text-cyan-700 hover:bg-cyan-50 transition"
+          >
+            Ask Sage ✦
+          </button>
+        ) : null}
       </div>
     </div>
   );

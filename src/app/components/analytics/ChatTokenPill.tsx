@@ -20,7 +20,6 @@ function formatTokens(value: number): string {
 export default function ChatTokenPill() {
   const { data: planData, hasActiveInstance } = usePlanInfo();
   const [open, setOpen] = useState(false);
-  if (!hasActiveInstance) return null;
 
   const {
     usedPct,
@@ -43,6 +42,8 @@ export default function ChatTokenPill() {
       unlimited,
     };
   }, [planData]);
+
+  if (!hasActiveInstance) return null;
 
   return (
     <div

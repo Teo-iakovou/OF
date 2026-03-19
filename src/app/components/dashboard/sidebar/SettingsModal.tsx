@@ -180,21 +180,23 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
 
   const modal = (
     <div className="fixed inset-0 z-[120]">
+      {/* Backdrop */}
       <button
         type="button"
         aria-label="Close settings"
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
+
+      {/* Panel — full-screen on mobile, centered card on desktop */}
       <div
-        className="absolute left-1/2 top-1/2 z-[130] overflow-hidden rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] shadow-2xl"
-        style={{
-          width: "min(1100px, calc(100vw - 32px))",
-          height: "min(720px, calc(100vh - 32px))",
-          transform: "translate(-50%, -50%)",
-        }}
+        className="fixed inset-0 z-[130] flex flex-col overflow-hidden bg-[var(--hg-surface)] shadow-2xl
+          md:absolute md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2
+          md:rounded-2xl md:border md:border-[var(--hg-border)]
+          md:w-[min(1100px,calc(100vw-32px))] md:h-[min(720px,calc(100vh-32px))]"
       >
-        <div className="flex items-center justify-between border-b border-[var(--hg-border-2)] px-4 py-3 md:px-6">
+        {/* Header */}
+        <div className="flex shrink-0 items-center justify-between border-b border-[var(--hg-border-2)] px-4 py-3 md:px-6">
           <h2 className="text-lg font-semibold text-white">Settings</h2>
           <button
             type="button"
@@ -206,9 +208,36 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
           </button>
         </div>
 
-        <div className="grid h-[calc(100%-58px)] grid-cols-1 overflow-hidden md:grid-cols-[240px_1fr]">
-          <aside className="flex flex-col border-b border-[var(--hg-border-2)] p-3 md:border-b-0 md:border-r">
-            <nav className="space-y-1">
+        {/* Body */}
+        <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[240px_1fr]">
+
+          {/* Nav — horizontal scrollable tabs on mobile, vertical sidebar on desktop */}
+          <aside className="shrink-0 border-b border-[var(--hg-border-2)] md:flex md:flex-col md:border-b-0 md:border-r md:p-3">
+            {/* Mobile tabs */}
+            <nav className="flex gap-1 overflow-x-auto px-3 py-2 md:hidden">
+              {sections.map((item) => {
+                const Icon = item.icon;
+                const active = section === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setSection(item.key)}
+                    className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition ${
+                      active
+                        ? "bg-[var(--hg-accent-soft)] text-[#50C0F0]"
+                        : "text-[var(--hg-muted)] hover:text-white"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Desktop sidebar nav */}
+            <nav className="hidden space-y-1 md:block">
               {sections.map((item) => {
                 const Icon = item.icon;
                 const active = section === item.key;
@@ -229,13 +258,12 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                 );
               })}
             </nav>
-            <div className="mt-4 border-t border-[var(--hg-border-2)] pt-3">
+
+            {/* Desktop-only footer actions */}
+            <div className="mt-4 hidden border-t border-[var(--hg-border-2)] pt-3 md:block">
               <button
                 type="button"
-                onClick={() => {
-                  onOpenChange(false);
-                  router.push("/");
-                }}
+                onClick={() => { onOpenChange(false); router.push("/"); }}
                 className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm text-[var(--hg-muted)] transition hover:bg-[var(--hg-surface-2)] hover:text-white"
               >
                 Exit dashboard
@@ -261,7 +289,8 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
             </div>
           </aside>
 
-          <section className="h-full overflow-y-auto p-4 md:p-6">
+          {/* Content */}
+          <section className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
             {section === "account" ? (
               <div className="space-y-5">
                 <div className="flex items-center gap-3">
@@ -447,6 +476,37 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
               <HistoryPanel embedded />
             ) : null}
           </section>
+        </div>
+
+        {/* Mobile-only footer actions */}
+        <div className="shrink-0 border-t border-[var(--hg-border-2)] px-4 py-3 md:hidden">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => { onOpenChange(false); router.push("/"); }}
+              className="flex flex-1 items-center justify-center rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 py-2.5 text-sm text-[var(--hg-muted)] transition hover:text-white"
+            >
+              Exit dashboard
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (loggingOut) return;
+                setLoggingOut(true);
+                try {
+                  await logoutClient();
+                  onOpenChange(false);
+                  router.replace("/login");
+                } finally {
+                  setLoggingOut(false);
+                }
+              }}
+              disabled={loggingOut}
+              className="flex flex-1 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2.5 text-sm text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-60"
+            >
+              {loggingOut ? "Signing out..." : "Sign out"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

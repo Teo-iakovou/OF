@@ -175,7 +175,7 @@ export default function LayoutClient({
           </div>
 
           {/* Content column */}
-          <div className={`flex-1 flex flex-col transition-all duration-300 ${expanded ? DASHBOARD_LAYOUT.desktopExpandedMarginClass : DASHBOARD_LAYOUT.desktopCollapsedMarginClass}`}>
+          <div className={`flex-1 flex flex-col transition-[margin-left] duration-200 ${expanded ? DASHBOARD_LAYOUT.desktopExpandedMarginClass : DASHBOARD_LAYOUT.desktopCollapsedMarginClass}`}>
             <main className={`px-3 ${DASHBOARD_LAYOUT.mobileMainTopPaddingClass} sm:px-5 md:px-7 ${DASHBOARD_LAYOUT.desktopMainTopPaddingClass}`}>
               {children}
             </main>

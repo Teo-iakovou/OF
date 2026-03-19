@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
  
-import { createEmptyConversation, fetchConversation } from "@/app/utils/api";
+import { createEmptyConversation, fetchConversation, fetchLatestResultForPackageInstance, formatContentInfo } from "@/app/utils/api";
 import { BookOpen } from "lucide-react";
 import CoachChat from "@/app/components/AIchat/CoachChat";
 import CoachChatHistory from "@/app/components/AIchat/AiChatHistorySidebar";
@@ -31,6 +31,16 @@ export default function AiCoachChatPage() {
 
   const activePackageInstanceId = planData?.packageInstanceId ?? null;
   const isChatUnlimited = planData?.chatTokenLimit === 0;
+  const [latestContentInfo, setLatestContentInfo] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!activePackageInstanceId) return;
+    fetchLatestResultForPackageInstance(activePackageInstanceId)
+      .then((result) => {
+        if (result) setLatestContentInfo(formatContentInfo(result));
+      })
+      .catch(() => {});
+  }, [activePackageInstanceId]);
   const storageKey = activePackageInstanceId
     ? `ai_chat_active_conversation:${activePackageInstanceId}`
     : "ai_chat_active_conversation:unknown";
@@ -197,6 +207,7 @@ export default function AiCoachChatPage() {
               initialConversationId={selectedConvoId}
               onNewConversation={handleNewConversationCreated}
               onContextChange={setContextInfo}
+              latestContentInfo={latestContentInfo}
               layout="page"
             />
           </div>

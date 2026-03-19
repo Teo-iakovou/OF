@@ -241,6 +241,37 @@ const summarizeConversation = async (req, res) => {
   }
 };
 
+const submitFeedback = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { messageIndex, vote } = req.body || {};
+
+    if (!req.user?.id) return sendErr(req, res, 401, "Unauthorized");
+    if (vote !== "up" && vote !== "down") return sendErr(req, res, 400, "Invalid vote");
+    if (typeof messageIndex !== "number" || !Number.isInteger(messageIndex) || messageIndex < 0) {
+      return sendErr(req, res, 400, "Invalid messageIndex");
+    }
+
+    const conversation = await Conversation.findById(id);
+    if (!conversation) return sendErr(req, res, 404, "Conversation not found");
+    if (conversation.user.toString() !== req.user.id.toString()) {
+      return sendErr(req, res, 403, "Forbidden");
+    }
+
+    const msg = conversation.messages[messageIndex];
+    if (!msg) return sendErr(req, res, 400, "messageIndex out of bounds");
+    if (msg.role !== "assistant") return sendErr(req, res, 400, "Can only rate assistant messages");
+
+    conversation.messages[messageIndex] = { ...msg.toObject?.() ?? msg, feedback: vote };
+    conversation.markModified("messages");
+    await conversation.save();
+
+    return res.json({ ok: true });
+  } catch (err) {
+    return sendErr(req, res, 500, "Failed to save feedback");
+  }
+};
+
 module.exports = {
   getConversations,
   getConversationById,
@@ -248,4 +279,5 @@ module.exports = {
   createConversation,
   generateTitle,
   summarizeConversation,
+  submitFeedback,
 };

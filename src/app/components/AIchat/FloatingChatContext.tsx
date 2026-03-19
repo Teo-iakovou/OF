@@ -76,3 +76,8 @@ export function useFloatingChat() {
   if (!v) throw new Error("useFloatingChat must be used within FloatingChatProvider");
   return v;
 }
+
+/** Returns null when called outside FloatingChatProvider — safe to call anywhere. */
+export function useFloatingChatSafe() {
+  return useContext(Ctx);
+}

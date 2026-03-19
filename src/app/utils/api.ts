@@ -135,6 +135,27 @@ export async function fetchLatestResultForPackageInstance(
   return results[0] || null;
 }
 
+/** Formats a ResultDoc into a compact, labeled string for injection into the AI system prompt. */
+export function formatContentInfo(result: ResultDoc): string {
+  const plat = result.promotion?.recommendedPlatforms?.[0];
+  const lines: string[] = [];
+  if (plat?.platform) lines.push(`platform: ${plat.platform}`);
+  if (result.niche) lines.push(`niche: ${result.niche}`);
+  const rawCaption = plat?.caption ?? "";
+  if (rawCaption) {
+    const snippet = rawCaption.slice(0, 80).replace(/\n/g, " ") + (rawCaption.length > 80 ? "…" : "");
+    lines.push(`caption: '${snippet}'`);
+  }
+  const hashtagCount = plat?.hashtags?.length ?? 0;
+  if (hashtagCount > 0) lines.push(`hashtags: ${hashtagCount}`);
+  if (typeof result.csl === "number") lines.push(`score: ${result.csl}`);
+  if (result.createdAt) {
+    const daysAgo = Math.floor((Date.now() - new Date(result.createdAt).getTime()) / (24 * 3600e3));
+    lines.push(`uploaded: ${daysAgo === 0 ? "today" : `${daysAgo} day${daysAgo === 1 ? "" : "s"} ago`}`);
+  }
+  return lines.join("\n");
+}
+
 export type RecentCreation = {
   id: string;
   title: string;
@@ -848,6 +869,19 @@ export async function fetchConversations(): Promise<ConversationSummary[]> {
   const r = await fetchJson(url, { method: "GET", cache: "no-store" });
   if (!r.ok) throw new Error("Fetch conversations failed");
   return r.data as ConversationSummary[];
+}
+
+export async function submitMessageFeedback(
+  conversationId: string,
+  messageIndex: number,
+  vote: "up" | "down"
+): Promise<void> {
+  await fetch(`${BASE_URL}/api/conversations/${encodeURIComponent(conversationId)}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ messageIndex, vote }),
+  });
 }
 
 // -------------------------------

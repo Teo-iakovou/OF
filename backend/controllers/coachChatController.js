@@ -132,39 +132,51 @@ const coachChatHandler = async (req, res) => {
       });
     }
 
-    // --- Smart context (uses imported buildChatContext) ---
-    const { bullets, ids: usedContextIds } = await buildChatContext(email, {});
-    log(rid, "chat_context_ready", { usedContextCount: usedContextIds.length });
+    // --- First-ever message: structured intake (no OpenAI call) ---
+    const isFirstEverMessage = (user.totalChatMessages ?? 0) === 0;
+    let aiMessage;
+    let usedContextIds = [];
 
-    // --- Prompt ---
-    const systemPrompt = `
-You are Sage, an OnlyFans strategist AI. The user’s current plan: ${plan}.
-Recent context (last uploads):
-${bullets.join("\n") || "• (no prior uploads found)"}
-Latest content note: ${latestContentInfo || "n/a"}
-Always be clear and direct about what features are available for each plan.
+    if (isFirstEverMessage) {
+      aiMessage = `Hey! I’m Sage, your content strategist. Before I dive in, let me learn about you so every answer is relevant to YOUR account. Quick questions:\n\n1. What’s your main platform? (Instagram / TikTok / OnlyFans / other)\n2. What’s your content niche? (fitness, glamour, lifestyle, etc.)\n3. What’s your #1 goal right now? (more followers / more sales / better content)\n\nAnswer all three and I’ll give you a custom strategy instantly.`;
+    } else {
+      // --- Smart context (uses imported buildChatContext) ---
+      const { bullets, ids: ctxIds } = await buildChatContext(email, {});
+      usedContextIds = ctxIds;
+      log(rid, "chat_context_ready", { usedContextCount: usedContextIds.length });
+
+      // --- Prompt ---
+      const systemPrompt = `
+You are Sage — a sharp, direct OnlyFans content strategist. You give clear, actionable advice. No filler, no fluff.
+Plan: ${plan}. Adjust what you recommend to what’s available on this plan.
+Scope: captions, hashtags, posting schedules, content strategy${plan !== "lite" ? ", DM scripts" : ""}. Never give financial or legal advice.
+Recent upload context:
+${bullets.join("\n") || "• (no uploads found — ask the user to upload content first before making recommendations)"}
+${latestContentInfo ? `Latest upload:\n${latestContentInfo}` : ""}
+Rules: reference the upload context when it’s relevant. If context is empty, say so and ask for an upload. Be concise — lead with the answer.
 `.trim();
 
-    // --- OpenAI call ---
-    log(rid, "chat_openai_start", { model: "gpt-4o" });
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: (question || "").trim() },
-      ],
-      max_tokens: 350,
-      temperature: 0.8,
-    });
-    const aiMessage = response.choices?.[0]?.message?.content?.trim() || "";
-    const usage = response.usage || {};
-    log(rid, "chat_openai_done", {
-      latencyMs: Date.now() - t0,
-      prompt_tokens: usage.prompt_tokens,
-      completion_tokens: usage.completion_tokens,
-      total_tokens: usage.total_tokens,
-      openai_id: response.id,
-    });
+      // --- OpenAI call ---
+      log(rid, "chat_openai_start", { model: "gpt-4o" });
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: (question || "").trim() },
+        ],
+        max_tokens: 600,
+        temperature: 0.8,
+      });
+      aiMessage = response.choices?.[0]?.message?.content?.trim() || "";
+      const usage = response.usage || {};
+      log(rid, "chat_openai_done", {
+        latencyMs: Date.now() - t0,
+        prompt_tokens: usage.prompt_tokens,
+        completion_tokens: usage.completion_tokens,
+        total_tokens: usage.total_tokens,
+        openai_id: response.id,
+      });
+    }
 
     // --- Increment usage on success (per active package instance, atomic) ---
     try {
@@ -201,6 +213,9 @@ Always be clear and direct about what features are available for each plan.
     } catch (e) {
       log(rid, "chat_quota_increment_failed", { message: e?.message });
     }
+
+    // --- Increment lifetime chat message counter ---
+    await User.updateOne({ _id: user._id }, { $inc: { totalChatMessages: 1 } });
 
     // --- Conversation persistence ---
     if (conversationId && conversation) {
