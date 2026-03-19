@@ -132,4 +132,5 @@ if (!PORT) {
   });
 })().catch((err) => {
   console.error("[startup] failed:", err?.message || err);
+  process.exit(1);
 });

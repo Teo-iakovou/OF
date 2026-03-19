@@ -1178,3 +1178,16 @@ export async function fetchCoachChatPrompts(): Promise<SuggestPromptsResponse> {
   if (!r.ok) throw new Error("Fetch coach prompts failed");
   return r.data as SuggestPromptsResponse;
 }
+
+// --- Analytics ---
+// Thin wrapper: fires gtag if available, falls back to console.debug in dev.
+export function trackEvent(name: string, props?: Record<string, unknown>): void {
+  if (typeof window === "undefined") return;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (typeof (window as any).gtag === "function") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).gtag("event", name, props);
+  } else if (process.env.NODE_ENV === "development") {
+    console.debug("[analytics]", name, props);
+  }
+}

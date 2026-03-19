@@ -1,15 +1,20 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
- 
-import { createEmptyConversation, fetchConversation, fetchLatestResultForPackageInstance, formatContentInfo } from "@/app/utils/api";
+
+import {
+  createEmptyConversation,
+  fetchConversation,
+  fetchLatestResultForPackageInstance,
+  formatContentInfo,
+  fetchConversations,
+} from "@/app/utils/api";
 import { BookOpen } from "lucide-react";
 import CoachChat from "@/app/components/AIchat/CoachChat";
 import CoachChatHistory from "@/app/components/AIchat/AiChatHistorySidebar";
 import ChatTokenPill from "@/app/components/analytics/ChatTokenPill";
 import ContextTokenPill from "@/app/components/analytics/ContextTokenPill";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
-import { fetchConversations } from "@/app/utils/api";
 import { useRouter } from "@/i18n/navigation";
 
 export default function AiCoachChatPage() {
@@ -17,7 +22,6 @@ export default function AiCoachChatPage() {
   const searchParams = useSearchParams();
   const { data: planData } = usePlanInfo();
   const [historyOpen, setHistoryOpen] = useState(false);
-  
   const historyRef = useRef<HTMLDivElement>(null);
 
   const [selectedConvoId, setSelectedConvoId] = useState<string | undefined>();
@@ -27,6 +31,8 @@ export default function AiCoachChatPage() {
     tokensLimit?: number;
     nearLimit?: boolean;
   } | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [conversationTitle, setConversationTitle] = useState<string | undefined>();
   const initRef = useRef(false);
 
   const activePackageInstanceId = planData?.packageInstanceId ?? null;
@@ -41,9 +47,22 @@ export default function AiCoachChatPage() {
       })
       .catch(() => {});
   }, [activePackageInstanceId]);
+
   const storageKey = activePackageInstanceId
     ? `ai_chat_active_conversation:${activePackageInstanceId}`
     : "ai_chat_active_conversation:unknown";
+
+  // Sync conversation title whenever selected conversation changes
+  useEffect(() => {
+    if (!selectedConvoId) {
+      setConversationTitle(undefined);
+      return;
+    }
+    fetchConversation(selectedConvoId)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then((c) => setConversationTitle((c as any)?.title ?? undefined))
+      .catch(() => {});
+  }, [selectedConvoId]);
 
   const setActiveConversation = (id: string | undefined, replaceUrl = true) => {
     setSelectedConvoId(id);
@@ -84,27 +103,30 @@ export default function AiCoachChatPage() {
     };
 
     const init = async () => {
-      const urlId = searchParams.get("c");
-      if (urlId) {
-        try {
-          await fetchConversation(urlId);
-          if (!cancelled) setActiveConversation(urlId, false);
-        } catch {
-          if (!cancelled) router.replace("/dashboard/ai-chat");
-          await resolveFallback(urlId);
-        } finally {
-          initRef.current = true;
+      try {
+        const urlId = searchParams.get("c");
+        if (urlId) {
+          try {
+            await fetchConversation(urlId);
+            if (!cancelled) setActiveConversation(urlId, false);
+          } catch {
+            if (!cancelled) router.replace("/dashboard/ai-chat");
+            await resolveFallback(urlId);
+          }
+          return;
         }
-        return;
+        await resolveFallback();
+      } finally {
+        initRef.current = true;
+        if (!cancelled) setIsInitializing(false);
       }
-      await resolveFallback();
-      initRef.current = true;
     };
 
     init();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, storageKey, router]);
 
   useEffect(() => {
@@ -116,10 +138,12 @@ export default function AiCoachChatPage() {
       }
     } catch {}
   }, [selectedConvoId, storageKey]);
+
   useEffect(() => {
     if (!historyOpen) return;
     function handle(e: MouseEvent) {
-      if (historyRef.current && !historyRef.current.contains(e.target as Node)) setHistoryOpen(false);
+      if (historyRef.current && !historyRef.current.contains(e.target as Node))
+        setHistoryOpen(false);
     }
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
@@ -144,64 +168,85 @@ export default function AiCoachChatPage() {
     setActiveConversation(newId, true);
   }
 
+  // ── Skeleton (shown immediately on page load until init resolves) ──────────
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex flex-col text-white">
+        {/* Header skeleton */}
+        <div className="shrink-0 border-b border-white/5 px-4 py-2.5">
+          <div className="h-4 w-28 bg-white/5 animate-pulse rounded mx-auto" />
+        </div>
+        {/* Message skeletons */}
+        <div className="flex-1 max-w-[760px] mx-auto w-full px-4 py-6 space-y-4">
+          <div className="ml-auto h-10 w-2/3 bg-white/5 animate-pulse rounded-2xl" />
+          <div className="h-16 w-3/4 bg-white/5 animate-pulse rounded-2xl" />
+          <div className="ml-auto h-10 w-1/2 bg-white/5 animate-pulse rounded-2xl" />
+        </div>
+        {/* Input skeleton */}
+        <div className="shrink-0 max-w-[760px] mx-auto w-full px-4 pb-4">
+          <div className="h-12 w-full bg-white/5 animate-pulse rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-40 shrink-0 px-3 pt-2 md:px-12 md:pt-12 lg:px-20 max-w-6xl mx-auto w-full bg-transparent">
-        <div className="relative">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">AI Chat</h1>
+      {/* ── Minimal header ─────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 shrink-0 bg-transparent border-b border-white/5">
+        {/* Title row */}
+        <div className="relative flex items-center justify-center px-4 py-2.5 max-w-[760px] mx-auto">
+          <h1 className="text-sm font-medium text-gray-400 truncate max-w-[60%]">
+            {conversationTitle || "AI Chat"}
+          </h1>
 
-            <div className="flex items-center gap-3">
-              {isChatUnlimited ? (
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 backdrop-blur">
-                  Unlimited
-                </span>
-              ) : (
-                <ChatTokenPill />
-              )}
-              {contextInfo ? (
-                <ContextTokenPill
-                  tokensUsed={contextInfo.tokensUsed}
-                  tokensLimit={contextInfo.tokensLimit}
-                  nearLimit={contextInfo.nearLimit}
+          {/* History icon button — absolute right */}
+          <div className="absolute right-4" ref={historyRef}>
+            <button
+              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/5 transition"
+              onClick={() => setHistoryOpen((v) => !v)}
+              aria-label="Chat History"
+            >
+              <BookOpen className="w-4 h-4" />
+            </button>
+
+            {historyOpen && (
+              <div className="absolute right-0 mt-2 z-50 w-[min(92vw,340px)]">
+                <CoachChatHistory
+                  onSelect={handleSelectHistory}
+                  selectedId={selectedConvoId}
+                  refreshKey={refreshKey}
+                  showHeader
+                  onNew={handleNewChat}
+                  maxHeight={420}
                 />
-              ) : null}
-              <button
-                className="px-4 py-2 rounded bg-gray-900 hover:bg-gray-800 text-gray-100 hover:text-cyan-400 transition flex items-center gap-2"
-                onClick={() => setHistoryOpen(v => !v)}
-              >
-                <span className="hidden md:inline font-medium">Chat History</span>
-                <BookOpen className="w-5 h-5 md:hidden" />
-              </button>
-            </div>
+              </div>
+            )}
           </div>
-          <p className="mt-2 text-xs text-gray-400">
-            Conversations have a memory limit. When full, summarize to continue.
-            {isChatUnlimited ? " Your plan tokens are unlimited." : ""}
-          </p>
+        </div>
 
-          {/* Mobile Project Nav moved to global drawer in layout */}
-
-          {/* History popover */}
-          {historyOpen && (
-            <div ref={historyRef} className="absolute right-0 mt-2 z-50 w-[min(92vw,340px)]">
-              <CoachChatHistory
-                onSelect={handleSelectHistory}
-                selectedId={selectedConvoId}
-                refreshKey={refreshKey}
-                showHeader
-                onNew={handleNewChat}
-                maxHeight={420}
-              />
-            </div>
+        {/* Token pills row */}
+        <div className="flex items-center justify-center gap-2 pb-1.5">
+          {isChatUnlimited ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/40">
+              Unlimited
+            </span>
+          ) : (
+            <ChatTokenPill />
           )}
+          {contextInfo ? (
+            <ContextTokenPill
+              tokensUsed={contextInfo.tokensUsed}
+              tokensLimit={contextInfo.tokensLimit}
+              nearLimit={contextInfo.nearLimit}
+            />
+          ) : null}
         </div>
       </header>
 
-      {/* Main fills remaining height; CoachChat manages its own scroll area */}
+      {/* ── Chat area ──────────────────────────────────────────────────────── */}
       <main className="flex-1 min-h-0 w-full">
-        <div className="w-full max-w-3xl mx-auto px-2 md:px-0 flex flex-col min-h-0">
+        <div className="w-full max-w-[760px] mx-auto flex flex-col min-h-0">
           <div className="flex-1 min-h-0 flex flex-col">
             <CoachChat
               initialConversationId={selectedConvoId}
