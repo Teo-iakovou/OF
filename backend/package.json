@@ -6,6 +6,7 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "worker:stub": "node scripts/worker-stub.js",
+    "migrate:chat-tokens": "node scripts/migrate-chat-quota-to-tokens.js",
     "worker:setup": "bash scripts/setup_worker.sh",
     "worker:run": "bash scripts/run_worker.sh",
     "worker:health": "bash scripts/health.sh",

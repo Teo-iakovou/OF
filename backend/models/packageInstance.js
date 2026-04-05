@@ -14,6 +14,8 @@ const packageInstanceSchema = new mongoose.Schema(
     },
     uploadsUsed: { type: Number, default: 0 },
     uploadLimit: { type: Number, default: 0 },
+    tokensUsed: { type: Number, default: 0 },
+    tokensLimit: { type: Number, default: 0 },
     chatUsedThisCycle: { type: Number, default: 0 },
     chatMonthlyLimit: { type: Number, default: 0 },
     chatCycleEndsAt: { type: Date },

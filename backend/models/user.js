@@ -22,6 +22,8 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  tokensUsed: { type: Number, default: 0 },
+  tokensLimit: { type: Number, default: 20 * 500 },
   isAdmin: {
     type: Boolean,
     default: false,

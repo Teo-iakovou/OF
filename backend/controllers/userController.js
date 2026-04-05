@@ -8,6 +8,7 @@ const { sendQuotaError } = require("../utils/quotaError");
 const { planLimit } = require("../middleware/chatLimits");
 const { sendErr } = require("../utils/sendErr");
 const { signUrl, objectExists } = require("../utils/s3");
+const TOKENS_PER_LEGACY_CHAT_UNIT = 500;
 
 const makeRequestId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -60,6 +61,34 @@ const deriveImageKey = (result, ext = "jpg") => {
   return `uploads/${userId}/${packageInstanceId}/${imageHash}.${safeExt}`;
 };
 
+const toLegacyTokenValue = (value, fallback = 0) => {
+  const raw = Number(value);
+  if (!Number.isFinite(raw) || raw < 0) return fallback;
+  return raw > 5000 ? raw : raw * TOKENS_PER_LEGACY_CHAT_UNIT;
+};
+
+const resolveTokenBaseLimit = (instance) => {
+  const planDefault = planLimit(instance?.planKey || "lite");
+  if (typeof instance?.tokensLimit === "number" && instance.tokensLimit >= 0) {
+    const tokensLimit = Number(instance.tokensLimit);
+    if (tokensLimit > 0 || planDefault === 0) return tokensLimit;
+  }
+  if (typeof instance?.chatMonthlyLimit === "number" && instance.chatMonthlyLimit >= 0) {
+    const legacyLimit = toLegacyTokenValue(instance.chatMonthlyLimit, 0);
+    if (legacyLimit > 0 || planDefault === 0) return legacyLimit;
+  }
+  return planDefault;
+};
+
+const resolveVideoBaseLimit = (instance) => {
+  const planDefault = getSadTalkerPlanLimit(instance?.planKey || null);
+  if (typeof instance?.sadtalkerVideoLimit === "number") {
+    const value = Number(instance.sadtalkerVideoLimit);
+    if (value > 0 || planDefault === 0) return value;
+  }
+  return planDefault;
+};
+
 const toInstanceSummary = (instance) => {
   const addons = instance.addons || {};
   const addonsUploads = typeof addons.uploads === "number" ? addons.uploads : 0;
@@ -76,19 +105,48 @@ const toInstanceSummary = (instance) => {
   const uploadsRemaining =
     effectiveUploadLimit === 0 ? null : Math.max(0, effectiveUploadLimit - (instance.uploadsUsed || 0));
 
-  const chatMonthlyLimit = Number(instance?.chatMonthlyLimit ?? 0);
-  const chatUsedThisCycle = Number(instance?.chatUsedThisCycle ?? 0);
-  const effectiveChatLimit = chatMonthlyLimit === 0 ? 0 : chatMonthlyLimit + addonsChatTokens;
+  const tokensLimitBase =
+    resolveTokenBaseLimit(instance);
+  const tokensUsed =
+    typeof instance?.tokensUsed === "number"
+      ? Number(instance.tokensUsed)
+      : toLegacyTokenValue(instance?.chatUsedThisCycle ?? 0, 0);
+  const effectiveChatLimit = tokensLimitBase === 0 ? 0 : tokensLimitBase + addonsChatTokens;
   const isChatUnlimited = effectiveChatLimit === 0;
-  const chatRemaining = isChatUnlimited ? null : Math.max(0, effectiveChatLimit - chatUsedThisCycle);
+  const chatRemaining = isChatUnlimited ? null : Math.max(0, effectiveChatLimit - tokensUsed);
 
-  const baseVideoLimit =
-    typeof instance.sadtalkerVideoLimit === "number" ? instance.sadtalkerVideoLimit : 0;
+  const baseVideoLimit = resolveVideoBaseLimit(instance);
   const effectiveVideoLimit = baseVideoLimit === 0 ? 0 : baseVideoLimit + addonsVideos;
   const videoRemaining =
     effectiveVideoLimit === 0
       ? null
       : Math.max(0, effectiveVideoLimit - (instance.sadtalkerVideosUsed || 0));
+  const quotas = {
+    uploads: {
+      baseLimit: baseUploadLimit,
+      addons: addonsUploads,
+      effectiveLimit: effectiveUploadLimit,
+      used: instance.uploadsUsed || 0,
+      remaining: uploadsRemaining,
+      isUnlimited: effectiveUploadLimit === 0,
+    },
+    aiTokens: {
+      baseLimit: tokensLimitBase,
+      addons: addonsChatTokens,
+      effectiveLimit: effectiveChatLimit,
+      used: tokensUsed,
+      remaining: chatRemaining,
+      isUnlimited: isChatUnlimited,
+    },
+    videos: {
+      baseLimit: baseVideoLimit,
+      addons: addonsVideos,
+      effectiveLimit: effectiveVideoLimit,
+      used: instance.sadtalkerVideosUsed || 0,
+      remaining: videoRemaining,
+      isUnlimited: effectiveVideoLimit === 0,
+    },
+  };
 
   return {
     id: instance._id.toString(),
@@ -97,13 +155,17 @@ const toInstanceSummary = (instance) => {
     personaKey: instance.personaKey || null,
     uploadsUsed: instance.uploadsUsed,
     uploadLimit: instance.uploadLimit,
-    chatMonthlyLimit: instance.chatMonthlyLimit,
-    chatUsedThisCycle: instance.chatUsedThisCycle,
+    tokensLimit: tokensLimitBase,
+    tokensUsed,
+    chatMonthlyLimit: tokensLimitBase,
+    chatUsedThisCycle: tokensUsed,
     sadtalkerVideosUsed: instance.sadtalkerVideosUsed,
-    sadtalkerVideoLimit: instance.sadtalkerVideoLimit,
+    sadtalkerVideoLimit: baseVideoLimit,
     sadtalkerPrimaryImageHash: instance.sadtalkerPrimaryImageHash,
     personaBound: instance.personaBound,
     createdAt: instance.createdAt,
+    quotas,
+    // Deprecated compatibility aliases (derived from `quotas`).
     addonsUploads,
     addonsChatTokens,
     addonsVideos,
@@ -136,18 +198,47 @@ const buildCheckPackagePayload = (instance) => {
       : Math.max(0, effectiveUploadLimit - (instance.uploadsUsed || 0));
 
   const chatCycleEndsAt = instance?.chatCycleEndsAt ?? null;
-  const baseChatLimit = Number(instance?.chatMonthlyLimit ?? 0); // 0 = unlimited
-  const usedChat = Number(instance?.chatUsedThisCycle ?? 0);
+  const baseChatLimit =
+    resolveTokenBaseLimit(instance);
+  const usedChat =
+    typeof instance?.tokensUsed === "number"
+      ? Number(instance.tokensUsed)
+      : toLegacyTokenValue(instance?.chatUsedThisCycle ?? 0, 0);
   const effectiveChatLimit = baseChatLimit === 0 ? 0 : baseChatLimit + addonsChatTokens;
   const isChatUnlimited = baseChatLimit === 0;
   const chatRemaining = isChatUnlimited ? null : Math.max(0, effectiveChatLimit - usedChat);
 
-  const baseVideoLimit =
-    typeof instance.sadtalkerVideoLimit === "number" ? instance.sadtalkerVideoLimit : 0;
+  const baseVideoLimit = resolveVideoBaseLimit(instance);
   const effectiveVideoLimit = baseVideoLimit === 0 ? 0 : baseVideoLimit + addonsVideos;
   const videosUsed = instance.sadtalkerVideosUsed || 0;
   const videosRemaining =
     effectiveVideoLimit === 0 ? null : Math.max(0, effectiveVideoLimit - videosUsed);
+  const quotas = {
+    uploads: {
+      baseLimit: baseUploadLimit,
+      addons: addonsUploads,
+      effectiveLimit: effectiveUploadLimit,
+      used: instance.uploadsUsed || 0,
+      remaining: uploadsRemaining,
+      isUnlimited: effectiveUploadLimit === 0,
+    },
+    aiTokens: {
+      baseLimit: baseChatLimit,
+      addons: addonsChatTokens,
+      effectiveLimit: effectiveChatLimit,
+      used: usedChat,
+      remaining: chatRemaining,
+      isUnlimited: effectiveChatLimit === 0,
+    },
+    videos: {
+      baseLimit: baseVideoLimit,
+      addons: addonsVideos,
+      effectiveLimit: effectiveVideoLimit,
+      used: videosUsed,
+      remaining: videosRemaining,
+      isUnlimited: effectiveVideoLimit === 0,
+    },
+  };
 
   return {
     hasAccess: true,
@@ -167,29 +258,33 @@ const buildCheckPackagePayload = (instance) => {
       chat: addonsChatTokens,
       sadtalkerVideos: addonsVideos,
     },
+    quotas,
+    // Deprecated compatibility aliases (derived from `quotas`).
     effectiveUploadLimit,
     effectiveChatLimit,
     effectiveVideoLimit,
-    chatMonthlyLimit: effectiveChatLimit,
-    chatUsedThisCycle: usedChat,
-    chatRemaining,
-    chatTokenLimit: baseChatLimit,
-    chatTokensUsed: usedChat,
-    chatLimitTokens: effectiveChatLimit,
-    chatUsedTokens: usedChat,
-    chatRemainingTokens: chatRemaining,
+    tokensLimit: quotas.aiTokens.effectiveLimit,
+    tokensUsed: quotas.aiTokens.used,
+    chatMonthlyLimit: quotas.aiTokens.effectiveLimit,
+    chatUsedThisCycle: quotas.aiTokens.used,
+    chatRemaining: quotas.aiTokens.remaining,
+    chatTokenLimit: quotas.aiTokens.baseLimit,
+    chatTokensUsed: quotas.aiTokens.used,
+    chatLimitTokens: quotas.aiTokens.effectiveLimit,
+    chatUsedTokens: quotas.aiTokens.used,
+    chatRemainingTokens: quotas.aiTokens.remaining,
     chatCycleEndsAt,
     nextReset: chatCycleEndsAt,
     expiresAt: chatCycleEndsAt,
     personaKey: instance.personaKey || null,
     // SadTalker-specific counters (optional for callers)
-    sadtalkerVideosUsed: videosUsed,
-    sadtalkerVideoLimit: effectiveVideoLimit,
-    sadtalkerVideosLimit: baseVideoLimit,
-    sadtalkerVideosRemaining: videosRemaining,
-    videosLimit: baseVideoLimit,
-    videosUsed,
-    videosRemaining,
+    sadtalkerVideosUsed: quotas.videos.used,
+    sadtalkerVideoLimit: quotas.videos.effectiveLimit,
+    sadtalkerVideosLimit: quotas.videos.baseLimit,
+    sadtalkerVideosRemaining: quotas.videos.remaining,
+    videosLimit: quotas.videos.baseLimit,
+    videosUsed: quotas.videos.used,
+    videosRemaining: quotas.videos.remaining,
     packageInstanceId: instance._id.toString(),
     packageInstanceCreatedAt: instance.createdAt,
   };
@@ -722,12 +817,10 @@ const consumeSadtalkerCredit = async (req, res) => {
     }
 
     const plan = instance.planKey || "lite";
-    const baseLimit =
-      typeof instance.sadtalkerVideoLimit === "number"
-        ? instance.sadtalkerVideoLimit
-        : getSadTalkerPlanLimit(plan);
+    const baseLimit = resolveVideoBaseLimit(instance);
     const addonsVideos =
       typeof instance.addons?.sadtalkerVideos === "number" ? instance.addons.sadtalkerVideos : 0;
+    const effectiveLimit = baseLimit === 0 ? 0 : baseLimit + addonsVideos;
     const used = instance.sadtalkerVideosUsed || 0;
 
     const imageHash =
@@ -743,7 +836,7 @@ const consumeSadtalkerCredit = async (req, res) => {
             "Your current plan allows videos for one face image only. Please reuse your original photo or upgrade to the Ultimate plan.",
           feature: "talking_head",
           plan,
-          remaining: Math.max(0, baseLimit ? baseLimit + addonsVideos - used : 0),
+          remaining: Math.max(0, effectiveLimit - used),
           limit: baseLimit || null,
           requestId,
         });
@@ -868,7 +961,7 @@ const consumeSadtalkerCredit = async (req, res) => {
               "Your current plan allows videos for one face image only. Please reuse your original photo or upgrade to the Ultimate plan.",
             feature: "talking_head",
             plan,
-            remaining: Math.max(0, baseLimit ? baseLimit + addonsVideos - used : 0),
+            remaining: Math.max(0, effectiveLimit - used),
             limit: baseLimit || null,
             requestId,
           });
@@ -881,10 +974,7 @@ const consumeSadtalkerCredit = async (req, res) => {
       });
     }
 
-    const remaining = Math.max(
-      0,
-      baseLimit + addonsVideos - (updated.sadtalkerVideosUsed || 0)
-    );
+    const remaining = Math.max(0, effectiveLimit - (updated.sadtalkerVideosUsed || 0));
 
     return res.json({
       ok: true,

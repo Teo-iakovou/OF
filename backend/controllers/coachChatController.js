@@ -28,6 +28,7 @@ function isPremiumRequest(question = "") {
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const DEFAULT_CONTEXT_LIMIT = Number(process.env.CHAT_CONTEXT_TOKENS_LIMIT || "128000");
+const TOKENS_PER_LEGACY_CHAT_UNIT = 500;
 
 function estimateTokensFromText(text = "") {
   if (!text) return 0;
@@ -36,6 +37,12 @@ function estimateTokensFromText(text = "") {
 
 function estimateTokensForMessages(messages = []) {
   return messages.reduce((sum, msg) => sum + estimateTokensFromText(msg?.content || ""), 0);
+}
+
+function toLegacyTokenValue(value, fallback = 0) {
+  const raw = Number(value);
+  if (!Number.isFinite(raw) || raw < 0) return fallback;
+  return raw > 5000 ? raw : raw * TOKENS_PER_LEGACY_CHAT_UNIT;
 }
 
 const coachChatHandler = async (req, res) => {
@@ -81,14 +88,34 @@ const coachChatHandler = async (req, res) => {
           ? instance.addons.chat
           : 0;
     const baseChatLimit =
-      typeof instance.chatMonthlyLimit === "number" ? instance.chatMonthlyLimit : planLimit(plan);
+      typeof instance.tokensLimit === "number" && instance.tokensLimit >= 0
+        ? instance.tokensLimit
+        : typeof instance.chatMonthlyLimit === "number"
+          ? toLegacyTokenValue(instance.chatMonthlyLimit, planLimit(plan))
+          : planLimit(plan);
     const effectiveChatLimit =
       typeof req.chatQuota?.effectiveChatLimit === "number"
         ? req.chatQuota.effectiveChatLimit
         : baseChatLimit === 0
           ? 0
           : baseChatLimit + addonsChatTokens;
+    const currentTokensUsed =
+      typeof req.chatQuota?.usedTokens === "number"
+        ? req.chatQuota.usedTokens
+        : typeof instance.tokensUsed === "number" && instance.tokensUsed >= 0
+          ? instance.tokensUsed
+          : toLegacyTokenValue(instance.chatUsedThisCycle, 0);
     // effectiveChatLimit === 0 means unlimited; never enforce plan quota.
+    if (effectiveChatLimit > 0 && currentTokensUsed >= effectiveChatLimit) {
+      return sendQuotaError(res, 402, {
+        message: "Chat token limit reached for your plan",
+        feature: "ai_chat_tokens",
+        plan: instance.planKey,
+        remaining: 0,
+        limit: effectiveChatLimit,
+        requestId: rid,
+      });
+    }
 
     let conversation = null;
     if (conversationId) {
@@ -169,49 +196,64 @@ Rules: reference the upload context when it’s relevant. If context is empty, s
       });
       aiMessage = response.choices?.[0]?.message?.content?.trim() || "";
       const usage = response.usage || {};
+      const totalTokens =
+        typeof usage.total_tokens === "number" && usage.total_tokens > 0
+          ? usage.total_tokens
+          : estimateTokensForMessages([
+              { role: "user", content: (question || "").trim() },
+              { role: "assistant", content: aiMessage },
+            ]);
       log(rid, "chat_openai_done", {
         latencyMs: Date.now() - t0,
         prompt_tokens: usage.prompt_tokens,
         completion_tokens: usage.completion_tokens,
-        total_tokens: usage.total_tokens,
+        total_tokens: totalTokens,
         openai_id: response.id,
       });
-    }
 
-    // --- Increment usage on success (per active package instance, atomic) ---
-    try {
-      if (effectiveChatLimit === 0) {
-        const trackUnlimited = process.env.TRACK_UNLIMITED_CHAT_USAGE === "true";
-        if (trackUnlimited) {
-          await PackageInstance.updateOne(
-            { _id: instance._id, userId: user._id, status: "active" },
-            { $inc: { chatUsedThisCycle: 1 } }
+      // --- Increment usage on success using OpenAI total tokens (per active package instance, atomic) ---
+      try {
+        if (effectiveChatLimit === 0) {
+          const trackUnlimited = process.env.TRACK_UNLIMITED_CHAT_USAGE === "true";
+          if (trackUnlimited) {
+            await PackageInstance.updateOne(
+              { _id: instance._id, userId: user._id, status: "active" },
+              {
+                $inc: { tokensUsed: 1, chatUsedThisCycle: 1 },
+                $set: { tokensLimit: baseChatLimit, chatMonthlyLimit: baseChatLimit },
+              }
+            );
+          }
+        } else {
+          const updated = await PackageInstance.findOneAndUpdate(
+            {
+              _id: instance._id,
+              userId: user._id,
+              status: "active",
+              $expr: {
+                $lte: [{ $add: [{ $ifNull: ["$tokensUsed", 0] }, 1] }, effectiveChatLimit],
+              },
+            },
+            {
+              $inc: { tokensUsed: 1, chatUsedThisCycle: 1 },
+              $set: { tokensLimit: baseChatLimit, chatMonthlyLimit: baseChatLimit },
+            },
+            { new: true }
           );
+          if (!updated) {
+            return sendQuotaError(res, 402, {
+              message: "Chat token limit reached for your plan",
+              feature: "ai_chat_tokens",
+              plan: instance.planKey,
+              remaining: 0,
+              limit: effectiveChatLimit,
+              requestId: rid,
+            });
+          }
         }
-      } else {
-        const updated = await PackageInstance.findOneAndUpdate(
-          {
-            _id: instance._id,
-            userId: user._id,
-            status: "active",
-            $expr: { $lt: ["$chatUsedThisCycle", effectiveChatLimit] },
-          },
-          { $inc: { chatUsedThisCycle: 1 } },
-          { new: true }
-        );
-        if (!updated) {
-          return sendQuotaError(res, 402, {
-            message: "Chat limit reached for your plan",
-            feature: "ai_chat",
-            plan: instance.planKey,
-            remaining: 0,
-            limit: effectiveChatLimit,
-            requestId: rid,
-          });
-        }
+      } catch (e) {
+        log(rid, "chat_quota_increment_failed", { message: e?.message });
       }
-    } catch (e) {
-      log(rid, "chat_quota_increment_failed", { message: e?.message });
     }
 
     // --- Increment lifetime chat message counter ---

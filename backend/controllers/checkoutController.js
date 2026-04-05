@@ -509,14 +509,16 @@ const handleStripeWebhook = async (req, res) => {
       }
       const uploadLimit = UPLOAD_LIMITS[packageId] || 0;
       const sadtalkerLimit = getSadTalkerPlanLimit(packageId);
-      const chatMonthlyLimit = planLimit(packageId);
+      const tokensLimit = planLimit(packageId);
       const instance = await PackageInstance.create({
         userId: user._id,
         planKey: packageId,
         status: "active",
         uploadLimit,
         uploadsUsed: 0,
-        chatMonthlyLimit,
+        tokensLimit,
+        tokensUsed: 0,
+        chatMonthlyLimit: tokensLimit,
         chatUsedThisCycle: 0,
         chatCycleEndsAt: null,
         sadtalkerVideoLimit: sadtalkerLimit,
