@@ -101,7 +101,7 @@ export default function CreationCard({
     <button
       type="button"
       onClick={() => onOpenCreation?.(id)}
-      className="group w-full rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 text-left shadow-[0_10px_26px_rgba(0,0,0,0.16)] transition duration-200 hover:-translate-y-0.5 hover:border-[var(--hg-accent)]/28 hover:shadow-[0_16px_34px_rgba(0,0,0,0.22)] motion-reduce:transition-none"
+      className="group w-full rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 text-left shadow-[0_10px_26px_rgba(0,0,0,0.16)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--hg-accent)]/28 hover:shadow-[0_16px_34px_rgba(0,0,0,0.22)] motion-reduce:transition-none"
     >
       <div className="relative h-32 w-full overflow-hidden rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] sm:h-36">
         {!showFallback ? (

@@ -12,24 +12,23 @@ import {
   type AddonType,
   type PackageInstanceSummary,
 } from "@/app/utils/api";
-import { getRemaining } from "@/app/utils/quota";
+import { resolveQuotaContract } from "@/app/utils/quotaContract";
 import { formatRemaining } from "@/app/utils/quotaDisplay";
 
 const formatTokenCount = (value: number | null) => {
   if (value === null) return "—";
-  if (value >= 1000) {
-    return new Intl.NumberFormat("en-US", {
-      notation: "compact",
-      compactDisplay: "short",
-      maximumFractionDigits: 0,
-    }).format(value);
-  }
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (value >= 1000) return `${(value / 1000).toFixed(1).replace(/\.0$/, "")}K`;
   return String(value);
 };
 
-const formatRemainingTokens = (remaining: number | null, limit: number | null) => {
+const formatRemainingTokens = (
+  remaining: number | null,
+  limit: number | null,
+  isUnlimited = false,
+) => {
+  if (isUnlimited) return "Unlimited";
   if (limit === null) return "—";
-  if (limit === 0) return "Unlimited";
   return formatTokenCount(remaining);
 };
 
@@ -231,26 +230,14 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
       ) : (
         <div className="space-y-4">
           {instances.map((instance) => {
+            const quotas = resolveQuotaContract(instance, "billing.panel.instance");
             const isSelected = instance.id === planInstanceId;
-            const uploadRemaining = formatLimit(
-              instance.uploadLimit,
-              getRemaining(instance.uploadLimit, instance.addonsUploads, instance.uploadsUsed),
-            );
-            const chatRemainingRaw = getRemaining(
-              instance.chatMonthlyLimit ?? null,
-              instance.addonsChat,
-              instance.chatUsedThisCycle,
-            );
-            const isChatUnlimited = instance.chatMonthlyLimit === 0;
-            const isUploadUnlimited = instance.uploadLimit === 0;
-            const videoRemaining = formatLimit(
-              instance.sadtalkerVideoLimit ?? null,
-              getRemaining(
-                instance.sadtalkerVideoLimit ?? null,
-                instance.addonsVideos,
-                instance.sadtalkerVideosUsed,
-              ),
-            );
+            const uploadRemaining = formatLimit(quotas.uploads.effectiveLimit, quotas.uploads.remaining);
+            const chatRemainingRaw = quotas.aiTokens.remaining;
+            const isChatUnlimited = quotas.aiTokens.isUnlimited;
+            const isUploadUnlimited = quotas.uploads.isUnlimited;
+            const isVideoUnlimited = quotas.videos.isUnlimited;
+            const videoRemaining = formatLimit(quotas.videos.effectiveLimit, quotas.videos.remaining);
             const disabled = instance.status !== "active";
             const profileLabel = profileLabelById.get(instance.id) || null;
             const planLabel = formatPlanLabel(instance.planKey || null);
@@ -286,12 +273,16 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
                   <div>Uploads: {uploadRemaining}</div>
                   <div>
                     <div>
-                      AI Chat:{" "}
+                      AI Tokens:{" "}
                       {formatRemainingTokens(
                         typeof chatRemainingRaw === "number" ? chatRemainingRaw : null,
-                        instance.chatMonthlyLimit ?? null,
+                        quotas.aiTokens.effectiveLimit,
+                        isChatUnlimited,
                       )}{" "}
                       tokens
+                    </div>
+                    <div className="mt-1 text-xs text-gray-400">
+                      Monthly package usage. Context tokens are tracked per conversation in AI Chat.
                     </div>
                     {isChatUnlimited ? (
                       <div className="mt-1 text-xs text-gray-400">
@@ -300,7 +291,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
                       </div>
                     ) : null}
                   </div>
-                  <div>Videos: {videoRemaining}</div>
+                  <div>Videos: {isVideoUnlimited ? "Unlimited" : videoRemaining}</div>
                 </div>
 
                 <div className="border-t border-white/10 pt-4">

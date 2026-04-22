@@ -311,11 +311,18 @@ export async function startCheckout(packageId: string, personaKey?: string | nul
   const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === 'true';
   const url = USE_BFF ? `/api/checkout/create-checkout-session` : `${BASE_URL}/api/checkout/create-checkout-session`;
   checkoutInFlightPromise = (async () => {
+    const normalizedPersonaKey =
+      typeof personaKey === "string" && personaKey.trim().length > 0 ? personaKey.trim() : undefined;
+    const bodyPayload: { packageId: string; locale?: string | null; personaKey?: string } = {
+      packageId,
+      locale,
+    };
+    if (normalizedPersonaKey) bodyPayload.personaKey = normalizedPersonaKey;
     const res = await fetch(url, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ packageId, personaKey, locale }),
+      body: JSON.stringify(bodyPayload),
     });
     const { ok, data } = await readJsonOrText(res);
     if (!ok)
@@ -340,7 +347,14 @@ export async function verifySession(sessionId: string) {
     `${base}/api/checkout/verify-session?session_id=${encodeURIComponent(sessionId)}`
   );
   const parsed = await readJsonOrText(res);
-  return ensureOk<{ status: string; email?: string; packageId?: string }>(
+  return ensureOk<{
+    status: string;
+    email?: string | null;
+    packageId?: string | null;
+    applied?: boolean;
+    activePackageInstanceId?: string | null;
+    sessionId?: string;
+  }>(
     parsed,
     "Verify session"
   );
@@ -375,40 +389,106 @@ export interface UserPackageResponse {
   expiresAt?: string;
   packageInstanceId?: string;
   packageInstanceCreatedAt?: string;
+
+  // Canonical quota contract (source of truth for dashboard surfaces).
+  quotas?: {
+    uploads?: {
+      baseLimit: number;
+      addons: number;
+      effectiveLimit: number;
+      used: number;
+      remaining: number | null;
+      isUnlimited: boolean;
+    };
+    aiTokens?: {
+      baseLimit: number;
+      addons: number;
+      effectiveLimit: number;
+      used: number;
+      remaining: number | null;
+      isUnlimited: boolean;
+    };
+    videos?: {
+      baseLimit: number;
+      addons: number;
+      effectiveLimit: number;
+      used: number;
+      remaining: number | null;
+      isUnlimited: boolean;
+    };
+  };
+
+  /** @deprecated Use `quotas.uploads.used` */
   uploadsUsed?: number;
+  /** @deprecated Use `quotas.uploads.baseLimit` */
   uploadLimit?: number | null;
+  /** @deprecated Use `quotas.uploads.addons` */
   addonsUploads?: number;
+  /** @deprecated Use `quotas.aiTokens.addons` */
   addonsChat?: number;
+  /** @deprecated Use `quotas.aiTokens.addons` */
   addonsChatTokens?: number;
+  /** @deprecated Use `quotas.videos.addons` */
   addonsVideos?: number;
+  /** @deprecated Use `quotas.uploads.effectiveLimit` */
   addons?: {
+    /** @deprecated Use `quotas.uploads.addons` */
     uploads?: number;
+    /** @deprecated Use `quotas.aiTokens.addons` */
     chatTokens?: number;
+    /** @deprecated Use `quotas.aiTokens.addons` */
     chat?: number;
+    /** @deprecated Use `quotas.videos.addons` */
     sadtalkerVideos?: number;
   };
+  /** @deprecated Use `quotas.uploads.effectiveLimit` */
   effectiveUploadLimit?: number | null;
+  /** @deprecated Use `quotas.aiTokens.effectiveLimit` */
   effectiveChatLimit?: number | null;
+  /** @deprecated Use `quotas.videos.effectiveLimit` */
   effectiveVideoLimit?: number | null;
+  /** @deprecated Use `quotas.aiTokens.used` */
+  tokensUsed?: number | null;
+  /** @deprecated Use `quotas.aiTokens.effectiveLimit` */
+  tokensLimit?: number | null;
   personaKey?: string | null;
+  /** @deprecated Use `quotas.aiTokens.effectiveLimit` */
   chatMonthlyLimit?: number | null;
+  /** @deprecated Use `quotas.aiTokens.baseLimit` */
   chatTokenLimit?: number | null;
+  /** @deprecated Use `quotas.aiTokens.used` */
   chatUsedThisCycle?: number | null;
+  /** @deprecated Use `quotas.aiTokens.used` */
   chatTokensUsed?: number | null;
+  /** @deprecated Use `quotas.aiTokens.remaining` */
   chatRemaining?: number | null;
+  /** @deprecated Use `quotas.aiTokens.effectiveLimit` */
   chatLimitTokens?: number | null;
+  /** @deprecated Use `quotas.aiTokens.used` */
   chatUsedTokens?: number | null;
+  /** @deprecated Use `quotas.aiTokens.remaining` */
   chatRemainingTokens?: number | null;
   chatCycleEndsAt?: string | null;
   nextReset?: string | null;
+  /** @deprecated Use `quotas.videos.effectiveLimit` */
   sadtalkerVideoLimit?: number | null;
+  /** @deprecated Use `quotas.videos.baseLimit` */
   sadtalkerVideosLimit?: number | null;
+  /** @deprecated Use `quotas.videos.used` */
   sadtalkerVideosUsed?: number | null;
+  /** @deprecated Use `quotas.videos.remaining` */
   sadtalkerVideosRemaining?: number | null;
+  /** @deprecated Use `quotas.videos.baseLimit` */
   videosLimit?: number | null;
+  /** @deprecated Use `quotas.videos.used` */
   videosUsed?: number | null;
+  /** @deprecated Use `quotas.videos.remaining` */
   videosRemaining?: number | null;
 }
+
+export type DashboardQuotaResponse = UserPackageResponse & {
+  quotas: NonNullable<UserPackageResponse["quotas"]>;
+};
 
 export async function updateUserProfile(payload: {
   firstName?: string | null;
@@ -516,6 +596,8 @@ export type PackageInstanceSummary = {
   effectiveUploadLimit?: number;
   effectiveChatLimit?: number;
   effectiveVideoLimit?: number;
+  tokensUsed?: number;
+  tokensLimit?: number;
   uploadsRemaining?: number | null;
   chatRemaining?: number | null;
   videoRemaining?: number | null;
@@ -525,6 +607,7 @@ export type PackageInstanceSummary = {
   chatUsedThisCycle?: number;
   sadtalkerVideoLimit?: number;
   sadtalkerVideosUsed?: number;
+  quotas?: UserPackageResponse["quotas"];
 };
 
 export type AddonType = "uploads" | "chat" | "sadtalkerVideos";

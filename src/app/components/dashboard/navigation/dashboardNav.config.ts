@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Home, UploadCloud, MessageCircle, Video, Settings, History, CreditCard, User } from "lucide-react";
+import { Home, UploadCloud, Video, Settings, History, CreditCard, User } from "lucide-react";
 
 export type DashboardNavPlacement = "desktop" | "mobile";
 export type DashboardNavItemType = "route" | "action";
@@ -8,7 +8,7 @@ export type DashboardSettingsSection = "account" | "usage" | "billing" | "histor
 export type DashboardNavItem = {
   key: string;
   label: string;
-  labelKey?: "overview" | "upload" | "aiChat" | "talkingHead";
+  labelKey?: "overview" | "upload" | "talkingHead";
   icon: LucideIcon;
   type: DashboardNavItemType;
   href?: string;
@@ -40,18 +40,6 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     icon: UploadCloud,
     type: "route",
     href: "/dashboard/upload",
-    showDesktop: true,
-    showMobile: true,
-    topLevel: true,
-    settingsOnly: false,
-  },
-  {
-    key: "ai-chat",
-    label: "AI Chat",
-    labelKey: "aiChat",
-    icon: MessageCircle,
-    type: "route",
-    href: "/dashboard/ai-chat",
     showDesktop: true,
     showMobile: true,
     topLevel: true,

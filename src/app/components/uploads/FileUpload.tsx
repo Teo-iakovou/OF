@@ -134,7 +134,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
   const [bindingActionLoading, setBindingActionLoading] = useState(false);
 
   const [dragActive, setDragActive] = useState(false);
-  const [uploadPct, setUploadPct] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -145,6 +145,20 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
       abortRef.current?.abort();
     };
   }, [previewURL]);
+
+  useEffect(() => {
+    if (status !== "uploading") return;
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev < 20) return Math.min(prev + 3.0, 20);   // ~2s  — uploading photo
+        if (prev < 40) return Math.min(prev + 6.1, 40);   // ~1s  — detecting face
+        if (prev < 70) return Math.min(prev + 1.12, 70);  // ~8s  — analyzing content
+        if (prev < 90) return Math.min(prev + 1.2, 90);   // ~5s  — generating insights
+        return prev; // holds at 90% until response arrives
+      });
+    }, 300);
+    return () => clearInterval(interval);
+  }, [status]);
 
   function formatSize(bytes: number) {
     if (bytes < 1024) return `${bytes} B`;
@@ -192,7 +206,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
     if (!selectedFile || status === "uploading") return;
 
     setStatus("uploading");
-    setUploadPct(0);
+    setUploadProgress(0);
     setError(null);
     setErrorRequestId(null);
     setErrorMeta(null);
@@ -209,7 +223,6 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
         file: selectedFile,
         packageInstanceId,
         signal: controller.signal,
-        onProgress: (pct: number) => setUploadPct(pct),
       });
 
       onUploadSuccess(insights as ResultDoc, { duplicate, requestId });
@@ -219,6 +232,8 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
         refreshPlan(true);
       }
 
+      setUploadProgress(100);
+      await new Promise((r) => setTimeout(r, 500));
       setStatus("success");
       setErrorRequestId(null);
       setUpgradeInfo(null);
@@ -327,6 +342,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
         });
         setUpgradeInfo(maybeUpgrade);
       }
+      setUploadProgress(0);
       setStatus("error");
     } finally {
       abortRef.current = null;
@@ -346,7 +362,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
     setPersonaMismatch(null);
     setPersonaAlreadyBound(null);
     setFile(null);
-    setUploadPct(0);
+    setUploadProgress(0);
     if (previewURL) URL.revokeObjectURL(previewURL);
     setPreviewURL(null);
     if (inputRef.current) inputRef.current.value = "";
@@ -425,11 +441,6 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-white">{file.name}</div>
                 <div className="text-xs hg-muted">{file.type || "image"} • {formatSize(file.size)}</div>
-                {status === "uploading" ? (
-                  <div className="mt-2">
-                    <Progress pct={uploadPct} />
-                  </div>
-                ) : null}
                 {status === "success" ? (
                   <div className="mt-2 inline-flex items-center gap-1 text-emerald-300 text-xs">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Uploaded & analyzed
@@ -585,25 +596,31 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
               Reset
             </button>
           )}
+        {status === "uploading" ? (
+          <div className="mt-3">
+            <div className="w-full bg-zinc-800 rounded-full h-1.5">
+              <div
+                className="bg-violet-500 h-1.5 rounded-full transition-all duration-500"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+            <p className="mt-1.5 text-xs text-[var(--hg-muted)]">
+              {uploadProgress < 20
+                ? "Uploading photo..."
+                : uploadProgress < 40
+                ? "Detecting face..."
+                : uploadProgress < 70
+                ? "Analyzing content..."
+                : uploadProgress < 90
+                ? "Generating insights..."
+                : uploadProgress < 100
+                ? "Almost done..."
+                : "Complete!"}
+            </p>
+          </div>
+        ) : null}
         </div>
       </div>
-    </div>
-  );
-}
-
-/* ───────── Smaller UI atoms ───────── */
-
-function Progress({ pct }: { pct: number }) {
-  const v = Math.max(0, Math.min(100, Math.round(pct)));
-  return (
-    <div className="w-full">
-      <div className="h-2 rounded-full bg-[rgba(255,255,255,0.10)] overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-[#50C0F0] to-[#7fd9ff]"
-          style={{ width: `${v}%` }}
-        />
-      </div>
-      <div className="mt-1 text-[10px] hg-muted">{v}%</div>
     </div>
   );
 }

@@ -11,6 +11,14 @@ import { Skeleton } from "@/app/components/ui/Skeleton";
 import { toast } from "sonner";
 import { PACKAGES_URL } from "@/app/utils/urls";
 import ReportDrawer from "@/app/components/dashboard/report/ReportDrawer";
+import { Play, Video } from "lucide-react";
+
+type VideoHistoryItem = {
+  jobId: string;
+  videoUrl: string;
+  createdAt?: string;
+  options?: { thumbnailUrl?: string } | null;
+};
 
 type HistoryPanelProps = {
   embedded?: boolean;
@@ -23,11 +31,19 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
   const [reportResultId, setReportResultId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"uploads" | "videos">("uploads");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [videos, setVideos] = useState<VideoHistoryItem[]>([]);
+  const [videosLoading, setVideosLoading] = useState(false);
   const { data: planData } = usePlanInfo();
   const packageInstanceId = planData?.packageInstanceId || null;
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
+  const handleGenerateNew = useCallback(() => {
+    try {
+      window.dispatchEvent(new Event("dashboard:close-settings"));
+    } catch {}
+    router.push("/dashboard/talking-head");
+  }, [router]);
 
   const loadHistory = useCallback(
     async (page = 1) => {
@@ -58,7 +74,7 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
             : null;
         const message = err instanceof Error ? err.message : "Failed to load history.";
         if (errCode === "ACTIVE_INSTANCE_REQUIRED") {
-          setErrorMessage(null);
+          setErrorMessage("You need an active package to view your history.");
         } else {
           setErrorMessage(message);
           toast.error(message, {
@@ -78,9 +94,28 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
     [packageInstanceId],
   );
 
+  const loadVideos = useCallback(async () => {
+    setVideosLoading(true);
+    try {
+      const res = await fetch("/api/sadtalker/history", { method: "GET", cache: "no-store" });
+      if (!res.ok) throw new Error(`Failed to load videos (${res.status})`);
+      const data = await res.json();
+      setVideos(Array.isArray(data.items) ? data.items : []);
+    } catch (err) {
+      console.warn("[history-panel] video history error", err);
+      setVideos([]);
+    } finally {
+      setVideosLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadHistory(1);
   }, [loadHistory]);
+
+  useEffect(() => {
+    if (activeTab === "videos") loadVideos();
+  }, [activeTab, loadVideos]);
 
   useEffect(() => {
     const onLocalStorage = (e: StorageEvent) => {
@@ -173,7 +208,7 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
                       : "hg-muted hover:text-white"
                   }`}
                 >
-                  Talking Head
+                  Avatar Video
                 </button>
               </div>
 
@@ -221,8 +256,15 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
                     </table>
                   </div>
                 ) : errorMessage ? (
-                  <div className="rounded-xl hg-surface-soft px-3 py-2 text-sm hg-muted">
-                    {errorMessage}
+                  <div className="mx-auto w-full max-w-2xl rounded-2xl hg-surface p-5">
+                    <h3 className="text-xl font-semibold text-white">No access</h3>
+                    <p className="mt-2 text-sm hg-muted">{errorMessage}</p>
+                    <Link
+                      href={PACKAGES_URL}
+                      className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#07131d] hover:opacity-90"
+                    >
+                      View packages
+                    </Link>
                   </div>
                 ) : history.length === 0 ? (
                   <div className="mx-auto w-full max-w-2xl rounded-2xl hg-surface p-5">
@@ -241,15 +283,81 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
                   <HistoryTable history={history} onDeleteClick={handleDelete} onOpenClick={handleOpen} />
                 )
               ) : (
-                <div className="mx-auto w-full max-w-2xl rounded-2xl hg-surface p-5">
-                  <h3 className="text-xl font-semibold text-white">Talking Head history</h3>
-                  <p className="mt-2 text-sm hg-muted">Your generated videos will appear here.</p>
-                  <Link
-                    href="/dashboard/talking-head"
-                    className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#07131d] hover:opacity-90"
-                  >
-                    Go to Talking Head
-                  </Link>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-semibold text-white">Talking Head history</h3>
+                    <button
+                      type="button"
+                      onClick={handleGenerateNew}
+                      className="inline-flex rounded-xl bg-[#50C0F0] px-3 py-2 text-xs font-medium text-[#07131d] hover:opacity-90"
+                    >
+                      Generate new
+                    </button>
+                  </div>
+
+                  {videosLoading ? (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {Array.from({ length: 6 }).map((_, idx) => (
+                        <div key={idx} className="rounded-2xl overflow-hidden">
+                          <Skeleton className="h-32 w-full bg-[rgba(255,255,255,0.08)]" />
+                          <div className="p-2 space-y-1.5">
+                            <Skeleton className="h-3 w-20 bg-[rgba(255,255,255,0.08)]" />
+                            <Skeleton className="h-7 w-14 rounded-lg bg-[rgba(255,255,255,0.08)]" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : videos.length === 0 ? (
+                    <div className="rounded-2xl hg-surface p-5">
+                      <p className="text-sm hg-muted">Your generated videos will appear here.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {videos.map((item) => {
+                        const dateLabel = item.createdAt
+                          ? new Date(item.createdAt).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "—";
+                        return (
+                          <div
+                            key={item.jobId}
+                            className="rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] overflow-hidden"
+                          >
+                            <div className="relative h-32 bg-black/30">
+                              {item.options?.thumbnailUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={item.options.thumbnailUrl}
+                                  alt="Video thumbnail"
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <Video className="h-8 w-8 text-[var(--hg-muted-2)]" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-2.5 space-y-2">
+                              <p className="text-xs text-[var(--hg-muted)]">{dateLabel}</p>
+                              <a
+                                href={item.videoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--hg-accent)] px-2.5 py-1.5 text-xs font-semibold text-[#04131d] hover:opacity-90"
+                              >
+                                <Play className="h-3 w-3" />
+                                Play
+                              </a>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </section>

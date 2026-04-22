@@ -10,16 +10,8 @@ type ContextTokenPillProps = {
 
 function formatTokens(value: number): string {
   if (value < 1000) return String(Math.round(value));
-  if (value < 1_000_000) {
-    if (value < 10_000) {
-      const rounded = Math.round(value / 100) / 10;
-      return `${rounded.toFixed(rounded % 1 === 0 ? 0 : 1)}k`;
-    }
-    const rounded = Math.round(value / 1000);
-    return `${rounded}k`;
-  }
-  const millions = value / 1_000_000;
-  return `${millions.toFixed(millions >= 10 ? 0 : 1)}M`;
+  if (value < 1_000_000) return `${(value / 1000).toFixed(1).replace(/\.0$/, "")}K`;
+  return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
 }
 
 export default function ContextTokenPill({
@@ -59,7 +51,7 @@ export default function ContextTokenPill({
         aria-haspopup="true"
         aria-expanded={open}
       >
-        Context
+        Context Tokens
         {nearLimit ? (
           <span className="ml-1 h-1.5 w-1.5 rounded-full bg-amber-400" />
         ) : null}
@@ -70,12 +62,12 @@ export default function ContextTokenPill({
           open ? "block" : "hidden"
         }`}
       >
-        <div className="text-[11px] uppercase tracking-wide text-gray-400">Context window:</div>
+        <div className="text-[11px] uppercase tracking-wide text-gray-400">Context Window</div>
         <div className="mt-1 text-sm font-semibold text-white">
           {usedPct}% used ({leftPct}% left)
         </div>
         <div className="mt-1 text-gray-300">
-          {usedDisplay} / {limitDisplay} tokens used
+          {usedDisplay} / {limitDisplay} context tokens used
         </div>
       </div>
     </div>

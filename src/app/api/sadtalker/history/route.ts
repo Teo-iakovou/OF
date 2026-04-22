@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getRedis } from "../_lib/redis";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -32,7 +30,7 @@ async function getCurrentUserId(req: NextRequest): Promise<string | null> {
     const id = typeof data?.user?.id === "string" ? data.user.id.trim() : "";
     return id || null;
   } catch (err) {
-    console.error("[sadtalker:history] auth lookup failed", err);
+    console.error("[heygen:history] auth lookup failed", err);
     return null;
   }
 }
@@ -44,24 +42,29 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const redis = getRedis();
-    const key = `sadtalker:history:${userId}`;
-    const rows = await redis.lrange(key, 0, HISTORY_LIMIT - 1);
-    const items = rows
-      .map((row) => {
-        try {
-          return JSON.parse(row);
-        } catch (err) {
-          console.warn("[sadtalker:history] failed to parse row", err);
-          return null;
-        }
-      })
-      .filter((item): item is Record<string, unknown> => !!item);
+    const internalSecret = process.env.INTERNAL_SECRET;
+    const res = await fetch(
+      `${SERVER_BASE_URL}/api/heygen/history?userId=${encodeURIComponent(userId)}&limit=${HISTORY_LIMIT}`,
+      {
+        method: "GET",
+        headers: {
+          "x-internal-secret": internalSecret ?? "",
+          "content-type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
 
-    return NextResponse.json({ items });
+    if (!res.ok) {
+      console.error("[heygen:history] backend error", res.status);
+      return NextResponse.json({ error: "Failed to load history" }, { status: res.status });
+    }
+
+    const data = await res.json();
+    return NextResponse.json({ items: Array.isArray(data.items) ? data.items : [] });
   } catch (err) {
-    console.error("[sadtalker:history] error", err);
-    return NextResponse.json({ error: "Failed to load SadTalker history" }, { status: 500 });
+    console.error("[heygen:history] error", err);
+    return NextResponse.json({ error: "Failed to load history" }, { status: 500 });
   }
 }
 
@@ -73,32 +76,30 @@ export async function DELETE(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => null);
-    const jobId = typeof body?.jobId === "string" ? body.jobId.trim() : "";
-    if (!jobId) {
+    const id = typeof body?.jobId === "string" ? body.jobId.trim() : "";
+    if (!id) {
       return NextResponse.json({ error: "jobId is required" }, { status: 400 });
     }
 
-    const redis = getRedis();
-    const key = `sadtalker:history:${userId}`;
-    const rows = await redis.lrange(key, 0, -1);
+    const internalSecret = process.env.INTERNAL_SECRET;
+    const res = await fetch(`${SERVER_BASE_URL}/api/heygen/history/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: {
+        "x-internal-secret": internalSecret ?? "",
+        "content-type": "application/json",
+        "x-user-id": userId,
+      },
+      cache: "no-store",
+    });
 
-    let removed = false;
-    for (const row of rows) {
-      try {
-        const parsed = JSON.parse(row) as { jobId?: string } | null;
-        if (parsed?.jobId === jobId) {
-          await redis.lrem(key, 1, row);
-          removed = true;
-          break;
-        }
-      } catch {
-        // ignore malformed rows
-      }
+    if (!res.ok) {
+      console.error("[heygen:history:delete] backend error", res.status);
+      return NextResponse.json({ error: "Failed to delete history item" }, { status: res.status });
     }
 
-    return NextResponse.json({ removed });
+    return NextResponse.json({ removed: true });
   } catch (err) {
-    console.error("[sadtalker:history:delete] error", err);
+    console.error("[heygen:history:delete] error", err);
     return NextResponse.json({ error: "Failed to delete history item" }, { status: 500 });
   }
 }

@@ -10,11 +10,12 @@ import QuotaUsageCard from "@/app/components/dashboard/QuotaUsageCard";
 import QuickActions from "@/app/components/dashboard/QuickActions";
 import ProfileSwitcherModal from "@/app/components/dashboard/ProfileSwitcherModal";
 import { useCart } from "@/app/components/cart/CartContext";
-import { clearApiCaches, selectPackageInstance } from "@/app/utils/api";
-import { getRemaining } from "@/app/utils/quota";
+import { clearApiCaches, selectPackageInstance, verifySession, type DashboardQuotaResponse } from "@/app/utils/api";
+import { resolveQuotaContract } from "@/app/utils/quotaContract";
 import { PACKAGES_URL } from "@/app/utils/urls";
 import { useOverviewModel } from "@/app/dashboard/useOverviewModel";
 import { useRouter } from "@/i18n/navigation";
+import NoPlanDashboard from "@/app/components/dashboard/NoPlanDashboard";
 
 function OverviewSkeleton() {
   return (
@@ -45,7 +46,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { clearCart } = useCart();
-  const { user, loading } = useUser({ required: true, redirectTo: "/" });
+  const { user, loading } = useUser({ required: true, redirectTo: "/login" });
   const didClearCartRef = useRef(false);
   const {
     ready,
@@ -76,112 +77,19 @@ export default function DashboardPage() {
   const activeProfileLabel =
     activeIndex >= 0 ? `Profile ${String.fromCharCode(65 + activeIndex)}` : null;
 
-  const uploadsLimitRaw =
-    typeof planData?.uploadLimit === "number" ? planData.uploadLimit : null;
-  const uploadsEffectiveLimitRaw =
-    typeof planData?.effectiveUploadLimit === "number"
-      ? Math.max(0, planData.effectiveUploadLimit || 0)
-      : null;
-  const uploadsUsedRaw = typeof planData?.uploadsUsed === "number" ? planData.uploadsUsed : 0;
-  const addonsUploadsRaw =
-    typeof planData?.addonsUploads === "number"
-      ? planData.addonsUploads
-      : typeof planData?.addons?.uploads === "number"
-        ? planData.addons.uploads
-        : 0;
-  const uploadsLimitComputed =
-    typeof uploadsLimitRaw === "number"
-      ? uploadsLimitRaw === 0
-        ? 0
-        : uploadsLimitRaw + addonsUploadsRaw
-      : null;
-  const uploadsLimitValue =
-    typeof uploadsEffectiveLimitRaw === "number" ? uploadsEffectiveLimitRaw : uploadsLimitComputed;
-  const uploadsLimit = uploadsLimitValue === 0 ? null : uploadsLimitValue;
-  const uploadsUsed = Math.max(0, uploadsUsedRaw);
-  const uploadsRemaining = getRemaining(uploadsLimitRaw, addonsUploadsRaw, uploadsUsed);
-
-  const chatRemainingRaw =
-    typeof planData?.chatRemaining === "number" ? Math.max(0, planData.chatRemaining || 0) : null;
-  const chatLimitRaw =
-    typeof planData?.chatTokenLimit === "number"
-      ? Math.max(0, planData.chatTokenLimit || 0)
-      : typeof planData?.chatMonthlyLimit === "number"
-        ? Math.max(0, planData.chatMonthlyLimit || 0)
-        : null;
-  const chatEffectiveLimitRaw =
-    typeof planData?.effectiveChatLimit === "number"
-      ? Math.max(0, planData.effectiveChatLimit || 0)
-      : null;
-  const chatUsedRaw =
-    typeof planData?.chatUsedThisCycle === "number"
-      ? Math.max(0, planData.chatUsedThisCycle || 0)
-      : null;
-  const addonsChatRaw =
-    typeof planData?.addonsChat === "number"
-      ? planData.addonsChat
-      : typeof planData?.addonsChatTokens === "number"
-        ? planData.addonsChatTokens
-        : typeof planData?.addons?.chatTokens === "number"
-          ? planData.addons.chatTokens
-          : typeof planData?.addons?.chat === "number"
-            ? planData.addons.chat
-            : 0;
-  const chatLimitComputed =
-    typeof chatLimitRaw === "number"
-      ? chatLimitRaw === 0
-        ? 0
-        : chatLimitRaw + addonsChatRaw
-      : null;
-  const chatLimitValue =
-    typeof chatEffectiveLimitRaw === "number" ? chatEffectiveLimitRaw : chatLimitComputed;
-  const chatLimit = chatLimitValue === 0 ? null : chatLimitValue;
-  const chatUsed = typeof chatUsedRaw === "number" ? chatUsedRaw : null;
-  const chatRemaining =
-    chatRemainingRaw ??
-    (typeof chatEffectiveLimitRaw === "number"
-      ? getRemaining(chatEffectiveLimitRaw, 0, chatUsed)
-      : getRemaining(chatLimitRaw, addonsChatRaw, chatUsed));
-
-  const videoRemainingRaw =
-    typeof planData?.sadtalkerVideosRemaining === "number"
-      ? Math.max(0, planData.sadtalkerVideosRemaining || 0)
-      : null;
-  const videoLimitRaw =
-    typeof planData?.sadtalkerVideosLimit === "number"
-      ? Math.max(0, planData.sadtalkerVideosLimit || 0)
-      : typeof planData?.sadtalkerVideoLimit === "number"
-        ? Math.max(0, planData.sadtalkerVideoLimit || 0)
-        : null;
-  const videoEffectiveLimitRaw =
-    typeof planData?.effectiveVideoLimit === "number"
-      ? Math.max(0, planData.effectiveVideoLimit || 0)
-      : null;
-  const videoUsedRaw =
-    typeof planData?.sadtalkerVideosUsed === "number"
-      ? Math.max(0, planData.sadtalkerVideosUsed || 0)
-      : null;
-  const addonsVideosRaw =
-    typeof planData?.addonsVideos === "number"
-      ? planData.addonsVideos
-      : typeof planData?.addons?.sadtalkerVideos === "number"
-        ? planData.addons.sadtalkerVideos
-        : 0;
-  const videoLimitComputed =
-    typeof videoLimitRaw === "number"
-      ? videoLimitRaw === 0
-        ? 0
-        : videoLimitRaw + addonsVideosRaw
-      : null;
-  const videoLimitValue =
-    typeof videoEffectiveLimitRaw === "number" ? videoEffectiveLimitRaw : videoLimitComputed;
-  const videoLimit = videoLimitValue === 0 ? null : videoLimitValue;
-  const videoUsed = typeof videoUsedRaw === "number" ? videoUsedRaw : null;
-  const videoRemaining =
-    videoRemainingRaw ??
-    (typeof videoEffectiveLimitRaw === "number"
-      ? getRemaining(videoEffectiveLimitRaw, 0, videoUsed)
-      : getRemaining(videoLimitRaw, addonsVideosRaw, videoUsed));
+  const quotas = resolveQuotaContract(planData as DashboardQuotaResponse | null, "dashboard.page");
+  const uploadsLimit = quotas.uploads.effectiveLimit;
+  const uploadsUsed = quotas.uploads.used;
+  const uploadsRemaining = quotas.uploads.remaining;
+  const uploadsUnlimited = quotas.uploads.isUnlimited;
+  const chatLimit = quotas.aiTokens.effectiveLimit;
+  const chatUsed = quotas.aiTokens.used;
+  const chatRemaining = quotas.aiTokens.remaining;
+  const chatUnlimited = quotas.aiTokens.isUnlimited;
+  const videoLimit = quotas.videos.effectiveLimit;
+  const videoUsed = quotas.videos.used;
+  const videoRemaining = quotas.videos.remaining;
+  const videoUnlimited = quotas.videos.isUnlimited;
 
   useEffect(() => {
     setInstancesError(modelInstancesError);
@@ -189,11 +97,24 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const status = searchParams.get("status");
+    const sessionId = searchParams.get("session_id");
     if (status !== "success" || didClearCartRef.current) return;
     didClearCartRef.current = true;
-    clearCart();
-    router.replace("/dashboard");
-  }, [searchParams, clearCart, router]);
+    (async () => {
+      clearCart();
+      if (sessionId) {
+        try {
+          await verifySession(sessionId);
+        } catch {}
+      }
+      clearApiCaches();
+      await refresh(true);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("ai-auth-changed"));
+      }
+      router.replace("/dashboard");
+    })();
+  }, [searchParams, clearCart, refresh, router]);
 
   useEffect(() => {
     if (!switcherOpen) return;
@@ -242,36 +163,7 @@ export default function DashboardPage() {
   }
 
   if (showGetStarted) {
-    return (
-      <div className="min-h-screen text-white">
-        <header className="mx-auto w-full max-w-6xl px-4 pt-3 md:px-8 md:pt-16">
-          <div className="flex flex-col gap-3">
-            <p className="text-xs uppercase tracking-[0.14em] hg-muted-2">Overview</p>
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Dashboard</h1>
-            <p className="text-sm hg-muted">
-              See what you can do now and jump into your next action fast.
-            </p>
-          </div>
-        </header>
-        <main className="pb-16">
-          <div className="mx-auto max-w-6xl px-4 pt-8 md:px-8">
-            <section className="rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-6 shadow-sm shadow-black/20">
-              <p className="text-xs uppercase tracking-[0.14em] hg-muted-2">Active package</p>
-              <h2 className="text-xl font-semibold text-white">Select a package to continue</h2>
-              <p className="mt-2 text-sm hg-muted">
-                You need an active package instance to use Uploads, History, and AI Chat.
-              </p>
-              <a
-                href={PACKAGES_URL}
-                className="mt-4 inline-flex h-10 items-center rounded-xl bg-[#50C0F0] px-4 text-sm font-semibold text-[#07131d] hover:opacity-90"
-              >
-                Select package
-              </a>
-            </section>
-          </div>
-        </main>
-      </div>
-    );
+    return <NoPlanDashboard />;
   }
 
   return (
@@ -329,10 +221,13 @@ export default function DashboardPage() {
               <QuotaUsageCard
                 uploadsUsed={uploadsUsed}
                 uploadLimit={uploadsLimit}
+                uploadsUnlimited={uploadsUnlimited}
                 chatUsed={chatUsed}
                 chatLimit={chatLimit}
+                chatUnlimited={chatUnlimited}
                 videoUsed={videoUsed}
                 videoLimit={videoLimit}
+                videoUnlimited={videoUnlimited}
               />
             </section>
 

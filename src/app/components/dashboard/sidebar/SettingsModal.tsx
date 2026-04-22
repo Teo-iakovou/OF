@@ -8,6 +8,7 @@ import { useUser } from "@/app/hooks/useUser";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import HistoryPanel from "@/app/components/dashboard/history/HistoryPanel";
 import BillingPanel from "@/app/components/dashboard/billing/BillingPanel";
+import { resolveQuotaContract } from "@/app/utils/quotaContract";
 import { toast } from "sonner";
 import { updateUserProfile } from "@/app/utils/api";
 import { logoutClient } from "@/app/utils/authClient";
@@ -27,6 +28,16 @@ const sections: Array<{ key: SettingsSection; label: string; icon: ComponentType
   { key: "history", label: "History", icon: History },
 ];
 
+const isSettingsSection = (value: unknown): value is SettingsSection =>
+  value === "account" || value === "usage" || value === "billing" || value === "history";
+
+const fmtN = (value: number | null): string => {
+  if (value === null || value === undefined) return "∞";
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (value >= 1000) return `${(value / 1000).toFixed(1).replace(/\.0$/, "")}K`;
+  return String(Math.round(value));
+};
+
 const toPercent = (used: number | null, limit: number | null) => {
   if (limit === null || limit <= 0 || used === null) return 0;
   return Math.max(0, Math.min(100, Math.round((used / limit) * 100)));
@@ -37,14 +48,16 @@ function UsageBar({
   used,
   limit,
   remaining,
+  isUnlimited = false,
 }: {
   label: string;
   used: number | null;
   limit: number | null;
   remaining: number | null;
+  isUnlimited?: boolean;
 }) {
-  const pct = toPercent(used, limit);
-  const rightLabel = limit === null ? "Unlimited" : `${remaining ?? 0} left`;
+  const pct = isUnlimited ? 0 : toPercent(used, limit);
+  const rightLabel = isUnlimited ? "Unlimited" : `${fmtN(remaining ?? 0)} left`;
   return (
     <div className="rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] p-3">
       <div className="flex items-center justify-between text-sm">
@@ -58,7 +71,7 @@ function UsageBar({
         />
       </div>
       <div className="mt-1 text-[11px] text-[var(--hg-muted)]">
-        {used ?? 0} used{limit !== null ? ` / ${limit}` : ""}
+        {fmtN(used ?? 0)} used{!isUnlimited && limit !== null ? ` / ${fmtN(limit)}` : ""}
       </div>
     </div>
   );
@@ -67,7 +80,9 @@ function UsageBar({
 export default function SettingsModal({ open, onOpenChange, initialSection = "account" }: SettingsModalProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [section, setSection] = useState<SettingsSection>("account");
+  const [section, setSection] = useState<SettingsSection>(
+    isSettingsSection(initialSection) ? initialSection : "account"
+  );
   const { user } = useUser({ required: false });
   const { data: planData } = usePlanInfo();
   const [profileName, setProfileName] = useState<{ firstName: string; lastName: string }>({
@@ -122,7 +137,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
 
   useEffect(() => {
     if (!open) return;
-    setSection(initialSection);
+    setSection(isSettingsSection(initialSection) ? initialSection : "account");
   }, [open, initialSection]);
 
   useEffect(() => {
@@ -133,50 +148,24 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
 
   if (!open || !mounted) return null;
 
+  const activeSection: SettingsSection = isSettingsSection(section) ? section : "account";
+
   const hasNameChanges =
     firstName.trim() !== initialFirstName.trim() || lastName.trim() !== initialLastName.trim();
 
-  const uploadsUsed = typeof planData?.uploadsUsed === "number" ? planData.uploadsUsed : null;
-  const uploadsLimit =
-    typeof planData?.effectiveUploadLimit === "number" ? planData.effectiveUploadLimit : null;
-  const uploadsRemaining =
-    typeof planData?.uploadsRemaining === "number" ? planData.uploadsRemaining : null;
-  const chatUsed =
-    typeof planData?.chatUsedTokens === "number"
-      ? planData.chatUsedTokens
-      : typeof planData?.chatTokensUsed === "number"
-        ? planData.chatTokensUsed
-        : null;
-  const chatLimit =
-    typeof planData?.chatLimitTokens === "number"
-      ? planData.chatLimitTokens
-      : typeof planData?.effectiveChatLimit === "number"
-        ? planData.effectiveChatLimit
-        : null;
-  const chatRemaining =
-    typeof planData?.chatRemainingTokens === "number"
-      ? planData.chatRemainingTokens
-      : typeof planData?.chatRemaining === "number"
-        ? planData.chatRemaining
-        : null;
-  const videosUsed =
-    typeof planData?.sadtalkerVideosUsed === "number"
-      ? planData.sadtalkerVideosUsed
-      : typeof planData?.videosUsed === "number"
-        ? planData.videosUsed
-        : null;
-  const videosLimit =
-    typeof planData?.sadtalkerVideosLimit === "number"
-      ? planData.sadtalkerVideosLimit
-      : typeof planData?.effectiveVideoLimit === "number"
-        ? planData.effectiveVideoLimit
-        : null;
-  const videosRemaining =
-    typeof planData?.sadtalkerVideosRemaining === "number"
-      ? planData.sadtalkerVideosRemaining
-      : typeof planData?.videosRemaining === "number"
-        ? planData.videosRemaining
-        : null;
+  const quotas = resolveQuotaContract(planData, "settings.modal");
+  const uploadsUsed = quotas.uploads.used;
+  const uploadsLimit = quotas.uploads.effectiveLimit;
+  const uploadsRemaining = quotas.uploads.remaining;
+  const uploadsUnlimited = quotas.uploads.isUnlimited;
+  const chatUsed = quotas.aiTokens.used;
+  const chatLimit = quotas.aiTokens.effectiveLimit;
+  const chatRemaining = quotas.aiTokens.remaining;
+  const chatUnlimited = quotas.aiTokens.isUnlimited;
+  const videosUsed = quotas.videos.used;
+  const videosLimit = quotas.videos.effectiveLimit;
+  const videosRemaining = quotas.videos.remaining;
+  const videosUnlimited = quotas.videos.isUnlimited;
 
   const modal = (
     <div className="fixed inset-0 z-[120]">
@@ -209,7 +198,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
         </div>
 
         {/* Body */}
-        <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[240px_1fr]">
+        <div className="flex flex-1 flex-col overflow-y-auto md:min-h-0 md:overflow-hidden md:grid md:grid-cols-[240px_1fr]">
 
           {/* Nav — horizontal scrollable tabs on mobile, vertical sidebar on desktop */}
           <aside className="shrink-0 border-b border-[var(--hg-border-2)] md:flex md:flex-col md:border-b-0 md:border-r md:p-3">
@@ -217,7 +206,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
             <nav className="flex gap-1 overflow-x-auto px-3 py-2 md:hidden">
               {sections.map((item) => {
                 const Icon = item.icon;
-                const active = section === item.key;
+                const active = activeSection === item.key;
                 return (
                   <button
                     key={item.key}
@@ -240,7 +229,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
             <nav className="hidden space-y-1 md:block">
               {sections.map((item) => {
                 const Icon = item.icon;
-                const active = section === item.key;
+                const active = activeSection === item.key;
                 return (
                   <button
                     key={item.key}
@@ -290,8 +279,8 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
           </aside>
 
           {/* Content */}
-          <section className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
-            {section === "account" ? (
+          <section className="p-4 md:min-h-0 md:flex-1 md:overflow-y-auto md:p-6">
+            {activeSection === "account" ? (
               <div className="space-y-5">
                 <div className="flex items-center gap-3">
                   <div className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-gradient-to-br from-slate-800 to-slate-900 text-sm font-medium text-white/85 shadow-sm">
@@ -445,41 +434,48 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
               </div>
             ) : null}
 
-            {section === "usage" ? (
+            {activeSection === "usage" ? (
               <div className="space-y-3">
+                <p className="text-xs text-[var(--hg-muted)]">
+                  AI Tokens track monthly package usage. Context Tokens are the per-conversation
+                  memory window shown inside AI Chat.
+                </p>
                 <UsageBar
                   label="Uploads"
                   used={uploadsUsed}
                   limit={uploadsLimit}
                   remaining={uploadsRemaining}
+                  isUnlimited={uploadsUnlimited}
                 />
                 <UsageBar
-                  label="AI Chat Tokens"
+                  label="AI Tokens"
                   used={chatUsed}
                   limit={chatLimit}
                   remaining={chatRemaining}
+                  isUnlimited={chatUnlimited}
                 />
                 <UsageBar
-                  label="Talking Head Videos"
+                  label="Avatar Videos"
                   used={videosUsed}
                   limit={videosLimit}
                   remaining={videosRemaining}
+                  isUnlimited={videosUnlimited}
                 />
               </div>
             ) : null}
 
-            {section === "billing" ? (
+            {activeSection === "billing" ? (
               <BillingPanel embedded />
             ) : null}
 
-            {section === "history" ? (
+            {activeSection === "history" ? (
               <HistoryPanel embedded />
             ) : null}
           </section>
         </div>
 
         {/* Mobile-only footer actions */}
-        <div className="shrink-0 border-t border-[var(--hg-border-2)] px-4 py-3 md:hidden">
+        <div className="shrink-0 border-t border-[var(--hg-border-2)] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
           <div className="flex gap-2">
             <button
               type="button"

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { checkUserPackage, type UserPackageResponse } from "@/app/utils/api";
 import { toast } from "sonner";
 import { markToasted, shouldToastOnce } from "@/lib/toastDedupe";
@@ -106,7 +106,11 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
             }));
           } else {
             if (!redirectedRef.current) {
-              router.replace(PACKAGES_URL);
+              const currentPath = window.location.pathname;
+              const isDashboard = currentPath === "/dashboard" || currentPath === "/en/dashboard" || currentPath.endsWith("/dashboard");
+              if (!isDashboard) {
+                router.replace("/dashboard");
+              }
               redirectedRef.current = true;
             }
             setState((prev) => ({

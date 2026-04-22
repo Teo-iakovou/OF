@@ -1,7 +1,5 @@
 "use client";
 
-import Reveal from "@/app/components/common/Reveal";
-
 type UploadStageProps = {
   title?: string;
   subtitle?: string;
@@ -27,12 +25,9 @@ export default function UploadStage({
           <p className="text-xs uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">{statusLabel}</p>
         </header>
       ) : null}
-      <Reveal
-        as="section"
-        className="w-full rounded-3xl border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface)_92%,transparent)] p-4 shadow-[0_14px_34px_rgba(0,0,0,0.2)] md:p-5"
-      >
+      <section className="w-full rounded-3xl border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface)_92%,transparent)] p-4 shadow-[0_14px_34px_rgba(0,0,0,0.2)] md:p-5">
         {children}
-      </Reveal>
+      </section>
     </div>
   );
 }

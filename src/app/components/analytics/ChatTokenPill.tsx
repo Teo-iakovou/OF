@@ -59,7 +59,7 @@ export default function ChatTokenPill() {
         aria-haspopup="true"
         aria-expanded={open}
       >
-        Tokens
+        AI Tokens
       </button>
 
       <div
@@ -67,11 +67,14 @@ export default function ChatTokenPill() {
           open ? "block" : "hidden"
         }`}
       >
-        <div className="text-[11px] uppercase tracking-wide text-gray-400">Context window:</div>
+        <div className="text-[11px] uppercase tracking-wide text-gray-400">Monthly AI Tokens</div>
         {unlimited ? (
           <>
-            <div className="mt-1 text-sm font-semibold text-white">Unlimited</div>
-            <div className="mt-1 text-gray-300">{usedDisplay} tokens used</div>
+            <div className="mt-1 text-sm font-semibold text-white">Included in plan</div>
+            <div className="mt-1 text-gray-300">{usedDisplay} AI tokens used this cycle</div>
+            <div className="mt-1 text-[11px] text-gray-400">
+              Context Tokens are tracked separately per conversation in AI Chat.
+            </div>
           </>
         ) : (
           <>
@@ -79,7 +82,10 @@ export default function ChatTokenPill() {
               {usedPct}% used ({leftPct}% left)
             </div>
             <div className="mt-1 text-gray-300">
-              {usedDisplay} / {limitDisplay} tokens used
+              {usedDisplay} / {limitDisplay} AI tokens used this cycle
+            </div>
+            <div className="mt-1 text-[11px] text-gray-400">
+              Context Tokens are tracked separately per conversation in AI Chat.
             </div>
           </>
         )}

@@ -7,7 +7,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useFloatingChat } from "@/app/components/AIchat/FloatingChatContext";
-import { createEmptyConversation } from "@/app/utils/api";
+import {
+  createEmptyConversation,
+  fetchConversation,
+  fetchLatestResultForPackageInstance,
+  formatContentInfo,
+} from "@/app/utils/api";
+import { usePlanInfo } from "@/app/dashboard/PlanContext";
 
 // Lazy-load chat pieces
 const CoachChat = dynamic(() => import("@/app/components/AIchat/CoachChat"), { ssr: false });
@@ -16,14 +22,29 @@ const CoachChatHistory = dynamic(
   { ssr: false }
 );
 
+const STORAGE_KEY = "floating_chat_conversation_id";
+
 function useIsClient() {
   const [c, setC] = useState(false);
   useEffect(() => setC(true), []);
   return c;
 }
 
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return mobile;
+}
+
 export default function FloatingChatWidget() {
   const isClient = useIsClient();
+  const isMobile = useIsMobile();
   const {
     isOpen,
     open,
@@ -32,9 +53,15 @@ export default function FloatingChatWidget() {
     setAnchor,
   } = useFloatingChat();
 
+  const { data: planData } = usePlanInfo();
+  const activePackageInstanceId = planData?.packageInstanceId ?? null;
+
   // Chat session state
   const [selectedConvoId, setSelectedConvoId] = useState<string | undefined>();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [conversationTitle, setConversationTitle] = useState<string | undefined>();
+  const [latestContentInfo, setLatestContentInfo] = useState<string | undefined>();
+  const [showDot, setShowDot] = useState(false);
 
   // Header dropdown state
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -43,7 +70,7 @@ export default function FloatingChatWidget() {
   // Refs for dragging
   const fabRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  
+
   const anchorRef = useRef(anchor);
   useEffect(() => {
     anchorRef.current = anchor;
@@ -52,8 +79,6 @@ export default function FloatingChatWidget() {
   // ── layout constants ────────────────────────────────────────────────────────
   const MARGIN = 12;
   const BUBBLE = 48;  // h-12 w-12
-  const PANEL_W = 420;
-  const PANEL_H = 560;
 
   // Place bottom-right on first mount if still default (24,24)
   useEffect(() => {
@@ -70,6 +95,54 @@ export default function FloatingChatWidget() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Restore persisted conversation ID from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) setSelectedConvoId(stored);
+    } catch {}
+  }, []);
+
+  // Show red dot until user has opened the widget at least once
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("chat_seen")) setShowDot(true);
+    } catch {}
+  }, []);
+
+  // Persist active conversation ID to localStorage
+  useEffect(() => {
+    try {
+      if (selectedConvoId) {
+        localStorage.setItem(STORAGE_KEY, selectedConvoId);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch {}
+  }, [selectedConvoId]);
+
+  // Fetch latest content info for AI context
+  useEffect(() => {
+    if (!activePackageInstanceId) return;
+    fetchLatestResultForPackageInstance(activePackageInstanceId)
+      .then((result) => {
+        if (result) setLatestContentInfo(formatContentInfo(result));
+      })
+      .catch(() => {});
+  }, [activePackageInstanceId]);
+
+  // Sync conversation title whenever selected conversation changes
+  useEffect(() => {
+    if (!selectedConvoId) {
+      setConversationTitle(undefined);
+      return;
+    }
+    fetchConversation(selectedConvoId)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then((c) => setConversationTitle((c as any)?.title ?? undefined))
+      .catch(() => {});
+  }, [selectedConvoId]);
+
   // Keep inside viewport
   const clamp = useCallback((x: number, y: number, w: number, h: number) => {
     const maxX = Math.max(MARGIN, window.innerWidth - w - MARGIN);
@@ -79,8 +152,6 @@ export default function FloatingChatWidget() {
       y: Math.min(Math.max(y, MARGIN), maxY),
     };
   }, []);
-
-  // Panel opens centered now; no need to compute relative position
 
   // Drag via React pointerdown + global move/up + rAF
   const dragState = useRef({
@@ -208,16 +279,14 @@ export default function FloatingChatWidget() {
 
   if (!isClient) return null;
 
-  // centered panel, no computed position needed
-
-  // “+ New” from dropdown
+  // "+ New" from history dropdown — clear persisted id so next message creates fresh
   async function handleNewChat() {
-  const newId = await createEmptyConversation();
-  if (newId) {
-    setSelectedConvoId(newId);
+    const newId = await createEmptyConversation();
+    setSelectedConvoId(newId || undefined);
+    setConversationTitle(undefined);
+    setRefreshKey((k) => k + 1);
+    setHistoryOpen(false);
   }
-  setRefreshKey((k) => k + 1);
-}
 
   return createPortal(
     <>
@@ -226,16 +295,25 @@ export default function FloatingChatWidget() {
         <button
           ref={fabRef}
           aria-label="AI Coach"
-          onPointerDown={onFabPointerDown}
+          onPointerDown={isMobile ? undefined : onFabPointerDown}
           onClick={() => {
-            // ignore click when pointer interaction was a drag/drop
-            if (dragState.current.dragging || dragState.current.suppressClick) {
+            // ignore click when pointer interaction was a drag/drop (desktop only)
+            if (!isMobile && (dragState.current.dragging || dragState.current.suppressClick)) {
               dragState.current.suppressClick = false;
               return;
             }
+            if (showDot) {
+              setShowDot(false);
+              try { localStorage.setItem("chat_seen", "true"); } catch {}
+            }
             open();
           }}
-          style={{
+          style={isMobile ? {
+            position: "fixed",
+            bottom: "5.5rem", // 64px bar + 24px gap
+            right: "1rem",    // mr-4
+            zIndex: 2147483647,
+          } : {
             position: "fixed",
             left: 0,
             top: 0,
@@ -244,9 +322,12 @@ export default function FloatingChatWidget() {
             touchAction: "none",
             willChange: "transform",
           }}
-          className="h-12 w-12 rounded-full shadow-lg border border-gray-700 bg-gray-900 text-white flex items-center justify-center cursor-grab active:cursor-grabbing active:scale-95"
+          className="relative h-12 w-12 rounded-full shadow-lg border border-gray-700 bg-gray-900 text-white flex items-center justify-center active:scale-95 md:cursor-grab md:active:cursor-grabbing"
         >
           <MessageCircle className="h-6 w-6" />
+          {showDot && (
+            <span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500" />
+          )}
         </button>
       ) : null}
 
@@ -273,30 +354,21 @@ export default function FloatingChatWidget() {
               className="bg-black/30 backdrop-blur-sm"
             />
 
-            {/* Center container to perfectly center the panel with padding */}
-            <div
-              className="fixed inset-0 flex items-center justify-center p-4 md:p-6"
-              style={{ zIndex: 2147483646, pointerEvents: "none" }}
-            >
+            {/* Panel — full screen on mobile, bottom-right fixed on desktop */}
               <motion.div
                 ref={panelRef}
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                style={{
-                  width: PANEL_W,
-                  maxWidth: "95vw",
-                  height: PANEL_H,
-                  maxHeight: "80vh",
-                  willChange: "transform",
-                  pointerEvents: "auto",
-                }}
-                className="rounded-2xl shadow-2xl border border-[#232B36] bg-[#0f1520] overflow-hidden flex flex-col"
+                style={{ zIndex: 2147483646, willChange: "transform" }}
+                className="fixed inset-0 rounded-none md:inset-auto md:bottom-24 md:right-6 md:w-[380px] md:h-[520px] md:rounded-2xl shadow-2xl border-0 md:border border-[#232B36] bg-[#0f1520] overflow-hidden flex flex-col"
               >
               {/* Header with History dropdown */}
               <div className="relative px-4 py-2 border-b border-[#232B36] bg-[#121A24] text-gray-200 flex items-center justify-between">
-                <span className="text-sm font-medium">AI Coach</span>
+                <span className="text-sm font-medium truncate max-w-[60%]">
+                  {conversationTitle || "AI Coach"}
+                </span>
 
                 <div className="flex items-center gap-2">
                   <button
@@ -339,9 +411,10 @@ export default function FloatingChatWidget() {
               </div>
 
                 {/* Chat body */}
-                <div className="flex-1 min-h-0">
+                <div className="flex-1 min-h-0" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
                   <CoachChat
                     initialConversationId={selectedConvoId}
+                    latestContentInfo={latestContentInfo}
                     onNewConversation={(newId: string) => {
                       setSelectedConvoId(newId);
                       setRefreshKey((k) => k + 1);
@@ -349,7 +422,6 @@ export default function FloatingChatWidget() {
                   />
                 </div>
               </motion.div>
-            </div>
           </>
         )}
       </AnimatePresence>

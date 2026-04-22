@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, Globe, Menu } from "lucide-react";
+import Image from "next/image";
+import { ChevronDown, Globe, Settings } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
@@ -17,10 +18,10 @@ const LOCALES = [
 type SupportedLocale = (typeof LOCALES)[number]["key"];
 
 type Props = {
-  onOpenMenu: () => void;
+  onOpenSettings: () => void;
 };
 
-export default function DashboardTopBar({ onOpenMenu }: Props) {
+export default function DashboardTopBar({ onOpenSettings }: Props) {
   const [mobileLangOpen, setMobileLangOpen] = useState(false);
   const locale = useLocale() as SupportedLocale;
   const pathname = usePathname();
@@ -42,15 +43,29 @@ export default function DashboardTopBar({ onOpenMenu }: Props) {
   return (
     <div className={`md:hidden fixed left-0 right-0 ${DASHBOARD_LAYOUT.mobileTopBarTopOffset} z-40 flex justify-center`}>
       <div className="w-full max-w-6xl bg-[color:color-mix(in_oklab,white_3%,transparent)] backdrop-blur-[2px]">
-        <div className="mx-auto flex h-[calc(env(safe-area-inset-top,0px)+3.8rem)] w-full items-end justify-between px-4 pb-2">
+        <div className="mx-auto relative flex h-[calc(env(safe-area-inset-top,0px)+3.8rem)] w-full items-end justify-between px-4 pb-2">
+
+          {/* Left: Settings */}
           <button
-            aria-label="Open dashboard menu"
-            onClick={onOpenMenu}
+            aria-label="Open settings"
+            onClick={onOpenSettings}
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/10 hover:text-white"
           >
-            <Menu size={18} />
+            <Settings size={18} />
           </button>
-          <div className="flex-1" />
+
+          {/* Center: Logo — absolutely positioned so it's always centered */}
+          <div className="absolute left-1/2 bottom-2 -translate-x-1/2">
+            <Image
+              src="/echofy-removebg-preview.png"
+              alt="echo‑fy"
+              width={28}
+              height={28}
+              className="h-7 w-auto rounded-full"
+            />
+          </div>
+
+          {/* Right: Language switcher */}
           <div className="relative">
             <button
               type="button"
@@ -81,6 +96,7 @@ export default function DashboardTopBar({ onOpenMenu }: Props) {
               </div>
             ) : null}
           </div>
+
         </div>
       </div>
     </div>

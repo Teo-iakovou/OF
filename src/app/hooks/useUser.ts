@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BASE_URL, fetchJson } from "@/app/utils/fetcher";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { AUTH_EVENT } from "@/app/utils/sessionExpiry";
 
 type User = {
@@ -79,11 +79,9 @@ export function useUser(opts: { redirectTo?: string; required?: boolean; initial
             setLoading(false);
             return;
           } else if (!initialUser && required) {
-            // No server user and no client token → redirect now.
-            router.replace(redirectTo);
-            setUser(null);
-            setLoading(false);
-            return;
+            // initialUser is null/falsy but don't redirect immediately —
+            // the cookie may have just been set by OAuth and SSR hasn't read it yet.
+            // Fall through to fetch /api/auth/me and let lines below decide.
           }
           // else: initialUser is null but we have a client token; fall through to fetch
         }

@@ -45,7 +45,7 @@ export default function Reveal<T extends React.ElementType = "div">({
   return (
     <Tag
       ref={ref as any}
-      className={`transition-all duration-1000 ease-out will-change-transform ${
+      className={`transition-[opacity,transform] duration-1000 ease-out will-change-transform ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
       } ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
@@ -55,4 +55,3 @@ export default function Reveal<T extends React.ElementType = "div">({
     </Tag>
   );
 }
-

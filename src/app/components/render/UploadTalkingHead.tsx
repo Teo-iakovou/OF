@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import { Copy, Sparkles } from "lucide-react";
@@ -10,29 +10,16 @@ import UpgradeRequiredBanner from "@/app/components/common/UpgradeRequiredBanner
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import { createAddonCheckoutSession } from "@/app/utils/api";
 import { getRemaining } from "@/app/utils/quota";
+import { resolveQuotaContract } from "@/app/utils/quotaContract";
 import TalkingHeadResultDrawer, {
   type TalkingHeadRecentItem,
 } from "@/app/components/dashboard/talking-head/TalkingHeadResultDrawer";
 
-type JobState =
-  | "queued"
-  | "running"
-  | "succeeded"
-  | "failed"
-  | "active"
-  | "completed"
-  | "waiting"
-  | null;
-
 type HistoryItem = {
   jobId: string;
-  remoteJobId?: string | null;
   videoUrl: string;
   createdAt?: string;
-  durationMs?: number;
   options?: {
-    source_image?: string;
-    sourceImage?: string;
     thumbnailUrl?: string;
   } | null;
 };
@@ -46,19 +33,6 @@ type UpgradeInfo = {
   limit?: number | null;
 } | null;
 
-const HISTORY_USER_FALLBACK = "web-client";
-
-const FIXED_OPTIONS = {
-  preprocess: "full",
-  resolution: "512p",
-  enhancer: "gfpgan",
-  backgroundEnhancer: "",
-  expressionScale: 1,
-  poseStyle: 0,
-  batchSize: 2,
-  still: false,
-} as const;
-
 const statusClass: Record<TalkingHeadRecentItem["status"], string> = {
   queued: "bg-white/10 text-white/70 border border-white/15",
   processing: "bg-[#50C0F0]/15 text-[#9bdcf7] border border-[#50C0F0]/35",
@@ -66,79 +40,58 @@ const statusClass: Record<TalkingHeadRecentItem["status"], string> = {
   failed: "bg-rose-500/15 text-rose-200 border border-rose-400/40",
 };
 
-function toRecentStatus(state: JobState): TalkingHeadRecentItem["status"] {
-  if (state === "failed") return "failed";
-  if (state === "succeeded" || state === "completed") return "done";
-  if (state === "queued" || state === "waiting") return "queued";
-  return "processing";
-}
-
 export default function UploadTalkingHead() {
-  const { user } = useUser({ required: true });
+  useUser({ required: true });
   const locale = useLocale();
-  const historyUserId = user?.id || HISTORY_USER_FALLBACK;
   const { data: planData, refresh: refreshPlan, hasActiveInstance } = usePlanInfo();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const packageInstanceId = planData?.packageInstanceId ?? null;
 
-  const videosLimit =
-    typeof planData?.videosLimit === "number"
-      ? planData.videosLimit
-      : planData?.sadtalkerVideosLimit ?? null;
-  const videosUsed =
-    typeof planData?.videosUsed === "number"
-      ? planData.videosUsed
-      : planData?.sadtalkerVideosUsed ?? null;
-  const videosAddon =
-    typeof planData?.addons?.sadtalkerVideos === "number"
-      ? planData.addons.sadtalkerVideos
-      : planData?.addonsVideos ?? 0;
+  const quotas = resolveQuotaContract(planData, "upload.talkingHead");
+  const videosLimit = quotas.videos.effectiveLimit;
+  const videosUsed = quotas.videos.used;
   const videosRemaining =
-    typeof planData?.videosRemaining === "number"
-      ? Math.max(0, planData.videosRemaining)
-      : getRemaining(videosLimit, videosAddon, videosUsed);
+    typeof quotas.videos.remaining === "number"
+      ? Math.max(0, quotas.videos.remaining)
+      : getRemaining(videosLimit, quotas.videos.addons, videosUsed);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
-
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [jobState, setJobState] = useState<JobState>(null);
-  const [jobStage, setJobStage] = useState<string | null>(null);
-  const [progress, setProgress] = useState<number | undefined>(undefined);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [videoReadyAt, setVideoReadyAt] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [errorRequestId, setErrorRequestId] = useState<string | null>(null);
   const [upgradeInfo, setUpgradeInfo] = useState<UpgradeInfo>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [forceUpsell, setForceUpsell] = useState(false);
 
+  const [heygenLoading, setHeygenLoading] = useState(false);
+  const [heygenProgress, setHeygenProgress] = useState(0);
+  const [heygenError, setHeygenError] = useState<string | null>(null);
+  const [heygenVideoUrl, setHeygenVideoUrl] = useState<string | null>(null);
+  const [heygenWarning, setHeygenWarning] = useState<{
+    creditsToConsume: number;
+    durationSeconds: number;
+  } | null>(null);
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRecent, setSelectedRecent] = useState<TalkingHeadRecentItem | null>(null);
 
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
-
   const isOutOfCredits =
     forceUpsell || (typeof videosRemaining === "number" ? videosRemaining <= 0 : false);
-  const hasActiveJob =
-    jobState === "queued" || jobState === "running" || jobState === "active" || jobState === "waiting";
 
-  const canSubmit = useMemo(() => {
-    return !!imageFile && !!audioFile && !isSubmitting && !hasActiveJob;
-  }, [imageFile, audioFile, isSubmitting, hasActiveJob]);
+  const canGenerate = useMemo(() => {
+    return !!imageFile && !!audioFile && !heygenLoading;
+  }, [imageFile, audioFile, heygenLoading]);
 
   const loadHistory = useCallback(async () => {
     try {
-      if (!historyUserId) return;
       setHistoryLoading(true);
-      const res = await fetch(`/api/sadtalker/history?userId=${encodeURIComponent(historyUserId)}`, {
+      const res = await fetch(`/api/sadtalker/history`, {
         method: "GET",
         cache: "no-store",
       });
@@ -148,11 +101,11 @@ export default function UploadTalkingHead() {
       const data = await res.json();
       setHistory(Array.isArray(data.items) ? data.items : []);
     } catch (err) {
-      console.warn("[sadtalker-ui] history error", err);
+      console.warn("[heygen-ui] history error", err);
     } finally {
       setHistoryLoading(false);
     }
-  }, [historyUserId]);
+  }, []);
 
   useEffect(() => {
     const status = searchParams.get("status");
@@ -168,140 +121,73 @@ export default function UploadTalkingHead() {
   }, [loadHistory]);
 
   useEffect(() => {
-    if (!jobId) return;
-    if (pollRef.current) clearInterval(pollRef.current);
-
-    const poll = async () => {
-      try {
-        const res = await fetch(`/api/sadtalker/status?id=${encodeURIComponent(jobId)}`, {
-          method: "GET",
-          cache: "no-store",
-        });
-        if (!res.ok) {
-          throw new Error(`Status request failed (${res.status})`);
-        }
-        const data = await res.json();
-        const nextState = (data.state ?? null) as JobState;
-        setJobState(nextState);
-        setJobStage(data.remoteState ?? null);
-        if (typeof data.progress === "number") setProgress(data.progress);
-
-        const isSuccessState = nextState === "succeeded" || nextState === "completed";
-        if (isSuccessState && data.result?.videoUrl) {
-          const nextVideoUrl = data.result.videoUrl;
-          setVideoUrl(nextVideoUrl);
-          const now = new Date().toISOString();
-          setVideoReadyAt(now);
-          if (pollRef.current) clearInterval(pollRef.current);
-          await loadHistory();
-          setSelectedRecent({
-            id: jobId,
-            title: "Avatar Video",
-            createdAt: now,
-            status: "done",
-            stage: data.remoteState ?? null,
-            progress: typeof data.progress === "number" ? data.progress : undefined,
-            videoUrl: nextVideoUrl,
-            supportId: null,
-            thumbnailUrl: null,
-          });
-          setDrawerOpen(true);
-        } else if (nextState === "failed") {
-          setError(data.error?.message || "Video generation failed.");
-          if (typeof data?.requestId === "string") setErrorRequestId(data.requestId);
-          if (pollRef.current) clearInterval(pollRef.current);
-        }
-      } catch (err) {
-        console.warn("[sadtalker-ui] polling error", err);
-      }
-    };
-
-    poll();
-    pollRef.current = setInterval(poll, 3000);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [jobId, loadHistory]);
+    if (!heygenLoading) return;
+    const interval = setInterval(() => {
+      setHeygenProgress((prev) => {
+        if (prev < 15) return Math.min(prev + 2.3, 15);
+        if (prev < 30) return Math.min(prev + 4.5, 30);
+        if (prev < 85) return Math.min(prev + 0.28, 85);
+        return prev;
+      });
+    }, 300);
+    return () => clearInterval(interval);
+  }, [heygenLoading]);
 
   const recentItems = useMemo<TalkingHeadRecentItem[]>(() => {
-    const historyItems: TalkingHeadRecentItem[] = history.map((item) => ({
-      id: item.remoteJobId || item.jobId,
+    return history.map((item) => ({
+      id: item.jobId,
       title: "Avatar Video",
       createdAt: item.createdAt,
-      status: "done",
+      status: "done" as const,
       videoUrl: item.videoUrl,
       stage: null,
       progress: undefined,
       supportId: null,
-      thumbnailUrl:
-        item.options?.thumbnailUrl || item.options?.source_image || item.options?.sourceImage || null,
+      thumbnailUrl: item.options?.thumbnailUrl || null,
     }));
+  }, [history]);
 
-    if (!jobId) return historyItems;
-
-    const liveItem: TalkingHeadRecentItem = {
-      id: jobId,
-      title: "Avatar Video",
-      createdAt: videoReadyAt || new Date().toISOString(),
-      status: toRecentStatus(jobState),
-      videoUrl,
-      stage: jobStage,
-      progress,
-      supportId: errorRequestId,
-      thumbnailUrl: null,
-    };
-
-    const exists = historyItems.some((item) => item.id === liveItem.id);
-    return exists ? historyItems : [liveItem, ...historyItems];
-  }, [history, jobId, jobState, videoUrl, jobStage, progress, errorRequestId, videoReadyAt]);
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (isOutOfCredits) return;
-
-    setError(null);
-    setErrorCode(null);
-    setErrorRequestId(null);
-    setForceUpsell(false);
-    setUpgradeInfo(null);
-    setVideoUrl(null);
-    setVideoReadyAt(null);
-    setJobState(null);
-    setProgress(undefined);
-    setJobStage(null);
-
+  async function handleGenerate(confirmed: boolean) {
     if (!imageFile) {
-      setError("Please choose a face photo (PNG/JPG).");
+      setHeygenError("Please choose a face photo (PNG/JPG).");
       return;
     }
     if (!audioFile) {
-      setError("Please choose a voice audio file (MP3/WAV).");
+      setHeygenError("Please choose a voice audio file (MP3/WAV).");
       return;
     }
 
-    setIsSubmitting(true);
+    setHeygenError(null);
+    setError(null);
+    setErrorCode(null);
+    setErrorRequestId(null);
+    setHeygenProgress(0);
+    setHeygenLoading(true);
+    if (!confirmed) {
+      setHeygenWarning(null);
+      setHeygenVideoUrl(null);
+    }
+
     try {
       const formData = new FormData();
       formData.append("source_image", imageFile);
       formData.append("driven_audio", audioFile);
-      formData.append("preprocess", FIXED_OPTIONS.preprocess);
-      formData.append("resolution", FIXED_OPTIONS.resolution);
-      formData.append("expression_scale", FIXED_OPTIONS.expressionScale.toString());
-      formData.append("pose_style", FIXED_OPTIONS.poseStyle.toString());
-      formData.append("batch_size", FIXED_OPTIONS.batchSize.toString());
-      formData.append("still", FIXED_OPTIONS.still ? "true" : "false");
-      if (FIXED_OPTIONS.enhancer) formData.append("enhancer", FIXED_OPTIONS.enhancer);
-      if (FIXED_OPTIONS.backgroundEnhancer) {
-        formData.append("background_enhancer", FIXED_OPTIONS.backgroundEnhancer);
-      }
-      formData.append("userId", historyUserId);
+      formData.append("confirmed", confirmed ? "true" : "false");
 
-      const res = await fetch("/api/sadtalker/create", {
+      const res = await fetch("/api/heygen/create", {
         method: "POST",
         body: formData,
       });
 
       const data = await res.json();
+
+      if (res.ok && data.warning) {
+        setHeygenWarning({
+          creditsToConsume: data.creditsToConsume,
+          durationSeconds: data.durationSeconds,
+        });
+        return;
+      }
 
       if (!res.ok) {
         const codeRaw =
@@ -310,14 +196,6 @@ export default function UploadTalkingHead() {
             : typeof data?.code === "string"
               ? data.code
               : "";
-        if (res.status === 403 && data?.errorCode === "SADTALKER_NO_CREDITS") {
-          setError("You're out of video credits.");
-          setErrorCode("SADTALKER_NO_CREDITS");
-          setErrorRequestId(typeof data?.requestId === "string" ? data.requestId : null);
-          setForceUpsell(true);
-          refreshPlan(true);
-          return;
-        }
 
         if (
           codeRaw === "ACTIVE_INSTANCE_REQUIRED" ||
@@ -357,18 +235,19 @@ export default function UploadTalkingHead() {
           return;
         }
 
-        throw new Error(data?.error || "Failed to start video generation");
+        setHeygenError(data?.error || "Video generation failed.");
+        return;
       }
 
-      setJobId(data.jobId);
-      setJobState("queued");
+      setHeygenVideoUrl(data.videoUrl ?? null);
+      setHeygenWarning(null);
+      setHeygenProgress(100);
+      await loadHistory();
+      await new Promise((r) => setTimeout(r, 600));
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to start video generation");
-      setErrorCode(null);
-      setErrorRequestId(null);
-      setUpgradeInfo(null);
+      setHeygenError(err instanceof Error ? err.message : "Video generation failed.");
     } finally {
-      setIsSubmitting(false);
+      setHeygenLoading(false);
     }
   }
 
@@ -428,7 +307,7 @@ export default function UploadTalkingHead() {
       ) : null}
 
       <section className="mx-auto w-full max-w-3xl rounded-2xl hg-surface p-5 md:p-6 text-white">
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="block text-sm hg-muted">Face photo (PNG/JPG)</label>
@@ -450,28 +329,19 @@ export default function UploadTalkingHead() {
             </div>
           </div>
 
-          {(jobId || isSubmitting) ? (
-            <div className="rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 py-2 text-xs text-[var(--hg-muted)]">
-              <div className="flex items-center justify-between gap-2">
-                <span>Status: {jobState || (isSubmitting ? "submitting" : "idle")}</span>
-                {typeof progress === "number" ? <span>{progress.toFixed(0)}%</span> : null}
-              </div>
-              {jobStage ? <p className="mt-1">Stage: {jobStage}</p> : null}
-            </div>
-          ) : null}
-
           <div className="flex flex-wrap items-center gap-2">
             <button
-              type="submit"
-              disabled={!canSubmit || isOutOfCredits}
+              type="button"
+              disabled={!canGenerate || isOutOfCredits}
+              onClick={() => void handleGenerate(false)}
               className={`inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
-                canSubmit && !isOutOfCredits
+                canGenerate && !isOutOfCredits
                   ? "bg-[var(--hg-accent)] text-[#04131d] hover:opacity-90"
                   : "bg-[var(--hg-surface-2)] text-[var(--hg-muted-2)] cursor-not-allowed"
               }`}
             >
               <Sparkles className="mr-2 h-4 w-4" />
-              {isSubmitting ? "Generating…" : "Generate"}
+              {heygenLoading ? "Generating…" : "Generate"}
             </button>
             <button
               type="button"
@@ -481,13 +351,36 @@ export default function UploadTalkingHead() {
                 setError(null);
                 setErrorCode(null);
                 setErrorRequestId(null);
+                setHeygenError(null);
+                setHeygenVideoUrl(null);
+                setHeygenWarning(null);
               }}
               className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 text-sm text-[var(--hg-muted)] hover:text-white"
             >
               Reset
             </button>
           </div>
-        </form>
+
+          {heygenLoading ? (
+            <div className="mt-3">
+              <div className="w-full bg-zinc-800 rounded-full h-1.5">
+                <div
+                  className="bg-violet-500 h-1.5 rounded-full transition-all duration-500"
+                  style={{ width: `${heygenProgress}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-[var(--hg-muted)]">
+                {heygenProgress < 15
+                  ? "Uploading files..."
+                  : heygenProgress < 30
+                  ? "Verifying identity..."
+                  : heygenProgress < 85
+                  ? "Generating video..."
+                  : "Almost done..."}
+              </p>
+            </div>
+          ) : null}
+        </div>
 
         {error ? (
           <div className="mt-4 space-y-3 rounded-xl border border-rose-500/35 bg-rose-500/10 p-4 text-sm text-rose-100">
@@ -545,73 +438,156 @@ export default function UploadTalkingHead() {
             ) : null}
           </div>
         ) : null}
+
+        {/* ── HeyGen warning ──────────────────────────────────────────────── */}
+        {heygenWarning ? (
+          <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100 space-y-3">
+            <p className="font-semibold">Credit confirmation required</p>
+            <p>
+              This audio is <strong>{heygenWarning.durationSeconds}s</strong> long and will use{" "}
+              <strong>{heygenWarning.creditsToConsume} video credit{heygenWarning.creditsToConsume !== 1 ? "s" : ""}</strong>. Continue?
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => void handleGenerate(true)}
+                disabled={heygenLoading}
+                className="inline-flex h-9 items-center rounded-lg bg-amber-400 px-3 text-xs font-semibold text-[#07131d] hover:opacity-90 disabled:opacity-50"
+              >
+                Confirm (use {heygenWarning.creditsToConsume} credit{heygenWarning.creditsToConsume !== 1 ? "s" : ""})
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeygenWarning(null)}
+                className="inline-flex h-9 items-center rounded-lg border border-amber-400/40 px-3 text-xs text-amber-200 hover:border-amber-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {/* ── Generation error ─────────────────────────────────────────────── */}
+        {heygenError ? (
+          <div className="mt-4 rounded-xl border border-rose-500/35 bg-rose-500/10 p-4 text-sm text-rose-100">
+            <p className="mt-1">{heygenError}</p>
+          </div>
+        ) : null}
+
+        {/* ── Video result ─────────────────────────────────────────────────── */}
+        {heygenVideoUrl ? (
+          <div className="mt-4 space-y-2">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-300">
+              <Sparkles className="h-4 w-4" />
+              Video ready ✓
+            </p>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              src={heygenVideoUrl}
+              controls
+              playsInline
+              className="w-full rounded-xl border border-[var(--hg-border)] bg-black"
+            />
+          </div>
+        ) : null}
       </section>
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-white">Recent</h3>
+      <section className="w-full pb-8 pt-1 md:pt-2">
+        <div className="flex items-baseline justify-between border-b border-[var(--hg-border-2)] pb-4">
+          <div className="space-y-1">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">Generated Results</p>
+            <h2 className="text-2xl font-semibold tracking-tight text-white/95 md:text-3xl">Recents</h2>
+          </div>
         </div>
 
         {historyLoading && recentItems.length === 0 ? (
-          <div className="flex gap-4 overflow-hidden">
-            {[0, 1, 2].map((idx) => (
-              <div key={idx} className="h-48 w-64 shrink-0 animate-pulse rounded-2xl bg-white/5" />
+          <div className="mt-3 flex gap-3 overflow-x-auto pb-2 pr-4 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div
+                key={`recent-video-skeleton-${idx}`}
+                className="w-[230px] shrink-0 rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 sm:w-[270px]"
+              >
+                <div className="h-32 w-full rounded-lg bg-[var(--hg-surface-2)]" />
+                <div className="mt-3 space-y-2">
+                  <div className="h-4 w-40 rounded bg-[rgba(255,255,255,0.08)]" />
+                  <div className="h-3 w-24 rounded bg-[rgba(255,255,255,0.06)]" />
+                </div>
+              </div>
             ))}
           </div>
         ) : null}
 
         {!historyLoading && recentItems.length === 0 ? (
-          <div className="rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] p-4 text-sm text-[var(--hg-muted)]">
-            No videos yet. Generate your first avatar video.
+          <div className="mt-4 rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5">
+            <h3 className="text-base font-semibold text-white">Create your first avatar video</h3>
+            <p className="mt-1 text-sm hg-muted">Upload a face photo and audio to generate a video.</p>
+            <button
+              type="button"
+              onClick={() => {
+                const target = document.getElementById("upload-stage");
+                if (target) {
+                  target.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+              }}
+              className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-2 text-sm font-semibold text-[#04131d] hover:opacity-90"
+            >
+              Start generating
+            </button>
           </div>
         ) : null}
 
         {recentItems.length > 0 ? (
-          <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2">
+          <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 pr-4 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
             {recentItems.map((item) => {
               const createdAt = item.createdAt
-                ? new Date(item.createdAt).toLocaleString(undefined, {
+                ? new Intl.DateTimeFormat(undefined, {
                     month: "short",
                     day: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
-                    hour12: false,
                   })
-                : "Just now";
+                    .format(new Date(item.createdAt))
+                    .replace(",", " •")
+                : "—";
 
               return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedRecent(item);
-                    setDrawerOpen(true);
-                  }}
-                  className="group w-[240px] shrink-0 snap-start rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] p-3 text-left transition hover:border-[var(--hg-accent)]/50"
-                >
-                  <div className="relative h-28 overflow-hidden rounded-xl border border-[var(--hg-border-2)] bg-black/25">
-                    {item.thumbnailUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.thumbnailUrl}
-                        alt="Video source preview"
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-[var(--hg-muted)]">
-                        No preview
+                <div key={item.id} className="w-[230px] shrink-0 snap-start sm:w-[270px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRecent(item);
+                      setDrawerOpen(true);
+                    }}
+                    className="group w-full rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 text-left shadow-[0_10px_26px_rgba(0,0,0,0.16)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--hg-accent)]/28 hover:shadow-[0_16px_34px_rgba(0,0,0,0.22)] motion-reduce:transition-none"
+                  >
+                    <div className="relative h-32 w-full overflow-hidden rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] sm:h-36">
+                      {item.thumbnailUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.thumbnailUrl}
+                          alt="Video source preview"
+                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-[var(--hg-muted-2)] text-sm">
+                          No preview
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-3.5 space-y-1.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="truncate text-[15px] font-semibold tracking-tight text-white">Avatar Video</p>
+                        <span
+                          className={`inline-flex items-center rounded-full border border-[var(--hg-border)] px-2 py-0.5 text-[11px] ${statusClass[item.status]}`}
+                        >
+                          {item.status}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  <div className="mt-3 space-y-1">
-                    <p className="text-sm font-medium text-white">Avatar Video</p>
-                    <p className="text-xs text-[var(--hg-muted)]">{createdAt}</p>
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${statusClass[item.status]}`}>
-                      {item.status}
-                    </span>
-                  </div>
-                </button>
+                      <p className="text-xs text-[var(--hg-muted)]">{createdAt}</p>
+                    </div>
+                  </button>
+                </div>
               );
             })}
           </div>

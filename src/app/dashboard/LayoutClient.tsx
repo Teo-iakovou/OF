@@ -5,15 +5,16 @@ import Spinner from "@/app/components/dashboard/loading spinner/page";
 import DashboardSidebar from "@/app/components/dashboard/sidebar/DashboardSidebar";
 import { FloatingChatProvider } from "@/app/components/AIchat/FloatingChatContext";
 import FloatingChatWidget from "@/app/components/AIchat/FloatingChatWidget";
-import MobileProjectNavDrawer from "@/app/components/dashboard/buttons/MobileProjectNavDrawer";
 import FaceEnrollModal from "@/app/components/dashboard/FaceEnrollModal";
 import DashboardGlow from "@/app/components/dashboard/DashboardGlow";
 import { useConsent } from "@/app/components/consent/ConsentContext";
 import { useUser } from "@/app/hooks/useUser";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import SettingsModal, { type SettingsSection } from "@/app/components/dashboard/sidebar/SettingsModal";
+import PackagesModal from "@/app/components/dashboard/sidebar/PackagesModal";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import DashboardTopBar from "@/app/components/dashboard/navigation/DashboardTopBar";
+import MobileBottomBar from "@/app/components/dashboard/MobileBottomBar";
 import { DASHBOARD_LAYOUT } from "@/app/dashboard/dashboardLayout.constants";
 import { SESSION_EXPIRED_EVENT } from "@/app/utils/sessionExpiry";
 type User = { id: string; email: string; plan?: string | null } | null;
@@ -27,9 +28,9 @@ export default function LayoutClient({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("account");
+  const [packagesOpen, setPackagesOpen] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const redirectingRef = useRef(false);
   const { open: openConsent } = useConsent();
@@ -59,7 +60,6 @@ export default function LayoutClient({
   useEffect(() => {
     const onSessionExpired = () => {
       setSessionExpired(true);
-      setMobileNavOpen(false);
       setSettingsOpen(false);
     };
     if (typeof window !== "undefined") {
@@ -114,14 +114,12 @@ export default function LayoutClient({
 
   // routes where we DON'T want the bottom spacer (no footer UI)
   const noBottomSpacerRoutes = [
-    "/dashboard/ai-chat",
     "/dashboard/ai-coach",
     "/dashboard/coaching",
   ];
   const showBottomSpacer = !noBottomSpacerRoutes.some((r) => pathname?.startsWith(r));
 
-  // also hide the floating widget on the dedicated chat routes
-  const showFloating = showBottomSpacer;
+  const showFloating = true;
   const forceEnroll = searchParams.get("enroll") === "1";
   const shouldBlock =
     forceEnroll ||
@@ -163,7 +161,7 @@ export default function LayoutClient({
           <DashboardGlow />
           {/* Sidebar */}
           <div
-            className={`hidden md:flex fixed ${DASHBOARD_LAYOUT.sidebarTopOffset} ${DASHBOARD_LAYOUT.sidebarLeftOffset} z-30 transition-all duration-200`}
+            className={`hidden md:flex fixed ${DASHBOARD_LAYOUT.sidebarTopOffset} ${DASHBOARD_LAYOUT.sidebarLeftOffset} z-30 md:transition-[width] md:duration-200`}
             style={{ width: sidebarWidth, height: "calc(100svh - 2rem)", padding: "0.25rem 0" }}
           >
             <DashboardSidebar
@@ -175,8 +173,8 @@ export default function LayoutClient({
           </div>
 
           {/* Content column */}
-          <div className={`flex-1 flex flex-col transition-[margin-left] duration-200 ${expanded ? DASHBOARD_LAYOUT.desktopExpandedMarginClass : DASHBOARD_LAYOUT.desktopCollapsedMarginClass}`}>
-            <main className={`px-3 ${DASHBOARD_LAYOUT.mobileMainTopPaddingClass} sm:px-5 md:px-7 ${DASHBOARD_LAYOUT.desktopMainTopPaddingClass}`}>
+          <div className={`flex-1 flex flex-col md:transition-[margin-left] md:duration-200 ${expanded ? DASHBOARD_LAYOUT.desktopExpandedMarginClass : DASHBOARD_LAYOUT.desktopCollapsedMarginClass}`}>
+            <main className={`px-3 ${DASHBOARD_LAYOUT.mobileMainTopPaddingClass} sm:px-5 md:px-7 ${DASHBOARD_LAYOUT.desktopMainTopPaddingClass} pb-20 md:pb-0`}>
               {children}
             </main>
 
@@ -192,23 +190,16 @@ export default function LayoutClient({
             />
           )}
 
-          {showFloating ? (
-            <div className="hidden md:block">
-              <FloatingChatWidget />
-            </div>
-          ) : null}
+          {showFloating ? <FloatingChatWidget /> : null}
 
           <DashboardTopBar
-            onOpenMenu={() => setMobileNavOpen(true)}
-          />
-
-          {/* Mobile Project Navigation Drawer */}
-          <MobileProjectNavDrawer
-            open={mobileNavOpen}
-            onClose={() => setMobileNavOpen(false)}
             onOpenSettings={openSettings}
           />
 
+          <MobileBottomBar
+            onOpenSettings={() => openSettings()}
+            onOpenPackages={() => setPackagesOpen(true)}
+          />
         </div>
         <FaceEnrollModal
           open={shouldBlock}
@@ -229,6 +220,10 @@ export default function LayoutClient({
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
           initialSection={settingsSection}
+        />
+        <PackagesModal
+          open={packagesOpen}
+          onOpenChange={setPackagesOpen}
         />
       </FloatingChatProvider>
     </>

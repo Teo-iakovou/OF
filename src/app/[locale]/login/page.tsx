@@ -12,7 +12,8 @@ export default async function LoginPage({
 }) {
   const { locale } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const redirectTo = sanitizeRedirect(resolvedSearchParams?.next);
+  const hasExplicitNext = typeof resolvedSearchParams?.next !== "undefined";
+  const redirectTo = hasExplicitNext ? sanitizeRedirect(resolvedSearchParams?.next) : undefined;
   const intent = Array.isArray(resolvedSearchParams?.intent)
     ? resolvedSearchParams?.intent?.[0]
     : resolvedSearchParams?.intent;
@@ -24,7 +25,7 @@ export default async function LoginPage({
     if (hasActiveAccess) {
       redirect({ href: "/dashboard", locale });
     }
-    redirect({ href: redirectTo || "/", locale });
+    redirect({ href: redirectTo || "/dashboard", locale });
   }
 
   return <LoginPageContent redirectTo={redirectTo} intent={intent} />;
