@@ -28,6 +28,22 @@ ALLOWED_ORIGINS=https://echo-fy.com,https://www.echo-fy.com,http://localhost:300
 CORS_ALLOW_ALL=false
 ```
 
+## Local Stripe webhook forwarding (required for package activation)
+
+For local package checkout fulfillment, Stripe must deliver `checkout.session.completed` to your local backend webhook route:
+
+```bash
+stripe listen --forward-to http://localhost:5001/api/checkout/webhook
+```
+
+Then copy the printed signing secret (`whsec_...`) into backend local env:
+
+```env
+STRIPE_WEBHOOK_SECRET=whsec_xxx_from_stripe_listen
+```
+
+This is only for local development. Production webhook delivery remains configured in Stripe Dashboard (Railway endpoint).
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
