@@ -731,6 +731,9 @@ const grantAddons = async (req, res) => {
       return sendErr(req, res, 404, "Active package instance not found");
     }
 
+    const changes = Object.fromEntries(keys.map((k) => [k, provided[k]]));
+    console.log(`[ADMIN ACTION] ${req.user.email} modified addons for user ${user._id}: ${JSON.stringify(changes)}`);
+
     return res.json({
       ok: true,
       instance: toInstanceSummary(updated),

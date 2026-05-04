@@ -16,6 +16,8 @@ const {
 } = require("../controllers/userController");
 const { verifyPersonaFace } = require("../middleware/verifyPersonaFace");
 const { guardActiveInstanceAndFace } = require("../middleware/guardActiveInstanceAndFace");
+const { requireAuth } = require("../middleware/requireAuth");
+const { requireAdmin } = require("../middleware/requireAdmin");
 const multer = require("multer");
 
 const router = express.Router();
@@ -32,7 +34,7 @@ router.get(
   guardActiveInstanceAndFace({ requireFaceEnrolled: false }),
   getUserResultImageUrl
 );
-router.post("/addons", grantAddons);
+router.post("/addons", requireAuth, requireAdmin, grantAddons);
 router.post("/select-package-instance", selectPackageInstance);
 router.post(
   "/sadtalker/consume",
