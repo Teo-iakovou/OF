@@ -15,6 +15,21 @@ const enrollFace = async (req, res) => {
   }
 
   try {
+    try {
+      console.log(
+        JSON.stringify({
+          requestId,
+          stage: "enroll_face_runtime_config",
+          awsAccessKeyIdPresent: !!process.env.AWS_ACCESS_KEY_ID,
+          awsSecretAccessKeyPresent: !!process.env.AWS_SECRET_ACCESS_KEY,
+          awsSessionTokenPresent: !!process.env.AWS_SESSION_TOKEN,
+          rekognitionRegion:
+            process.env.REKOGNITION_REGION || process.env.AWS_REGION || process.env.S3_REGION || "us-east-1",
+          credentialMode: process.env.AWS_SESSION_TOKEN ? "temporary_session" : "static_keys",
+        })
+      );
+    } catch {}
+
     const requestedPackageInstanceId =
       typeof req.body?.packageInstanceId === "string" ? req.body.packageInstanceId : null;
     const user = await User.findById(req.user.id);
@@ -118,7 +133,19 @@ const enrollFace = async (req, res) => {
 
     return res.json({ ok: true, faceId: result.faceId, requestId });
   } catch (err) {
-    console.error("[persona] enroll-face failed:", err?.message || err);
+    console.error(
+      "[persona] enroll-face failed:",
+      JSON.stringify({
+        requestId,
+        name: err?.name || null,
+        code: err?.code || null,
+        message: err?.message || String(err),
+        fault: err?.$fault || null,
+        httpStatusCode: err?.$metadata?.httpStatusCode ?? null,
+        requestIdAws: err?.$metadata?.requestId ?? null,
+        attempts: err?.$metadata?.attempts ?? null,
+      })
+    );
     return res.status(500).json({ error: "ENROLL_FACE_FAILED", requestId });
   }
 };

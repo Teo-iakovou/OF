@@ -46,7 +46,26 @@ async function enroll({ imageBuffer, externalImageId }) {
     MaxFaces: 5,
     QualityFilter: "AUTO",
   });
-  const resp = await rekognition.send(cmd);
+  let resp;
+  try {
+    resp = await rekognition.send(cmd);
+  } catch (err) {
+    try {
+      console.error(
+        JSON.stringify({
+          stage: "face_engine_index_faces_failed",
+          operation: "IndexFaces",
+          name: err?.name || null,
+          code: err?.code || null,
+          message: err?.message || String(err),
+          httpStatusCode: err?.$metadata?.httpStatusCode ?? null,
+          requestIdAws: err?.$metadata?.requestId ?? null,
+          attempts: err?.$metadata?.attempts ?? null,
+        })
+      );
+    } catch {}
+    throw err;
+  }
   const records = Array.isArray(resp.FaceRecords) ? resp.FaceRecords : [];
   if (records.length === 0) {
     throw makeError("FACE_REQUIRED_FOR_ENROLLMENT", "No face detected for enrollment");

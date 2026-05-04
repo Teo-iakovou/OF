@@ -22,6 +22,8 @@ const packageInstanceSchema = new mongoose.Schema(
     sadtalkerVideosUsed: { type: Number, default: 0 },
     sadtalkerVideoLimit: { type: Number, default: 0 },
     sadtalkerPrimaryImageHash: { type: String, default: null },
+    heygenTalkingPhotoId: { type: String, default: null },
+    heygenTalkingPhotoHash: { type: String, default: null },
     personaKey: {
       type: String,
       default: null,

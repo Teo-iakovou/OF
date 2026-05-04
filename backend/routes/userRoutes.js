@@ -12,6 +12,7 @@ const {
   selectPackageInstance,
   grantAddons,
   consumeSadtalkerCredit,
+  consumeHeygenCredit,
 } = require("../controllers/userController");
 const { verifyPersonaFace } = require("../middleware/verifyPersonaFace");
 const { guardActiveInstanceAndFace } = require("../middleware/guardActiveInstanceAndFace");
@@ -39,5 +40,12 @@ router.post(
   upload.single("image"),
   verifyPersonaFace,
   consumeSadtalkerCredit
+);
+router.post(
+  "/heygen/consume",
+  guardActiveInstanceAndFace({ requireFaceEnrolled: true }),
+  upload.single("image"),
+  verifyPersonaFace,
+  consumeHeygenCredit
 );
 module.exports = router;

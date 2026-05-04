@@ -563,14 +563,244 @@ const verifyCheckoutSession = async (req, res) => {
   try {
     const { session_id } = req.query;
     if (!session_id) return sendErr(req, res, 400, "session_id required");
+    const requestId = req.requestId || req.get("x-request-id") || `verify-${Date.now()}`;
+    try {
+      console.log("[verify-session:start]", { requestId, session_id });
+    } catch {}
 
     const session = await stripe.checkout.sessions.retrieve(session_id);
-    return res.json({
+    const sessionId = session?.id || null;
+    const paymentIntentId = session?.payment_intent || null;
+    const email =
+      session.metadata?.email ||
+      session.customer_details?.email ||
+      session.client_reference_id ||
+      session.customer_email;
+    const packageId = session.metadata?.packageId;
+    const personaKey = session.metadata?.personaKey;
+    const normalizedPersonaKey =
+      typeof personaKey === "string" && personaKey.trim().length > 0 ? personaKey.trim() : null;
+    let applied = false;
+    let activePackageInstanceId = null;
+    try {
+      console.log("[verify-session:session]", {
+        requestId,
+        sessionId,
+        payment_status: session?.payment_status,
+        email,
+        packageId,
+        personaKey: normalizedPersonaKey,
+      });
+    } catch {}
+
+    const existingInstance = sessionId
+      ? await PackageInstance.findOne({ stripeCheckoutSessionId: sessionId }).select({ _id: 1, userId: 1 })
+      : null;
+    if (existingInstance) {
+      applied = true;
+      activePackageInstanceId = existingInstance._id.toString();
+    }
+    try {
+      console.log("[verify-session:existing-instance]", {
+        requestId,
+        found: !!existingInstance,
+        existingInstanceId: existingInstance?._id?.toString?.() || null,
+      });
+    } catch {}
+
+    if (!applied && session.payment_status === "paid" && email && packageId) {
+      const fallbackEventId = `verify:${session.id}`;
+      try {
+        console.log("[verify-session:apply-guard]", {
+          requestId,
+          entered: true,
+          fallbackEventId,
+        });
+      } catch {}
+      try {
+        const upserted = await WebhookEvent.updateOne(
+          { eventId: fallbackEventId },
+          {
+            $setOnInsert: {
+              eventId: fallbackEventId,
+              type: "checkout.session.completed.verify_fallback",
+              kind: "package",
+              sessionId: session.id,
+              processedAt: null,
+              metadata: session?.metadata || null,
+            },
+          },
+          { upsert: true }
+        );
+        try {
+          console.log("[verify-session:webhook-upsert]", {
+            requestId,
+            fallbackEventId,
+            upsertedCount: upserted?.upsertedCount || 0,
+          });
+        } catch {}
+
+        if (upserted?.upsertedCount) {
+          let user = await User.findOne({ email });
+          const userFound = !!user;
+          if (!user) user = new User({ email });
+          user.purchasedPackage = packageId;
+          await user.save();
+          try {
+            console.log("[verify-session:user]", {
+              requestId,
+              found: userFound,
+              userId: user?._id?.toString?.() || null,
+              email: user?.email || null,
+            });
+          } catch {}
+
+          const legacyWindowStart = new Date(Date.now() - 2 * 60 * 1000);
+          const legacyInstance = await PackageInstance.findOne({
+            userId: user._id,
+            planKey: packageId,
+            status: "active",
+            stripeCheckoutSessionId: null,
+            createdAt: { $gte: legacyWindowStart },
+          }).sort({ createdAt: -1 });
+          try {
+            console.log("[verify-session:legacy-instance]", {
+              requestId,
+              found: !!legacyInstance,
+              legacyInstanceId: legacyInstance?._id?.toString?.() || null,
+            });
+          } catch {}
+
+          if (legacyInstance) {
+            legacyInstance.stripeCheckoutSessionId = sessionId;
+            legacyInstance.stripePaymentIntentId = paymentIntentId || null;
+            await legacyInstance.save();
+            user.activePackageInstanceId = legacyInstance._id;
+            await user.save();
+            applied = true;
+            activePackageInstanceId = legacyInstance._id.toString();
+            try {
+              console.log("[verify-session:legacy-applied]", {
+                requestId,
+                activePackageInstanceId,
+              });
+            } catch {}
+          } else {
+            const uploadLimit = UPLOAD_LIMITS[packageId] || 0;
+            const sadtalkerLimit = getSadTalkerPlanLimit(packageId);
+            const tokensLimit = planLimit(packageId);
+            const instance = await PackageInstance.create({
+              userId: user._id,
+              planKey: packageId,
+              status: "active",
+              uploadLimit,
+              uploadsUsed: 0,
+              tokensLimit,
+              tokensUsed: 0,
+              chatMonthlyLimit: tokensLimit,
+              chatUsedThisCycle: 0,
+              chatCycleEndsAt: null,
+              sadtalkerVideoLimit: sadtalkerLimit,
+              sadtalkerVideosUsed: 0,
+              sadtalkerPrimaryImageHash: null,
+              personaKey: normalizedPersonaKey,
+              personaBound: !!normalizedPersonaKey,
+              rekognitionFaceId: null,
+              stripeCheckoutSessionId: sessionId,
+              stripePaymentIntentId: paymentIntentId || null,
+            });
+            user.activePackageInstanceId = instance._id;
+            await user.save();
+            applied = true;
+            activePackageInstanceId = instance._id.toString();
+            try {
+              console.log("[verify-session:instance-created]", {
+                requestId,
+                instanceId: instance?._id?.toString?.() || null,
+                activePackageInstanceId,
+              });
+            } catch {}
+          }
+
+          await WebhookEvent.updateOne(
+            { eventId: fallbackEventId },
+            { $set: { error: null, processedAt: new Date() } }
+          );
+        } else {
+          try {
+            console.log("[verify-session:deduped]", { requestId, fallbackEventId });
+          } catch {}
+        }
+      } catch (err) {
+        try {
+          console.error("[verify-session:apply-error]", {
+            requestId,
+            code: err?.code || null,
+            message: err?.message || String(err),
+          });
+        } catch {}
+        if (err?.code !== 11000) {
+          console.error("Verify package fallback apply error:", err);
+        }
+      }
+    } else {
+      try {
+        console.log("[verify-session:apply-guard]", {
+          requestId,
+          entered: false,
+          applied,
+          payment_status: session?.payment_status || null,
+          hasEmail: !!email,
+          hasPackageId: !!packageId,
+        });
+      } catch {}
+    }
+
+    if (!applied && sessionId) {
+      const maxAttempts = 5;
+      const delayMs = 150;
+      let recheck = null;
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        recheck = await PackageInstance.findOne({ stripeCheckoutSessionId: sessionId }).select({ _id: 1 });
+        if (recheck) {
+          applied = true;
+          activePackageInstanceId = recheck._id.toString();
+          break;
+        }
+        if (attempt < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+      }
+      try {
+        console.log("[verify-session:recheck]", {
+          requestId,
+          found: !!recheck,
+          recheckInstanceId: recheck?._id?.toString?.() || null,
+          attempts: maxAttempts,
+          delayMs,
+        });
+      } catch {}
+    }
+
+    const payload = {
       status: session.payment_status, // 'paid' | 'unpaid' | 'no_payment_required'
-      email: session.metadata?.email,
-      packageId: session.metadata?.packageId,
-    });
+      email: email || null,
+      packageId: packageId || null,
+      applied,
+      activePackageInstanceId,
+      sessionId: session.id,
+    };
+    try {
+      console.log("[verify-session:result]", { requestId, ...payload });
+    } catch {}
+    return res.json(payload);
   } catch (err) {
+    try {
+      console.error("[verify-session:fatal]", {
+        code: err?.code || null,
+        message: err?.message || String(err),
+      });
+    } catch {}
     console.error("Verify session error:", err);
     return sendErr(req, res, 500, "Failed to verify session");
   }

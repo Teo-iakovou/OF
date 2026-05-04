@@ -993,6 +993,222 @@ const consumeSadtalkerCredit = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HeyGen credit consumption
+// Uses the same quota fields as SadTalker (shared video pool) but supports
+// consuming multiple credits at once for longer videos (1 credit = 1 minute).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const consumeHeygenCredit = async (req, res) => {
+  if (!req.user || !req.user.id) {
+    return sendErr(req, res, 401, "Unauthorized");
+  }
+
+  try {
+    const requestId = req.requestId || null;
+    const user = await User.findById(req.user.id);
+    if (!user) return sendErr(req, res, 404, "User not found");
+
+    const isAdmin = !!user.isAdmin;
+    if (!user.activePackageInstanceId) {
+      return sendErr(req, res, 409, "No active package instance.", {
+        errorCode: "ACTIVE_INSTANCE_REQUIRED",
+        message: "No active package instance.",
+      });
+    }
+
+    const instance = await PackageInstance.findOne({
+      _id: user.activePackageInstanceId,
+      userId: user._id,
+      status: "active",
+    });
+    if (!instance) {
+      return sendErr(req, res, 409, "No active package instance.", {
+        errorCode: "ACTIVE_INSTANCE_REQUIRED",
+        message: "No active package instance.",
+      });
+    }
+
+    // creditsToConsume: how many quota units this video costs (1 per minute of audio)
+    const rawCredits = Number(req.body?.creditsToConsume);
+    const creditsToConsume = Number.isFinite(rawCredits)
+      ? Math.max(1, Math.min(10, Math.ceil(rawCredits)))
+      : 1;
+
+    const plan = instance.planKey || "lite";
+    const baseLimit = resolveVideoBaseLimit(instance);
+    const addonsVideos =
+      typeof instance.addons?.sadtalkerVideos === "number" ? instance.addons.sadtalkerVideos : 0;
+    const effectiveLimit = baseLimit === 0 ? 0 : baseLimit + addonsVideos;
+    const used = instance.sadtalkerVideosUsed || 0;
+
+    const imageHash =
+      req.body && typeof req.body.imageHash === "string" ? req.body.imageHash.trim() : "";
+
+    // Single-face restriction for non-ultimate, non-admin users.
+    if (!isAdmin && plan !== "ultimate" && imageHash) {
+      if (!instance.sadtalkerPrimaryImageHash) {
+        instance.sadtalkerPrimaryImageHash = imageHash;
+      } else if (instance.sadtalkerPrimaryImageHash !== imageHash) {
+        return sendQuotaError(res, 403, {
+          message:
+            "Your current plan allows videos for one face image only. Please reuse your original photo or upgrade to the Ultimate plan.",
+          feature: "talking_head",
+          plan,
+          remaining: Math.max(0, effectiveLimit - used),
+          limit: baseLimit || null,
+          requestId,
+        });
+      }
+    }
+
+    // Admin bypass: unlimited, still tracks usage.
+    if (isAdmin) {
+      if (imageHash && !instance.sadtalkerPrimaryImageHash) {
+        instance.sadtalkerPrimaryImageHash = imageHash;
+      }
+      await instance.save();
+      return res.json({
+        ok: true,
+        userId: user._id.toString(),
+        packageInstanceId: instance._id.toString(),
+        personaKey: instance.personaKey || null,
+        plan,
+        videoLimit: null,
+        videosUsed: (instance.sadtalkerVideosUsed || 0) + creditsToConsume,
+        videosRemaining: null,
+        unlimited: true,
+        adminBypass: true,
+        creditsConsumed: creditsToConsume,
+      });
+    }
+
+    // Ultimate or explicit 0-limit = unlimited, still track usage.
+    if (plan === "ultimate" || baseLimit === 0) {
+      const update = {};
+      if (imageHash && !instance.sadtalkerPrimaryImageHash) {
+        update.sadtalkerPrimaryImageHash = imageHash;
+      }
+      const updated = await PackageInstance.findOneAndUpdate(
+        { _id: instance._id, userId: user._id, status: "active" },
+        {
+          $inc: { sadtalkerVideosUsed: creditsToConsume },
+          ...(Object.keys(update).length ? { $set: update } : {}),
+        },
+        { new: true }
+      );
+      if (!updated) {
+        return sendErr(req, res, 500, "Failed to update video quota");
+      }
+      return res.json({
+        ok: true,
+        userId: user._id.toString(),
+        packageInstanceId: instance._id.toString(),
+        personaKey: instance.personaKey || null,
+        plan,
+        videoLimit: null,
+        videosUsed: updated.sadtalkerVideosUsed,
+        videosRemaining: null,
+        unlimited: true,
+        creditsConsumed: creditsToConsume,
+      });
+    }
+
+    // Limited plan: atomic check that remaining >= creditsToConsume.
+    const remainingExpr = {
+      $subtract: [
+        {
+          $add: [
+            { $ifNull: ["$sadtalkerVideoLimit", 0] },
+            { $ifNull: ["$addons.sadtalkerVideos", 0] },
+          ],
+        },
+        { $ifNull: ["$sadtalkerVideosUsed", 0] },
+      ],
+    };
+
+    const primaryFilter = imageHash
+      ? {
+          $or: [
+            { sadtalkerPrimaryImageHash: imageHash },
+            { sadtalkerPrimaryImageHash: { $in: [null, ""] } },
+          ],
+        }
+      : {};
+
+    const setFields = { sadtalkerVideoLimit: baseLimit };
+    if (imageHash && !instance.sadtalkerPrimaryImageHash) {
+      setFields.sadtalkerPrimaryImageHash = imageHash;
+    }
+
+    const updated = await PackageInstance.findOneAndUpdate(
+      {
+        _id: instance._id,
+        userId: user._id,
+        status: "active",
+        ...primaryFilter,
+        $expr: {
+          $or: [
+            { $eq: ["$sadtalkerVideoLimit", 0] },
+            { $gte: [remainingExpr, creditsToConsume] },
+          ],
+        },
+      },
+      {
+        $inc: { sadtalkerVideosUsed: creditsToConsume },
+        $set: setFields,
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      if (imageHash) {
+        const current = await PackageInstance.findOne({
+          _id: instance._id,
+          userId: user._id,
+          status: "active",
+        });
+        if (current?.sadtalkerPrimaryImageHash && current.sadtalkerPrimaryImageHash !== imageHash) {
+          return sendQuotaError(res, 403, {
+            message:
+              "Your current plan allows videos for one face image only. Please reuse your original photo or upgrade to the Ultimate plan.",
+            feature: "talking_head",
+            plan,
+            remaining: Math.max(0, effectiveLimit - used),
+            limit: baseLimit || null,
+            requestId,
+          });
+        }
+      }
+      return res.status(403).json({
+        error: `Not enough video credits. This video requires ${creditsToConsume} credit(s).`,
+        errorCode: "HEYGEN_NO_CREDITS",
+        creditsRequired: creditsToConsume,
+        remaining: Math.max(0, effectiveLimit - used),
+        requestId,
+      });
+    }
+
+    const remaining = Math.max(0, effectiveLimit - (updated.sadtalkerVideosUsed || 0));
+
+    return res.json({
+      ok: true,
+      userId: user._id.toString(),
+      packageInstanceId: instance._id.toString(),
+      personaKey: instance.personaKey || null,
+      plan,
+      videoLimit: baseLimit,
+      videosUsed: updated.sadtalkerVideosUsed,
+      videosRemaining: remaining,
+      unlimited: false,
+      creditsConsumed: creditsToConsume,
+    });
+  } catch (error) {
+    console.error("Error consuming HeyGen credit:", error);
+    return sendErr(req, res, 500, "Failed to update video quota");
+  }
+};
+
 module.exports = {
   purchasePackage,
   checkUserPackage,
@@ -1004,5 +1220,6 @@ module.exports = {
   selectPackageInstance,
   grantAddons,
   consumeSadtalkerCredit,
+  consumeHeygenCredit,
   getSadTalkerPlanLimit,
 };

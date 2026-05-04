@@ -2,6 +2,11 @@ const cookie = require("cookie");
 const { verifyToken, SESSION_COOKIE_NAME } = require("../utils/jwt");
 const User = require("../models/user");
 const PackageInstance = require("../models/packageInstance");
+const {
+  DescribeCollectionCommand,
+  ListCollectionsCommand,
+} = require("@aws-sdk/client-rekognition");
+const { rekognition } = require("../utils/rekognition");
 
 const getUserIdFromCookie = (req) => {
   const header = req.headers["cookie"] || "";
@@ -101,4 +106,49 @@ const repairFaceId = async (req, res) => {
   });
 };
 
-module.exports = { debugWhoami, repairFaceId };
+const rekognitionTest = async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).json({ error: "Not Found" });
+  }
+
+  const requestId = req.requestId || null;
+  const collectionId = process.env.REKOGNITION_COLLECTION_ID || null;
+
+  try {
+    if (collectionId) {
+      const out = await rekognition.send(
+        new DescribeCollectionCommand({ CollectionId: collectionId })
+      );
+      return res.json({
+        success: true,
+        requestId,
+        mode: "describe",
+        collectionId,
+        status: {
+          faceCount: typeof out?.FaceCount === "number" ? out.FaceCount : null,
+          faceModelVersion: out?.FaceModelVersion || null,
+          creationTimestamp: out?.CreationTimestamp || null,
+        },
+      });
+    }
+
+    const out = await rekognition.send(new ListCollectionsCommand({ MaxResults: 20 }));
+    return res.json({
+      success: true,
+      requestId,
+      mode: "list",
+      collections: Array.isArray(out?.CollectionIds) ? out.CollectionIds : [],
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      requestId,
+      error: {
+        name: err?.name || null,
+        message: err?.message || String(err),
+      },
+    });
+  }
+};
+
+module.exports = { debugWhoami, repairFaceId, rekognitionTest };

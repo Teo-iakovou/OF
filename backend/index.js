@@ -32,6 +32,7 @@ const billingRoutes = require("./routes/billing");
 const debugRoutes = require("./routes/debug");
 const personaRoutes = require("./routes/persona");
 const recommendationRoutes = require("./routes/recommendations");
+const heygenRoutes = require("./routes/heygenRoutes");
 const webhookController = require("./controllers/checkoutController");
 const PackageInstance = require("./models/packageInstance");
 const { requestIdMiddleware } = require("./middleware/requestId");
@@ -113,6 +114,7 @@ app.use("/api/render-internal", renderInternalRoutes);
 app.use("/api/billing", requireAuth, billingRoutes);
 app.use("/api/persona", requireAuth, personaRoutes);
 app.use("/api/recommendations", requireAuth, recommendationRoutes);
+app.use("/api/heygen", heygenRoutes);
 
 const PORT = process.env.PORT || 5001;
 
