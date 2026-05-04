@@ -51,7 +51,7 @@
   "landing": {
     "hero": {
       "eyebrow": "Creator AI Platform",
-      "title": "Create winning content faster with one AI workflow",
+      "title": "Create winning content faster with",
       "subtitle": "Upload a photo, get platform strategy, captions, hashtags, and talking-head output from one place.",
       "primaryCta": "Get started",
       "secondaryCta": "Login",
@@ -64,32 +64,74 @@
           "Review report",
           "Publish faster"
         ]
+      },
+      "titleHighlight": "one AI workflow",
+      "stats": {
+        "strategies": "Strategies generated",
+        "rating": "Creator rating",
+        "cadence": "Faster weekly cadence"
       }
     },
     "brands": {
       "eyebrow": "Trusted by",
       "title": "Used by modern creator teams",
-      "items": ["CreatorDaily", "PixelStudio", "MonoMedia", "NorthSocial", "HypeOps"]
+      "items": [
+        "CreatorDaily",
+        "PixelStudio",
+        "MonoMedia",
+        "NorthSocial",
+        "HypeOps"
+      ]
     },
     "how": {
       "eyebrow": "How it works",
       "title": "Three steps to production-ready content",
       "steps": [
-        { "num": "1", "title": "Upload", "desc": "Add a face image once, then upload content photos for analysis." },
-        { "num": "2", "title": "Generate", "desc": "Receive strategy, captions, hashtags, and posting windows." },
-        { "num": "3", "title": "Scale", "desc": "Track in history, optimize with AI chat, and publish consistently." }
+        {
+          "num": "1",
+          "title": "Upload",
+          "desc": "Add a face image once, then upload content photos for analysis."
+        },
+        {
+          "num": "2",
+          "title": "Generate",
+          "desc": "Receive strategy, captions, hashtags, and posting windows."
+        },
+        {
+          "num": "3",
+          "title": "Scale",
+          "desc": "Track in history, optimize with AI chat, and publish consistently."
+        }
       ]
     },
     "features": {
       "eyebrow": "Features",
       "title": "Everything you need in one dashboard",
       "items": [
-        { "title": "AI image analysis", "desc": "Generate platform-ready posting strategy from one upload." },
-        { "title": "Captions + hashtags", "desc": "Receive optimized copy variations and hashtag sets quickly." },
-        { "title": "AI coach chat", "desc": "Ask for rewrites, timing suggestions, and creative direction." },
-        { "title": "AI video avatar", "desc": "Turn face photo + audio into ready-to-share talking videos." },
-        { "title": "History and reports", "desc": "Track outputs, revisit plans, and open report details anytime." },
-        { "title": "Face-bound security", "desc": "Package-instance enrollment and verification protect usage." }
+        {
+          "title": "AI image analysis",
+          "desc": "Generate platform-ready posting strategy from one upload."
+        },
+        {
+          "title": "Captions + hashtags",
+          "desc": "Receive optimized copy variations and hashtag sets quickly."
+        },
+        {
+          "title": "AI coach chat",
+          "desc": "Ask for rewrites, timing suggestions, and creative direction."
+        },
+        {
+          "title": "AI video avatar",
+          "desc": "Turn face photo + audio into ready-to-share talking videos."
+        },
+        {
+          "title": "History and reports",
+          "desc": "Track outputs, revisit plans, and open report details anytime."
+        },
+        {
+          "title": "Face-bound security",
+          "desc": "Package-instance enrollment and verification protect usage."
+        }
       ]
     },
     "testimonials": {
@@ -181,7 +223,11 @@
           "History and reports",
           "One-time face enrollment protection"
         ],
-        "highlights": ["Uploads included", "Fast results", "Email support (basic)"],
+        "highlights": [
+          "Uploads included",
+          "Fast results",
+          "Email support (basic)"
+        ],
         "badge": null,
         "cta": "Get started"
       },
@@ -197,7 +243,11 @@
           "Priority processing",
           "Better support"
         ],
-        "highlights": ["Most popular", "More AI capacity", "Faster turnaround"],
+        "highlights": [
+          "Most popular",
+          "More AI capacity",
+          "Faster turnaround"
+        ],
         "badge": "Most Popular",
         "cta": "Get started"
       },
@@ -212,7 +262,11 @@
           "Talking Head video credits included",
           "Premium support"
         ],
-        "highlights": ["Best value for teams", "Highest priority", "Agency-ready scale"],
+        "highlights": [
+          "Best value for teams",
+          "Highest priority",
+          "Agency-ready scale"
+        ],
         "badge": "Best Value",
         "cta": "Get started"
       }
@@ -239,7 +293,13 @@
       "socialProof": {
         "eyebrow": "Trusted by",
         "title": "Built for modern creator teams",
-        "items": ["CreatorDaily", "PixelStudio", "MonoMedia", "NorthSocial", "HypeOps"]
+        "items": [
+          "CreatorDaily",
+          "PixelStudio",
+          "MonoMedia",
+          "NorthSocial",
+          "HypeOps"
+        ]
       },
       "included": {
         "eyebrow": "Included",
@@ -250,9 +310,21 @@
         "eyebrow": "How it works",
         "title": "From purchase to production in three steps",
         "steps": [
-          { "num": "1", "title": "Activate plan", "desc": "Complete checkout and instantly unlock this package in your account." },
-          { "num": "2", "title": "Enroll & upload", "desc": "Finish one-time face enrollment, then start uploading content for analysis." },
-          { "num": "3", "title": "Generate & scale", "desc": "Use reports, chat guidance, and history to publish with consistency." }
+          {
+            "num": "1",
+            "title": "Activate plan",
+            "desc": "Complete checkout and instantly unlock this package in your account."
+          },
+          {
+            "num": "2",
+            "title": "Enroll & upload",
+            "desc": "Finish one-time face enrollment, then start uploading content for analysis."
+          },
+          {
+            "num": "3",
+            "title": "Generate & scale",
+            "desc": "Use reports, chat guidance, and history to publish with consistency."
+          }
         ]
       },
       "security": {

@@ -51,7 +51,7 @@
   "landing": {
     "hero": {
       "eyebrow": "Plataforma de IA para creadores",
-      "title": "Crea contenido ganador más rápido con un solo flujo de IA",
+      "title": "Crea contenido ganador más rápido con",
       "subtitle": "Sube una foto y obtén estrategia por plataforma, captions, hashtags y talking-head output desde un solo lugar.",
       "primaryCta": "Empezar",
       "secondaryCta": "Iniciar sesión",
@@ -64,32 +64,74 @@
           "Revisar informe",
           "Publicar más rápido"
         ]
+      },
+      "titleHighlight": "un solo flujo de IA",
+      "stats": {
+        "strategies": "Estrategias generadas",
+        "rating": "Valoración del creador",
+        "cadence": "Cadencia semanal más rápida"
       }
     },
     "brands": {
       "eyebrow": "Confían en nosotros",
       "title": "Usado por equipos de creadores modernos",
-      "items": ["CreatorDaily", "PixelStudio", "MonoMedia", "NorthSocial", "HypeOps"]
+      "items": [
+        "CreatorDaily",
+        "PixelStudio",
+        "MonoMedia",
+        "NorthSocial",
+        "HypeOps"
+      ]
     },
     "how": {
       "eyebrow": "Cómo funciona",
       "title": "Tres pasos para contenido listo para producción",
       "steps": [
-        { "num": "1", "title": "Sube", "desc": "Añade una imagen de tu rostro una vez y luego sube fotos de contenido para análisis." },
-        { "num": "2", "title": "Genera", "desc": "Recibe estrategia, captions, hashtags y ventanas recomendadas de publicación." },
-        { "num": "3", "title": "Escala", "desc": "Sigue todo en el historial, optimiza con AI chat y publica con constancia." }
+        {
+          "num": "1",
+          "title": "Sube",
+          "desc": "Añade una imagen de tu rostro una vez y luego sube fotos de contenido para análisis."
+        },
+        {
+          "num": "2",
+          "title": "Genera",
+          "desc": "Recibe estrategia, captions, hashtags y ventanas recomendadas de publicación."
+        },
+        {
+          "num": "3",
+          "title": "Escala",
+          "desc": "Sigue todo en el historial, optimiza con AI chat y publica con constancia."
+        }
       ]
     },
     "features": {
       "eyebrow": "Funciones",
       "title": "Todo lo que necesitas en un solo panel",
       "items": [
-        { "title": "Análisis de imagen con IA", "desc": "Genera estrategia de publicación lista para plataforma desde una sola carga." },
-        { "title": "Captions + hashtags", "desc": "Obtén variaciones de texto optimizadas y sets de hashtags rápidamente." },
-        { "title": "Chat con coach IA", "desc": "Pide reescrituras, sugerencias de timing y dirección creativa." },
-        { "title": "Avatar de video IA", "desc": "Convierte foto de rostro + audio en videos parlantes listos para compartir." },
-        { "title": "Historial e informes", "desc": "Sigue resultados, revisa planes y abre detalles de informes cuando quieras." },
-        { "title": "Seguridad vinculada al rostro", "desc": "La inscripción y verificación por instancia de paquete protege el uso." }
+        {
+          "title": "Análisis de imagen con IA",
+          "desc": "Genera estrategia de publicación lista para plataforma desde una sola carga."
+        },
+        {
+          "title": "Captions + hashtags",
+          "desc": "Obtén variaciones de texto optimizadas y sets de hashtags rápidamente."
+        },
+        {
+          "title": "Chat con coach IA",
+          "desc": "Pide reescrituras, sugerencias de timing y dirección creativa."
+        },
+        {
+          "title": "Avatar de video IA",
+          "desc": "Convierte foto de rostro + audio en videos parlantes listos para compartir."
+        },
+        {
+          "title": "Historial e informes",
+          "desc": "Sigue resultados, revisa planes y abre detalles de informes cuando quieras."
+        },
+        {
+          "title": "Seguridad vinculada al rostro",
+          "desc": "La inscripción y verificación por instancia de paquete protege el uso."
+        }
       ]
     },
     "testimonials": {
@@ -181,7 +223,11 @@
           "Historial e informes",
           "Protección con registro facial único"
         ],
-        "highlights": ["Cargas incluidas", "Resultados rápidos", "Soporte por email (básico)"],
+        "highlights": [
+          "Cargas incluidas",
+          "Resultados rápidos",
+          "Soporte por email (básico)"
+        ],
         "badge": null,
         "cta": "Empezar"
       },
@@ -197,7 +243,11 @@
           "Procesamiento prioritario",
           "Mejor soporte"
         ],
-        "highlights": ["Más popular", "Más capacidad de IA", "Entrega más rápida"],
+        "highlights": [
+          "Más popular",
+          "Más capacidad de IA",
+          "Entrega más rápida"
+        ],
         "badge": "Más popular",
         "cta": "Empezar"
       },
@@ -212,7 +262,11 @@
           "Créditos de video Talking Head incluidos",
           "Soporte premium"
         ],
-        "highlights": ["Mejor valor para equipos", "Prioridad más alta", "Escala para agencias"],
+        "highlights": [
+          "Mejor valor para equipos",
+          "Prioridad más alta",
+          "Escala para agencias"
+        ],
         "badge": "Mejor valor",
         "cta": "Empezar"
       }
@@ -239,7 +293,13 @@
       "socialProof": {
         "eyebrow": "Confían en nosotros",
         "title": "Diseñado para equipos de creadores modernos",
-        "items": ["CreatorDaily", "PixelStudio", "MonoMedia", "NorthSocial", "HypeOps"]
+        "items": [
+          "CreatorDaily",
+          "PixelStudio",
+          "MonoMedia",
+          "NorthSocial",
+          "HypeOps"
+        ]
       },
       "included": {
         "eyebrow": "Incluido",
@@ -250,9 +310,21 @@
         "eyebrow": "Cómo funciona",
         "title": "De la compra a la producción en tres pasos",
         "steps": [
-          { "num": "1", "title": "Activa el plan", "desc": "Completa el checkout y desbloquea este paquete al instante en tu cuenta." },
-          { "num": "2", "title": "Registra y sube", "desc": "Completa el face enrollment único y empieza a subir contenido para análisis." },
-          { "num": "3", "title": "Genera y escala", "desc": "Usa reportes, guía por chat y el historial para publicar con constancia." }
+          {
+            "num": "1",
+            "title": "Activa el plan",
+            "desc": "Completa el checkout y desbloquea este paquete al instante en tu cuenta."
+          },
+          {
+            "num": "2",
+            "title": "Registra y sube",
+            "desc": "Completa el face enrollment único y empieza a subir contenido para análisis."
+          },
+          {
+            "num": "3",
+            "title": "Genera y escala",
+            "desc": "Usa reportes, guía por chat y el historial para publicar con constancia."
+          }
         ]
       },
       "security": {
