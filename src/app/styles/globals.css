@@ -90,6 +90,182 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ---- Nav link hover underline (landing page) ---- */
+.nav-link-underline {
+  position: relative;
+}
+.nav-link-underline::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 0;
+  height: 2px;
+  background: var(--hg-accent);
+  border-radius: 2px;
+  transform: translateX(-50%);
+  transition: width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.nav-link-underline:hover::after {
+  width: 22px;
+}
+
+/* ---- Hero: gradient animated word ---- */
+.gradient-word {
+  background: linear-gradient(120deg, #50C0F0 0%, #7dd4fb 45%, #c8ebfa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-size: 200% 100%;
+  animation: shine 6s linear infinite;
+}
+@keyframes shine {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: -200% 50%; }
+}
+
+/* ---- Hero: badge pulse dot ---- */
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .4; }
+}
+
+/* ---- Hero: workflow card rotating border glow ---- */
+.wf-card-glow { position: relative; }
+.wf-card-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(80,192,240,.35) 25%, transparent 50%, rgba(80,192,240,.35) 75%, transparent 100%);
+  animation: rotate-border 10s linear infinite;
+  opacity: .6;
+  z-index: -1;
+  filter: blur(6px);
+}
+@keyframes rotate-border { to { transform: rotate(360deg); } }
+
+/* ---- Hero: scroll indicator bounce ---- */
+.scroll-ind {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--hg-muted);
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  animation: indBounce 2s ease-in-out infinite;
+}
+@media (min-width: 768px) { .scroll-ind { display: flex; } }
+@keyframes indBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0);   opacity: .5; }
+  50%       { transform: translateX(-50%) translateY(6px); opacity: 1; }
+}
+
+/* ---- Brands marquee ---- */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.brands-track {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  animation: marquee 22s linear infinite;
+}
+.brands-marquee:hover .brands-track {
+  animation-play-state: paused;
+}
+
+/* ---- Section divider: subtle cyan hairline ---- */
+.divider {
+  display: block;
+  width: 100%;
+  height: 1px;
+  border: 0;
+  background: rgba(80, 192, 240, 0.12);
+  margin: 0;
+}
+
+/* ---- Atmosphere blob float animations (landing page) ---- */
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(8%, 6%) scale(1.08); }
+}
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(-6%, 10%) scale(1.12); }
+}
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(-4%, -8%) scale(.92); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atmo-blob { animation: none !important; }
+}
+
+/* ---- Magnetic button ---- */
+[data-magnetic] { transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+
+/* ---- Primary CTA: sheen sweep on hover ---- */
+.btn-sheen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.55), rgba(255,255,255,0));
+  transform: translateX(-120%);
+  z-index: 0;
+  pointer-events: none;
+}
+.btn-sheen:hover::before { animation: sheen 1.1s ease-out; }
+.btn-sheen > * { position: relative; z-index: 1; }
+@keyframes sheen { to { transform: translateX(120%); } }
+
+/* ---- Final CTA: rotating gradient border ---- */
+@property --angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.final-card { position: relative; overflow: hidden; }
+.final-card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(from var(--angle, 0deg), rgba(80,192,240,.45), transparent 30%, transparent 70%, rgba(80,192,240,.45));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rotateAngle 8s linear infinite;
+  z-index: 0;
+}
+@keyframes rotateAngle { to { --angle: 360deg; } }
+.final-card > * { position: relative; z-index: 1; }
+
+/* ---- Wave stack: layered sea-from-above divider ---- */
+.wave-stack { position: relative; width: 100%; height: 140px; overflow: hidden; }
+.wave-layer { position: absolute; inset: 0; }
+.wave-track-fill { display: flex; width: 200%; height: 100%; }
+.wave-fill-svg { flex: 0 0 50%; height: 100%; display: block; }
+.wave-layer-1 .wave-track-fill { animation: waveSlide 20s linear infinite; }
+.wave-layer-2 .wave-track-fill { animation: waveSlide 14s linear infinite reverse; }
+.wave-layer-3 .wave-track-fill { animation: waveSlide 10s linear infinite; }
+.wave-layer-1 path { fill: color-mix(in oklab, var(--hg-accent) 8%, var(--hg-surface)); }
+.wave-layer-2 path { fill: color-mix(in oklab, var(--hg-accent) 13%, var(--hg-surface)); }
+.wave-layer-3 path { fill: var(--hg-surface); }
+@media (prefers-reduced-motion: reduce) { .wave-track-fill { animation: none !important; } }
+
+/* ---- Wave divider ---- */
+.wave-div { position: relative; width: 100%; height: 60px; line-height: 0; pointer-events: none; overflow: hidden; }
+.wave-track { display: flex; width: 200%; animation: waveSlide 14s linear infinite; }
+.wave-svg { flex: 0 0 50%; height: 60px; display: block; }
+.wave-line { fill: none; stroke: #50C0F0; stroke-width: 1.5; opacity: .4; }
+@keyframes waveSlide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .wave-track { animation: none !important; } }
+
 /* Loading dots – keep as is */
 .dot-wave {
   display: flex;

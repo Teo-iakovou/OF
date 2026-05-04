@@ -10,14 +10,14 @@ export default function LandingFooter() {
     <footer className="border-t border-[var(--hg-border)] bg-[var(--hg-surface)]">
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 md:grid-cols-4 md:px-8">
         <div className="space-y-3 md:col-span-1">
-          <h3 className="text-base font-semibold text-[var(--hg-text)]">Echofy</h3>
-          <p className="text-sm text-[var(--hg-muted)]">
+          <h3 className="text-base font-semibold text-white">Echofy</h3>
+          <p className="max-w-[280px] text-sm text-[var(--hg-muted)]">
             AI content platform for creators: strategy, captions, reports, chat, and talking-head generation.
           </p>
         </div>
 
         <div className="space-y-3">
-          <h4 className="text-xs uppercase tracking-wide text-[var(--hg-muted)]">Product</h4>
+          <h4 className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--hg-muted)]">Product</h4>
           <div className="flex flex-col gap-2 text-sm text-[var(--hg-text)]">
             <a href="#features" className="hover:text-[var(--hg-accent)]">Features</a>
             <a href="#pricing" className="hover:text-[var(--hg-accent)]">Pricing</a>
@@ -26,7 +26,7 @@ export default function LandingFooter() {
         </div>
 
         <div className="space-y-3">
-          <h4 className="text-xs uppercase tracking-wide text-[var(--hg-muted)]">Company</h4>
+          <h4 className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--hg-muted)]">Company</h4>
           <div className="flex flex-col gap-2 text-sm text-[var(--hg-text)]">
             <a href="#" className="hover:text-[var(--hg-accent)]">Help Center</a>
             <a href="#" className="hover:text-[var(--hg-accent)]">Contact</a>
@@ -34,7 +34,7 @@ export default function LandingFooter() {
         </div>
 
         <div className="space-y-3">
-          <h4 className="text-xs uppercase tracking-wide text-[var(--hg-muted)]">Legal</h4>
+          <h4 className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--hg-muted)]">Legal</h4>
           <div className="flex flex-col gap-2 text-sm text-[var(--hg-text)]">
             <Link href="/privacy" className="hover:text-[var(--hg-accent)]">Privacy</Link>
             <Link href="/terms" className="hover:text-[var(--hg-accent)]">Terms</Link>

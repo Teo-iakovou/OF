@@ -37,6 +37,8 @@ export default function LandingNavbar() {
   const [desktopLangOpen, setDesktopLangOpen] = useState(false);
   const [mobileLangOpen, setMobileLangOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [navHidden, setNavHidden] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -89,6 +91,20 @@ export default function LandingNavbar() {
     setPreviewOpen(false);
   }, [pathname]);
 
+  // Hide nav on scroll-down, show on scroll-up; strengthen bg when scrolled
+  useEffect(() => {
+    let lastY = 0;
+    function onScroll() {
+      const y = window.scrollY;
+      setScrolled(y > 20);
+      if (y > 120 && y > lastY + 6) setNavHidden(true);
+      else if (y < lastY - 6 || y < 120) setNavHidden(false);
+      lastY = y;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   useEffect(() => {
     if (!previewOpen) return;
     const handler = (e: MouseEvent) => {
@@ -100,8 +116,16 @@ export default function LandingNavbar() {
   }, [previewOpen]);
 
   return (
-    <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
-      <div className="w-full max-w-6xl rounded-full border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface)_82%,transparent)] shadow-lg shadow-black/20 backdrop-blur-md">
+    <header
+      className={`fixed top-6 left-0 right-0 z-50 flex justify-center px-4 transition-transform duration-[350ms] cubic-bezier-[.2,.8,.2,1] ${navHidden ? "-translate-y-[120%]" : "translate-y-0"}`}
+    >
+      <div
+        className={`w-full max-w-6xl rounded-full border border-[var(--hg-border)] backdrop-blur-md transition-[background,box-shadow] duration-300 ${
+          scrolled
+            ? "bg-[color:color-mix(in_oklab,var(--hg-surface)_92%,transparent)] shadow-[0_14px_40px_rgba(0,0,0,.45)]"
+            : "bg-[color:color-mix(in_oklab,var(--hg-surface)_82%,transparent)] shadow-lg shadow-black/20"
+        }`}
+      >
         <div className="flex items-center justify-between px-6 py-3">
           <Link href={locale === "en" ? "/" : `/${locale}`} className="inline-flex items-center gap-2">
             <Image src="/echofy-removebg-preview.png" alt="Echofy" width={34} height={34} className="rounded-full" />
@@ -112,7 +136,7 @@ export default function LandingNavbar() {
               <a
                 key={link.href}
                 href={sectionHref(link.href)}
-                className="text-sm text-[var(--hg-muted)] transition hover:text-[var(--hg-text)]"
+                className="nav-link-underline text-sm text-[var(--hg-muted)] transition hover:text-[var(--hg-text)]"
               >
                 {link.label}
               </a>

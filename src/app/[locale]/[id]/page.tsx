@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "framer-motion";
@@ -82,6 +82,129 @@ export default function PackageDetailPage() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [intentHandled, setIntentHandled] = useState(false);
   const [faqOpenDetail, setFaqOpenDetail] = useState<number | null>(0);
+
+  const starsRef = useRef<HTMLCanvasElement>(null);
+  const curDotRef = useRef<HTMLDivElement>(null);
+  const curRingRef = useRef<HTMLDivElement>(null);
+  const scrollProgRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let starAnimId: number | null = null;
+    let cursorRaf: number | null = null;
+    let cleanupCursor: (() => void) | null = null;
+    let cleanupMagnetic: (() => void) | null = null;
+    let cleanupStarResize: (() => void) | null = null;
+
+    // ---- Starfield ----
+    const canvas = starsRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      let w = (canvas.width = window.innerWidth);
+      let h = (canvas.height = window.innerHeight);
+      const stars = Array.from({ length: 120 }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 0.8 + 0.2,
+        a: Math.random(),
+        speed: Math.random() * 0.4 + 0.1,
+      }));
+      const onResize = () => {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+      };
+      window.addEventListener("resize", onResize);
+      cleanupStarResize = () => window.removeEventListener("resize", onResize);
+      function drawStars() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, w, h);
+        for (const s of stars) {
+          s.a += s.speed * 0.008;
+          const alpha = 0.18 + 0.18 * Math.sin(s.a);
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(234,240,255,${alpha})`;
+          ctx.fill();
+        }
+        starAnimId = requestAnimationFrame(drawStars);
+      }
+      drawStars();
+    }
+
+    // ---- Cursor ----
+    const dot = curDotRef.current;
+    const ring = curRingRef.current;
+    if (dot && ring && window.matchMedia("(pointer:fine)").matches) {
+      let mx = window.innerWidth / 2, my = window.innerHeight / 2;
+      let rx = mx, ry = my;
+      function onMouseMove(e: MouseEvent) {
+        mx = e.clientX; my = e.clientY;
+        dot!.style.opacity = "1";
+        ring!.style.opacity = "1";
+        dot!.style.transform = `translate(${mx - 4}px,${my - 4}px)`;
+      }
+      function onMouseLeave() {
+        dot!.style.opacity = "0";
+        ring!.style.opacity = "0";
+      }
+      function cursorTick() {
+        rx += (mx - rx) * 0.14;
+        ry += (my - ry) * 0.14;
+        ring!.style.transform = `translate(${rx - 18}px,${ry - 18}px)`;
+        cursorRaf = requestAnimationFrame(cursorTick);
+      }
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseleave", onMouseLeave);
+      cursorTick();
+      const onEnter = () => { ring!.style.width = "56px"; ring!.style.height = "56px"; ring!.style.borderColor = "rgba(80,192,240,.9)"; };
+      const onLeave = () => { ring!.style.width = "36px"; ring!.style.height = "36px"; ring!.style.borderColor = "rgba(80,192,240,.7)"; };
+      const interactives = document.querySelectorAll("a, button, article");
+      interactives.forEach((el) => { el.addEventListener("mouseenter", onEnter); el.addEventListener("mouseleave", onLeave); });
+      cleanupCursor = () => {
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mouseleave", onMouseLeave);
+        interactives.forEach((el) => { el.removeEventListener("mouseenter", onEnter); el.removeEventListener("mouseleave", onLeave); });
+      };
+    }
+
+    // ---- Magnetic buttons ----
+    if (window.matchMedia("(pointer:fine)").matches) {
+      const magnetics = document.querySelectorAll<HTMLElement>("[data-magnetic]");
+      const handlers: Array<[HTMLElement, EventListener, EventListener]> = [];
+      magnetics.forEach((btn) => {
+        const onMove: EventListener = (e) => {
+          const { clientX, clientY } = e as MouseEvent;
+          const r = btn.getBoundingClientRect();
+          btn.style.transform = `translate(${(clientX - r.left - r.width / 2) * 0.18}px,${(clientY - r.top - r.height / 2) * 0.28}px)`;
+        };
+        const onLeave: EventListener = () => { btn.style.transform = ""; };
+        btn.addEventListener("mousemove", onMove);
+        btn.addEventListener("mouseleave", onLeave);
+        handlers.push([btn, onMove, onLeave]);
+      });
+      cleanupMagnetic = () => handlers.forEach(([el, move, leave]) => {
+        el.removeEventListener("mousemove", move);
+        el.removeEventListener("mouseleave", leave);
+      });
+    }
+
+    // ---- Scroll progress ----
+    const prog = scrollProgRef.current;
+    const onScroll = () => {
+      if (!prog) return;
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      prog.style.width = total > 0 ? `${(window.scrollY / total) * 100}%` : "0%";
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      if (starAnimId) cancelAnimationFrame(starAnimId);
+      if (cursorRaf) cancelAnimationFrame(cursorRaf);
+      window.removeEventListener("scroll", onScroll);
+      cleanupStarResize?.();
+      cleanupCursor?.();
+      cleanupMagnetic?.();
+    };
+  }, []);
 
   const checkoutInFlight = useSyncExternalStore(
     subscribeCheckoutInFlight,
@@ -191,6 +314,33 @@ export default function PackageDetailPage() {
 
   return (
     <div className="min-h-screen bg-[var(--hg-bg)] text-[var(--hg-text)]">
+      {/* Scroll progress */}
+      <div ref={scrollProgRef} className="fixed top-0 left-0 z-[100] h-[2px] w-0 bg-[var(--hg-accent)]" style={{ transition: "none" }} aria-hidden />
+
+      {/* Starfield */}
+      <canvas ref={starsRef} className="pointer-events-none fixed inset-0 z-0" aria-hidden />
+
+      {/* Aurora blobs */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
+        <div className="atmo-blob absolute -left-40 -top-32 h-[520px] w-[520px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(80,192,240,0.13)_0%,transparent_70%)]" style={{ animation: "float1 18s ease-in-out infinite" }} />
+        <div className="atmo-blob absolute right-[-120px] top-[30%] h-[420px] w-[420px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(80,192,240,0.10)_0%,transparent_70%)]" style={{ animation: "float2 22s ease-in-out infinite" }} />
+        <div className="atmo-blob absolute bottom-[10%] left-[30%] h-[360px] w-[360px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(80,192,240,0.08)_0%,transparent_70%)]" style={{ animation: "float3 16s ease-in-out infinite" }} />
+      </div>
+
+      {/* Custom cursor */}
+      <div
+        ref={curDotRef}
+        aria-hidden
+        className="pointer-events-none fixed z-[999] h-2 w-2 rounded-full opacity-0 mix-blend-screen [@media(pointer:coarse)]:hidden"
+        style={{ background: "var(--hg-accent)", boxShadow: "0 0 20px var(--hg-accent),0 0 40px rgba(80,192,240,.4)", willChange: "transform", transition: "transform .08s linear" }}
+      />
+      <div
+        ref={curRingRef}
+        aria-hidden
+        className="pointer-events-none fixed z-[998] h-9 w-9 rounded-full opacity-0 [@media(pointer:coarse)]:hidden"
+        style={{ border: "1.5px solid rgba(80,192,240,.7)", willChange: "transform", transition: "transform .2s cubic-bezier(.2,.8,.2,1),opacity .25s,width .2s,height .2s" }}
+      />
+
       <LandingNavbar />
 
       <main className="pt-28 md:pt-32">
@@ -238,15 +388,14 @@ export default function PackageDetailPage() {
                 transition={{ duration: 0.5, delay: 0.48 }}
                 className="flex flex-wrap gap-3"
               >
-                <motion.button
+                <button
                   onClick={() => void handleCheckout()}
                   disabled={isCheckingOut || checkoutInFlight || userLoading}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="inline-flex h-11 items-center rounded-xl bg-[var(--hg-accent)] px-5 text-sm font-semibold text-[#07131d] hover:opacity-90 disabled:opacity-60"
+                  data-magnetic
+                  className="btn-sheen relative overflow-hidden inline-flex h-11 items-center rounded-xl bg-[var(--hg-accent)] px-5 text-sm font-semibold text-[#07131d] hover:opacity-90 disabled:opacity-60"
                 >
-                  {isCheckingOut || checkoutInFlight ? t("hero.processingCta") : t("hero.primaryCta")}
-                </motion.button>
+                  <span>{isCheckingOut || checkoutInFlight ? t("hero.processingCta") : t("hero.primaryCta")}</span>
+                </button>
                 <Link
                   href="/#pricing"
                   className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] px-5 text-sm font-semibold text-white hover:border-[var(--hg-accent)]/50"
@@ -303,18 +452,14 @@ export default function PackageDetailPage() {
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">{t("sections.socialProof.eyebrow")}</p>
               <h2 className="text-2xl font-semibold text-white md:text-3xl">{t("sections.socialProof.title")}</h2>
             </div>
-            <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
-              <motion.div
-                animate={{ x: ["0%", "-50%"] }}
-                transition={{ repeat: Infinity, ease: "linear", duration: 20 }}
-                className="flex w-max items-center gap-x-14"
-              >
+            <div className="brands-marquee relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+              <div className="brands-track">
                 {[...socialItems, ...socialItems].map((item, i) => (
-                  <span key={i} className="whitespace-nowrap text-sm font-medium tracking-wide text-[var(--hg-muted)]">
+                  <span key={i} className="mx-7 whitespace-nowrap text-sm font-medium tracking-wide text-[var(--hg-muted)]">
                     {item}
                   </span>
                 ))}
-              </motion.div>
+              </div>
             </div>
           </div>
         </SectionReveal>
@@ -458,7 +603,7 @@ export default function PackageDetailPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: index * 0.07 }}
-                  className="overflow-hidden rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)]"
+                  className={`overflow-hidden rounded-2xl border bg-[var(--hg-surface)] transition-colors ${open ? "border-[var(--hg-accent)]/40 bg-[color:color-mix(in_oklab,var(--hg-accent)_6%,var(--hg-surface))]" : "border-[var(--hg-border)]"}`}
                 >
                   <button
                     type="button"
@@ -491,7 +636,7 @@ export default function PackageDetailPage() {
 
         {/* Final CTA */}
         <SectionReveal as="section" className="px-4 pb-16 md:px-8 md:pb-24">
-          <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-8 text-center md:p-12">
+          <div className="final-card mx-auto flex w-full max-w-6xl flex-col items-center gap-4 rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-8 text-center md:p-12">
             <motion.h3
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -517,15 +662,14 @@ export default function PackageDetailPage() {
               transition={{ duration: 0.4, delay: 0.32 }}
               className="flex flex-wrap justify-center gap-3"
             >
-              <motion.button
+              <button
                 onClick={() => void handleCheckout()}
                 disabled={isCheckingOut || checkoutInFlight || userLoading}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-                className="inline-flex h-11 items-center rounded-xl bg-[var(--hg-accent)] px-6 text-sm font-semibold text-[#07131d] hover:opacity-90 disabled:opacity-60"
+                data-magnetic
+                className="btn-sheen relative overflow-hidden inline-flex h-11 items-center rounded-xl bg-[var(--hg-accent)] px-6 text-sm font-semibold text-[#07131d] hover:opacity-90 disabled:opacity-60"
               >
-                {isCheckingOut || checkoutInFlight ? t("hero.processingCta") : t("cta.primaryCta")}
-              </motion.button>
+                <span>{isCheckingOut || checkoutInFlight ? t("hero.processingCta") : t("cta.primaryCta")}</span>
+              </button>
               <Link
                 href="/#pricing"
                 className="inline-flex h-11 items-center rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-6 text-sm font-semibold text-white hover:border-[var(--hg-accent)]/50 transition-colors"
