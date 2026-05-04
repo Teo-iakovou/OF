@@ -34,6 +34,8 @@
     "emailPlaceholder": "you@example.com",
     "passwordLabel": "Password",
     "passwordPlaceholder": "Min. 8 characters",
+    "confirmPasswordLabel": "Confirm password",
+    "confirmPasswordPlaceholder": "Repeat your password",
     "emailFootnote": "Your password is encrypted and never shared.",
     "signingIn": "Signing you in...",
     "creatingAccount": "Creating your account...",
@@ -45,7 +47,8 @@
     "errors": {
       "signInFailed": "Sign in failed. Check your email and password.",
       "signUpFailed": "Sign up failed. Please try again.",
-      "verifyFailed": "Could not verify your session. Please enable cookies and try again."
+      "verifyFailed": "Could not verify your session. Please enable cookies and try again.",
+      "passwordMismatch": "Passwords do not match."
     }
   },
   "landing": {

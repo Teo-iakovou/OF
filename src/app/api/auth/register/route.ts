@@ -20,7 +20,7 @@ function getSetCookieList(res: Response) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const res = await fetch(`${SERVER_BASE_URL}/api/auth/register`, {
+  const res = await fetch(`${SERVER_BASE_URL}/api/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

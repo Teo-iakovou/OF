@@ -38,6 +38,8 @@ const userSchema = new mongoose.Schema({
   // Optional: remember the first face image hash for non-ultimate plans
   sadtalkerPrimaryImageHash: { type: String, default: null },
   totalChatMessages: { type: Number, default: 0 },
+  passwordHash: { type: String, select: false, required: function() { return !this.googleId; } },
+  emailVerified: { type: Boolean, default: false },
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);

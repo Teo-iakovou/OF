@@ -34,6 +34,8 @@
     "emailPlaceholder": "you@example.com",
     "passwordLabel": "Password",
     "passwordPlaceholder": "Min. 8 caratteri",
+    "confirmPasswordLabel": "Conferma password",
+    "confirmPasswordPlaceholder": "Ripeti la password",
     "emailFootnote": "La tua password è crittografata e non viene condivisa.",
     "signingIn": "Accesso in corso...",
     "creatingAccount": "Creazione account in corso...",
@@ -45,7 +47,8 @@
     "errors": {
       "signInFailed": "Accesso non riuscito. Controlla email e password.",
       "signUpFailed": "Registrazione non riuscita. Riprova.",
-      "verifyFailed": "Impossibile verificare la sessione. Abilita i cookie e riprova."
+      "verifyFailed": "Impossibile verificare la sessione. Abilita i cookie e riprova.",
+      "passwordMismatch": "Le password non corrispondono."
     }
   },
   "landing": {

@@ -34,6 +34,8 @@
     "emailPlaceholder": "you@example.com",
     "passwordLabel": "Κωδικός πρόσβασης",
     "passwordPlaceholder": "Τουλ. 8 χαρακτήρες",
+    "confirmPasswordLabel": "Επιβεβαίωση κωδικού",
+    "confirmPasswordPlaceholder": "Επαναλάβετε τον κωδικό",
     "emailFootnote": "Ο κωδικός σας είναι κρυπτογραφημένος και δεν κοινοποιείται.",
     "signingIn": "Σύνδεση...",
     "creatingAccount": "Δημιουργία λογαριασμού...",
@@ -45,7 +47,8 @@
     "errors": {
       "signInFailed": "Η σύνδεση απέτυχε. Ελέγξτε email και κωδικό.",
       "signUpFailed": "Η εγγραφή απέτυχε. Παρακαλώ δοκιμάστε ξανά.",
-      "verifyFailed": "Δεν ήταν δυνατή η επιβεβαίωση συνεδρίας. Ενεργοποιήστε cookies και δοκιμάστε ξανά."
+      "verifyFailed": "Δεν ήταν δυνατή η επιβεβαίωση συνεδρίας. Ενεργοποιήστε cookies και δοκιμάστε ξανά.",
+      "passwordMismatch": "Οι κωδικοί δεν ταιριάζουν."
     }
   },
   "landing": {

@@ -1,86 +1,73 @@
 const { signToken, getCookieOptions, SESSION_COOKIE_NAME } = require("../utils/jwt");
 const { sendErr } = require("../utils/sendErr");
 const User = require("../models/user");
+const { hashPassword, verifyPassword } = require("../utils/password");
+const { signupSchema, loginSchema } = require("../validators/authValidators");
 
-// Simple credential login (email-only dev mode). You can extend with password/OTP.
-const AUTH_DEBUG = String(process.env.AUTH_DEBUG || "").toLowerCase() === "true" || process.env.NODE_ENV !== 'production';
+const AUTH_DEBUG = String(process.env.AUTH_DEBUG || "").toLowerCase() === "true" || process.env.NODE_ENV !== "production";
+
+async function signup(req, res) {
+  try {
+    const parsed = signupSchema.safeParse(req.body || {});
+    if (!parsed.success) {
+      return sendErr(req, res, 400, "Invalid input");
+    }
+    const { email, password, name } = parsed.data;
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) {
+      // Generic message — don't reveal whether the email is already registered
+      return sendErr(req, res, 409, "Unable to create account");
+    }
+    const [firstName = "", ...rest] = typeof name === "string" ? name.trim().split(/\s+/) : [];
+    const lastName = rest.join(" ");
+    const passwordHash = await hashPassword(password);
+    const user = await User.create({
+      email: normalizedEmail,
+      provider: "email",
+      firstName,
+      lastName,
+      passwordHash,
+      emailVerified: false,
+    });
+    const token = signToken({ sub: user._id.toString(), email: user.email });
+    const opts = getCookieOptions();
+    res.cookie(SESSION_COOKIE_NAME, token, opts);
+    return res.status(201).json({ id: user._id.toString(), email: user.email, plan: user.purchasedPackage || null });
+  } catch (e) {
+    if (AUTH_DEBUG) { try { console.error("[auth] signup error", e?.message || e); } catch {} }
+    return sendErr(req, res, 500, "Signup failed");
+  }
+}
+
 async function login(req, res) {
   try {
-    // Support both POST (JSON body) and GET (query string) to enable
-    // top-level redirect-based login for cross-site cookie scenarios.
-    const isGet = req.method === "GET";
-    const email = isGet ? (req.query?.email || "") : ((req.body || {}).email || "");
-    const provider = isGet ? (req.query?.provider || null) : ((req.body || {}).provider || null);
-    const googleId = isGet ? (req.query?.googleId || null) : ((req.body || {}).googleId || null);
-    const fullName = isGet ? (req.query?.name || null) : ((req.body || {}).name || null);
-    const redirect = isGet ? (req.query?.redirect || null) : null;
-    if (typeof email !== "string" || !email.includes("@")) {
-      return sendErr(req, res, 400, "Valid email is required");
+    const parsed = loginSchema.safeParse(req.body || {});
+    if (!parsed.success) {
+      return sendErr(req, res, 400, "Invalid input");
     }
-    if (AUTH_DEBUG) {
-      try {
-        console.log('[auth] login attempt', {
-          email: String(email || '').slice(0, 80),
-          origin: req.get('origin') || undefined,
-          referer: req.get('referer') || undefined,
-          ua: req.get('user-agent') || undefined,
-        });
-      } catch {}
-    }
+    const { email, password } = parsed.data;
     const normalizedEmail = email.toLowerCase().trim();
-    let user = await User.findOne({ email: normalizedEmail });
-    if (!user) {
-      // Optional: auto-create user in dev; in production you may require invite / OAuth
-      const [firstName = "", ...rest] =
-        typeof fullName === "string" ? fullName.trim().split(/\s+/) : [];
-      const lastName = rest.join(" ");
-      user = await User.create({
-        email: normalizedEmail,
-        provider: provider === "google" ? "google" : "email",
-        googleId: provider === "google" && typeof googleId === "string" ? googleId : null,
-        firstName,
-        lastName,
-      });
-    } else if (provider === "google") {
-      const updates = {};
-      if (typeof googleId === "string" && googleId && user.googleId !== googleId) {
-        updates.googleId = googleId;
-      }
-      if (user.provider !== "google") {
-        updates.provider = "google";
-      }
-      if (typeof fullName === "string" && fullName.trim()) {
-        const [firstName = "", ...rest] = fullName.trim().split(/\s+/);
-        const lastName = rest.join(" ");
-        if (!user.firstName && firstName) updates.firstName = firstName;
-        if (!user.lastName && lastName) updates.lastName = lastName;
-      }
-      if (Object.keys(updates).length > 0) {
-        user = await User.findByIdAndUpdate(user._id, updates, { new: true });
-      }
+    // Select passwordHash explicitly (field has select:false)
+    const user = await User.findOne({ email: normalizedEmail }).select("+passwordHash");
+    // Same message for "not found" and "wrong password" — prevents user enumeration
+    const INVALID = "Invalid email or password";
+    if (!user || !user.passwordHash) {
+      return sendErr(req, res, 401, INVALID);
     }
-
+    const ok = await verifyPassword(password, user.passwordHash);
+    if (!ok) {
+      return sendErr(req, res, 401, INVALID);
+    }
     const token = signToken({ sub: user._id.toString(), email: user.email });
     const opts = getCookieOptions();
     res.cookie(SESSION_COOKIE_NAME, token, opts);
     if (AUTH_DEBUG) {
-      try { console.log('[auth] login ok', { sameSite: opts.sameSite, secure: opts.secure, domain: opts.domain || null }); } catch {}
+      try { console.log("[auth] login ok", { sameSite: opts.sameSite, secure: opts.secure }); } catch {}
     }
-    
-    // If this was a GET with a redirect hint, perform a top-level redirect
-    // back to the UI. This avoids third-party cookie restrictions because
-    // the cookie is being set on a top-level navigation to the API origin.
-    if (isGet) {
-      const uiBase = process.env.PUBLIC_URL || "http://localhost:3000";
-      // Only allow relative redirects to avoid open redirect issues.
-      const destPath = (typeof redirect === "string" && redirect.startsWith("/")) ? redirect : "/";
-      const to = new URL(destPath, uiBase).toString();
-      return res.redirect(302, to);
-    }
-
-    return res.json({ id: user._id.toString(), email: user.email, plan: user.purchasedPackage || null, token });
+    return res.json({ id: user._id.toString(), email: user.email, plan: user.purchasedPackage || null });
   } catch (e) {
-    if (AUTH_DEBUG) { try { console.error('[auth] login error', e?.message || e); } catch {} }
+    if (AUTH_DEBUG) { try { console.error("[auth] login error", e?.message || e); } catch {} }
     return sendErr(req, res, 500, "Login failed");
   }
 }
@@ -97,8 +84,8 @@ async function logout(_req, res) {
 async function me(req, res) {
   if (AUTH_DEBUG) {
     try {
-      const hasCookie = Boolean((req.headers['cookie'] || '').includes(SESSION_COOKIE_NAME));
-      console.log('[auth] /me', { hasCookie, userId: req.user?.id || null });
+      const hasCookie = Boolean((req.headers["cookie"] || "").includes(SESSION_COOKIE_NAME));
+      console.log("[auth] /me", { hasCookie, userId: req.user?.id || null });
     } catch {}
   }
   if (!req.user || !req.user.id) return sendErr(req, res, 401, "Unauthorized");
@@ -119,4 +106,58 @@ async function me(req, res) {
   }
 }
 
-module.exports = { login, logout, me };
+// Called server-to-server from the Next.js OAuth callback — never exposed publicly
+async function googleSession(req, res) {
+  try {
+    const { googleId, email, name } = req.body || {};
+    if (typeof googleId !== "string" || !googleId) {
+      return sendErr(req, res, 400, "Invalid googleId");
+    }
+    if (typeof email !== "string" || !email.includes("@")) {
+      return sendErr(req, res, 400, "Invalid email");
+    }
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Lookup by googleId first; fall back to email for account-linking
+    let user = await User.findOne({ googleId });
+    if (!user) {
+      user = await User.findOne({ email: normalizedEmail });
+    }
+    if (!user) {
+      const [firstName = "", ...rest] = typeof name === "string" ? name.trim().split(/\s+/) : [];
+      const lastName = rest.join(" ");
+      user = await User.create({
+        email: normalizedEmail,
+        provider: "google",
+        googleId,
+        firstName,
+        lastName,
+      });
+    } else {
+      const updates = {};
+      if (user.googleId !== googleId) updates.googleId = googleId;
+      if (user.provider !== "google") updates.provider = "google";
+      if (typeof name === "string" && name.trim()) {
+        const [firstName = "", ...rest] = name.trim().split(/\s+/);
+        const lastName = rest.join(" ");
+        if (!user.firstName && firstName) updates.firstName = firstName;
+        if (!user.lastName && lastName) updates.lastName = lastName;
+      }
+      if (Object.keys(updates).length > 0) {
+        user = await User.findByIdAndUpdate(user._id, updates, { new: true });
+      }
+    }
+
+    console.log(`[AUTH] Google OAuth login: ${normalizedEmail}`);
+
+    const token = signToken({ sub: user._id.toString(), email: user.email });
+    const opts = getCookieOptions();
+    res.cookie(SESSION_COOKIE_NAME, token, opts);
+    return res.json({ id: user._id.toString(), email: user.email, plan: user.purchasedPackage || null });
+  } catch (e) {
+    if (AUTH_DEBUG) { try { console.error("[auth] googleSession error", e?.message || e); } catch {} }
+    return sendErr(req, res, 500, "OAuth session failed");
+  }
+}
+
+module.exports = { signup, login, logout, me, googleSession };

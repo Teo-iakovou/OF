@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { login, logout, me } = require("../controllers/authController");
+const { signup, login, logout, me, googleSession } = require("../controllers/authController");
 
+router.post("/signup", signup);
 router.post("/login", login);
-router.get("/login", login); // allow redirect-based login in top-level navigation
 router.post("/logout", logout);
 router.get("/me", me);
+router.post("/google-session", googleSession);
 
 module.exports = router;

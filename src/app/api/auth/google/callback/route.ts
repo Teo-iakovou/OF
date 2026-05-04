@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sanitizeRedirect } from "@/app/utils/sanitizeRedirect";
+
+const SERVER_BASE_URL = process.env.API_URL || "http://localhost:5001";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -222,23 +225,55 @@ export async function GET(req: NextRequest) {
       return redirectError(req, requestId);
     }
 
-    const params = new URLSearchParams({
-      email: googleUser.email,
-      redirect: "/dashboard",
-      provider: "google",
-      googleId: googleUser.sub,
+    // Determine post-login destination from the state cookie; fallback to /dashboard
+    const rawNext = req.cookies.get(OAUTH_NEXT_COOKIE)?.value || "";
+    const destination = sanitizeRedirect(rawNext) || "/dashboard";
+
+    // Issue the session server-to-server via the Express backend, then forward
+    // the Set-Cookie onto the redirect response — same BFF pattern as POST /api/auth/login.
+    const sessionRes = await fetch(`${SERVER_BASE_URL}/api/auth/google-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        googleId: googleUser.sub,
+        email: googleUser.email,
+        name: googleUser.name ?? "",
+      }),
+      cache: "no-store",
     });
-    if (googleUser.name) {
-      params.set("name", googleUser.name);
+
+    if (!sessionRes.ok) {
+      const sessionError = truncate(await sessionRes.text());
+      console.log("[oauth-google-callback]", {
+        requestId,
+        stage: "google_session_failed",
+        status: sessionRes.status,
+        body: sessionError,
+      });
+      return redirectError(req, requestId);
     }
-    const loginUrl = new URL(`/api/auth/login?${params.toString()}`, baseUrl);
-    const redirectResponse = NextResponse.redirect(loginUrl, 302);
+
+    const redirectResponse = NextResponse.redirect(new URL(destination, baseUrl), 302);
     clearOauthCookies(req, redirectResponse);
+
+    // Forward every Set-Cookie header from the backend onto the redirect response
+    const viaMethod = (sessionRes.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.();
+    const setCookieList = Array.isArray(viaMethod) && viaMethod.length > 0
+      ? viaMethod
+      : (sessionRes.headers.get("set-cookie") ?? "")
+          .split(/,(?=\s*[^;,\s]+=)/g)
+          .map((v) => v.trim())
+          .filter(Boolean);
+
+    for (const value of setCookieList) {
+      redirectResponse.headers.append("set-cookie", value);
+    }
 
     console.log("[oauth-google-callback]", {
       requestId,
       stage: "success",
-      destination: loginUrl.toString(),
+      destination,
+      hasCookie: setCookieList.length > 0,
     });
     return redirectResponse;
   } catch (error) {
