@@ -13,7 +13,7 @@ router.post("/create-checkout-session", requireAuth, createCheckoutSession);
 // Create a Stripe Checkout session for addon packs
 router.post("/create-addon-checkout-session", requireAuth, createAddonCheckoutSession);
 
-// Verify a session (client convenience after redirect)
-router.get("/verify-session", verifyCheckoutSession);
+// Verify a session (client convenience after redirect) — requires the session owner
+router.get("/verify-session", requireAuth, verifyCheckoutSession);
 
 module.exports = router;

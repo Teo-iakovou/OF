@@ -132,6 +132,7 @@ const createCheckoutSession = async (req, res) => {
       metadata: {
         email,
         packageId,
+        userId: req.user?.id || "",
         ...(normalizedPersonaKey ? { personaKey: normalizedPersonaKey } : {}),
       },
       client_reference_id: email,
@@ -592,6 +593,22 @@ const verifyCheckoutSession = async (req, res) => {
         personaKey: normalizedPersonaKey,
       });
     } catch {}
+
+    // Ownership check: the session must belong to the logged-in user.
+    // New sessions carry metadata.userId; legacy sessions fall back to email.
+    const sessionUserId = session.metadata?.userId;
+    const sessionEmail = (session.metadata?.email || session.customer_details?.email || "").toLowerCase();
+    if (sessionUserId) {
+      if (sessionUserId !== req.user.id) {
+        console.log(`[SECURITY] verify-session ownership mismatch: user ${req.user.id} tried to verify session for ${sessionUserId}`);
+        return sendErr(req, res, 403, "Session does not belong to current user");
+      }
+    } else if (sessionEmail) {
+      if (sessionEmail !== (req.user.email || "").toLowerCase()) {
+        console.log(`[SECURITY] verify-session ownership mismatch (email fallback): user ${req.user.email} tried to verify session for ${sessionEmail}`);
+        return sendErr(req, res, 403, "Session does not belong to current user");
+      }
+    }
 
     const existingInstance = sessionId
       ? await PackageInstance.findOne({ stripeCheckoutSessionId: sessionId }).select({ _id: 1, userId: 1 })
