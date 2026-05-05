@@ -6,6 +6,24 @@ const connectDB = require("./utils/db");
 const dotenv = require("dotenv");
 dotenv.config({ path: ".env" });
 dotenv.config({ path: ".env.local", override: true });
+
+// ── Production safety guards ───────────────────────────────────────────────
+// These run before Express initialises. Any misconfigured flag that could
+// compromise security aborts the process immediately with a clear message.
+if (process.env.NODE_ENV === "production" && process.env.CORS_ALLOW_ALL === "true") {
+  console.error("[FATAL] CORS_ALLOW_ALL cannot be enabled in production. Aborting.");
+  process.exit(1);
+}
+if (process.env.NODE_ENV === "production" && process.env.DEBUG_ERRORS === "true") {
+  console.error("[FATAL] DEBUG_ERRORS cannot be enabled in production. Aborting.");
+  process.exit(1);
+}
+if (process.env.NODE_ENV === "production" && String(process.env.AUTH_DEBUG || "").toLowerCase() === "true") {
+  console.error("[FATAL] AUTH_DEBUG cannot be enabled in production. Aborting.");
+  process.exit(1);
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 const { getCookieOptions } = require("./utils/jwt");
 if (process.env.NODE_ENV !== "production") {
   const opts = getCookieOptions();
@@ -53,11 +71,9 @@ app.post(
   webhookController.handleStripeWebhook
 );
 app.use(requestIdMiddleware);
-// ✅ CORS for all routes (env-driven allowlist + credentials)
-const allowedOrigins = String(process.env.ALLOWED_ORIGINS || "http://localhost:3000")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+// ✅ CORS for all routes (explicit allowlist — see config/allowedOrigins.js)
+// In production the list is hardcoded; ALLOWED_ORIGINS env var is ignored there.
+const allowedOrigins = require("./config/allowedOrigins");
 const allowAllCors = String(process.env.CORS_ALLOW_ALL || "").toLowerCase() === "true";
 const shouldDebugCors =
   String(process.env.AUTH_DEBUG || "").toLowerCase() === "true" ||
