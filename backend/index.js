@@ -43,6 +43,10 @@ const { requestLogger } = require("./middleware/requestLogger");
 
 
 const app = express();
+// Trust the first proxy hop (Vercel, Cloudflare, Render, etc.) so that
+// req.ip reflects the real client IP rather than the proxy IP.
+// Must be set before any rate-limiter middleware runs.
+app.set("trust proxy", 1);
 app.post(
   "/api/checkout/webhook",
   express.raw({ type: "application/json" }),

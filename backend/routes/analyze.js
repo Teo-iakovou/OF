@@ -8,6 +8,7 @@ const {
 updateAnalysisResult
 } = require("../controllers/analyzeController");
 const { guardActiveInstanceAndFace } = require("../middleware/guardActiveInstanceAndFace");
+const { uploadLimiter } = require("../middleware/rateLimiters");
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
@@ -15,7 +16,7 @@ const upload = multer({ dest: "uploads/" });
 router.use(guardActiveInstanceAndFace({ requireFaceEnrolled: true }));
 
 // Upload an image (supports ?captions=false)
-router.post("/", upload.single("image"), analyzeImage);
+router.post("/", uploadLimiter, upload.single("image"), analyzeImage);
 router.patch("/:id", updateAnalysisResult); 
 
 

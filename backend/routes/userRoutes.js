@@ -18,6 +18,7 @@ const { verifyPersonaFace } = require("../middleware/verifyPersonaFace");
 const { guardActiveInstanceAndFace } = require("../middleware/guardActiveInstanceAndFace");
 const { requireAuth } = require("../middleware/requireAuth");
 const { requireAdmin } = require("../middleware/requireAdmin");
+const { videoGenerationLimiter } = require("../middleware/rateLimiters");
 const multer = require("multer");
 
 const router = express.Router();
@@ -45,6 +46,7 @@ router.post(
 );
 router.post(
   "/heygen/consume",
+  videoGenerationLimiter,
   guardActiveInstanceAndFace({ requireFaceEnrolled: true }),
   upload.single("image"),
   verifyPersonaFace,
