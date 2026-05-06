@@ -22,6 +22,10 @@ if (process.env.NODE_ENV === "production" && String(process.env.AUTH_DEBUG || ""
   console.error("[FATAL] AUTH_DEBUG cannot be enabled in production. Aborting.");
   process.exit(1);
 }
+if (process.env.NODE_ENV === "production" && !process.env.INTERNAL_SECRET) {
+  console.error("[FATAL] INTERNAL_SECRET must be set in production. Aborting.");
+  process.exit(1);
+}
 // ──────────────────────────────────────────────────────────────────────────
 
 const { getCookieOptions } = require("./utils/jwt");

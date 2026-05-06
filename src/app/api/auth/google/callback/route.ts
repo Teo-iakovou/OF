@@ -233,7 +233,10 @@ export async function GET(req: NextRequest) {
     // the Set-Cookie onto the redirect response — same BFF pattern as POST /api/auth/login.
     const sessionRes = await fetch(`${SERVER_BASE_URL}/api/auth/google-session`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-secret": process.env.INTERNAL_SECRET ?? "",
+      },
       body: JSON.stringify({
         googleId: googleUser.sub,
         email: googleUser.email,
