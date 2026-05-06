@@ -164,6 +164,7 @@ export default function Page() {
       type Star = { x: number; y: number; r: number; a: number; ph: number; sp: number };
       let stars: Star[] = [];
       function resize() {
+        if (!canvas) return;
         W = canvas.width = window.innerWidth * DPR;
         H = canvas.height = window.innerHeight * DPR;
         canvas.style.width = window.innerWidth + "px";
