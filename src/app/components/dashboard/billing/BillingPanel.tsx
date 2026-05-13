@@ -9,6 +9,7 @@ import {
   createAddonCheckoutSession,
   fetchActivePackageInstances,
   selectPackageInstance,
+  startCheckout,
   type AddonType,
   type PackageInstanceSummary,
 } from "@/app/utils/api";
@@ -37,10 +38,22 @@ const formatStatus = (status?: string | null) => {
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
+const PLAN_DISPLAY_NAMES: Record<string, string> = {
+  lite: "Lite",
+  pro: "Pro",
+  ultimate: "Ultimate",
+};
+
 const formatPlanLabel = (value: string | null) => {
   if (!value) return "—";
-  return value.charAt(0).toUpperCase() + value.slice(1);
+  return PLAN_DISPLAY_NAMES[value] ?? (value.charAt(0).toUpperCase() + value.slice(1));
 };
+
+const PURCHASABLE_PLANS = [
+  { id: "lite", displayName: "Lite", price: "$99", description: "Getting started and testing AI analysis" },
+  { id: "pro", displayName: "Pro", price: "$189", description: "Consistent creators posting weekly" },
+  { id: "ultimate", displayName: "Ultimate", price: "$399", description: "Power users and agency teams" },
+] as const;
 
 const ADDON_PACKS: Array<{
   label: string;
@@ -70,6 +83,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorRequestId, setErrorRequestId] = useState<string | null>(null);
   const [actionKey, setActionKey] = useState<string | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const planInstanceId = planData?.packageInstanceId ?? null;
   const needsSelection = Boolean(planData?.needsInstanceSelection);
@@ -187,9 +201,12 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
   if (!planLoading && !hasActiveInstance && !embedded) {
     return (
       <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-        <h2 className="text-lg font-semibold text-white">Select a package to continue</h2>
+        <h2 className="text-lg font-semibold text-white">No active plan</h2>
         <p className="mt-2 text-sm text-gray-400">
-          You need an active package instance to buy add-ons.
+          You need an active package to buy add-ons.{" "}
+          <a href="/account/plans" className="text-[#50C0F0] underline hover:opacity-80">
+            View plans →
+          </a>
         </p>
       </section>
     );

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import {
   PanelRight,
   GemIcon,
+  Lock,
 } from "lucide-react";
 import Image from "next/image";
 import ProfileMenuButton from "@/app/components/dashboard/sidebar/ProfileMenuButton";
@@ -11,7 +12,11 @@ import PackagesModal from "@/app/components/dashboard/sidebar/PackagesModal";
 import { Link as I18nLink, usePathname } from "@/i18n/navigation";
 import { getTopLevelDashboardNavItems } from "@/app/components/dashboard/navigation/dashboardNav.config";
 import { DASHBOARD_LAYOUT } from "@/app/dashboard/dashboardLayout.constants";
+import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import type { SettingsSection } from "@/app/components/dashboard/sidebar/SettingsModal";
+
+// Routes that require an active package — show a lock badge when unpaid
+const LOCKED_HREFS = ["/dashboard/upload", "/dashboard/ai-chat", "/dashboard/talking-head"];
 
 const navItems = getTopLevelDashboardNavItems("desktop").filter(
   (item) => item.type === "route" && item.href
@@ -30,6 +35,7 @@ export default function DashboardSidebar({
 }) {
   const t = useTranslations("dashboardNav");
   const pathname = usePathname();
+  const { hasActiveInstance } = usePlanInfo();
   const [packagesOpen, setPackagesOpen] = useState(false);
   const packagesIconSize = 22;
 
@@ -103,6 +109,7 @@ export default function DashboardSidebar({
             const Icon = item.icon;
             const active = isItemActive(item.href);
             const label = item.labelKey ? t(item.labelKey) : item.label;
+            const isLocked = !hasActiveInstance && item.href !== undefined && LOCKED_HREFS.includes(item.href);
 
             const base =
               "group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer font-medium text-[15px] transition-all duration-200 w-full border";
@@ -113,7 +120,7 @@ export default function DashboardSidebar({
             const iconCls = active ? "text-[#63c9f5] drop-shadow-[0_0_6px_rgba(80,192,240,0.24)]" : "text-slate-400 group-hover:text-[#50C0F0]";
 
             return (
-              <li key={item.key} className="relative group w-full">
+              <li key={item.key} className={`relative group w-full${isLocked ? " opacity-60" : ""}`}>
                 {active ? (
                   <span className="absolute left-0 top-1/2 h-6 w-[2px] -translate-y-1/2 rounded-full bg-[#63c9f5]" />
                 ) : null}
@@ -122,7 +129,10 @@ export default function DashboardSidebar({
                     <span className={`${base} ${itemSurface}`}>
                       <Icon size={22} className={iconCls} />
                       {expanded && (
-                        <span className={`whitespace-nowrap leading-none ${labelCls}`}>{label}</span>
+                        <span className={`flex flex-1 items-center justify-between whitespace-nowrap leading-none ${labelCls}`}>
+                          {label}
+                          {isLocked && <Lock size={12} className="shrink-0 text-slate-500" />}
+                        </span>
                       )}
                     </span>
                   </I18nLink>
@@ -136,6 +146,7 @@ export default function DashboardSidebar({
                 {!expanded && (
                   <div className="absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 py-1 text-xs font-semibold text-white opacity-0 shadow-[0_8px_18px_rgba(0,0,0,0.28)] transition group-hover:pointer-events-auto group-hover:opacity-100">
                     {label}
+                    {isLocked && <Lock size={10} className="ml-1.5 inline-block text-slate-400" />}
                   </div>
                 )}
               </li>

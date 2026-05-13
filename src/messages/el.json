@@ -378,5 +378,27 @@
     "upload": "Ανέβασμα Περιεχομένου",
     "aiChat": "AI Chat",
     "talkingHead": "AI Video Avatar"
+  },
+  "account": {
+    "tabs": { "plans": "Πλάνα", "profile": "Προφίλ" },
+    "plans": {
+      "noPlanHeading": "Επιλέξτε ένα πλάνο για να ξεκινήσετε",
+      "noPlanSubheading": "Ξεκλειδώστε AI uploads, παραγωγή βίντεο και στρατηγική περιεχομένου",
+      "yourPlan": "Το πλάνο σας",
+      "wantUpgrade": "Θέλετε αναβάθμιση ή επιπλέον credits;",
+      "currentPlan": "Τρέχον πλάνο",
+      "upgradeTo": "Αναβάθμιση σε {plan}",
+      "getPlan": "Αποκτήστε {plan}"
+    },
+    "profile": {
+      "heading": "Προφίλ",
+      "fullName": "Πλήρες όνομα",
+      "email": "Email",
+      "changePassword": "Αλλαγή κωδικού",
+      "currentPassword": "Τρέχων κωδικός",
+      "newPassword": "Νέος κωδικός",
+      "confirmPassword": "Επιβεβαίωση νέου κωδικού",
+      "saveChanges": "Αποθήκευση αλλαγών"
+    }
   }
 }

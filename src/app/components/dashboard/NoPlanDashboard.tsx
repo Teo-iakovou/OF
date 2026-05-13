@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Lock } from "lucide-react";
 
 const checklist = [
-  { title: "Choose a plan", detail: "Pick Lite, Pro, or Ultimate based on your workflow." },
+  { title: "Choose a plan", detail: "Pick Lite or Pro based on your workflow." },
   { title: "Upload your first content", detail: "Drop in a photo or promo image to analyze instantly." },
   { title: "Get your strategy", detail: "Receive captions, posting times, and platform guidance." },
 ];
@@ -35,7 +35,7 @@ export default function NoPlanDashboard() {
             <p className="text-gray-300">Pick a plan to unlock uploads, AI chat, and talking head tools.</p>
           </div>
           <Link
-            href="/#packages"
+            href="/account/plans"
             className="inline-flex items-center justify-center rounded-lg bg-cyan-600 hover:bg-cyan-700 px-5 py-2 text-white font-semibold"
           >
             Explore plans →

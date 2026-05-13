@@ -83,7 +83,7 @@ export default function AuthForm({
       notifyAuthChange();
 
       onSuccess?.();
-      const target = redirectTo || "/dashboard";
+      const target = redirectTo || (mode === "signup" ? "/account/plans" : "/dashboard");
       const packageState = await checkUserPackage({ force: true }).catch(() => null);
       const hasActiveAccess = Boolean(packageState?.hasAccess && packageState?.packageInstanceId);
       if (hasActiveAccess) {

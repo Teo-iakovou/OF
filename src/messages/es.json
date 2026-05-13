@@ -378,5 +378,27 @@
     "upload": "Subir contenido",
     "aiChat": "AI Chat",
     "talkingHead": "AI Video Avatar"
+  },
+  "account": {
+    "tabs": { "plans": "Planes", "profile": "Perfil" },
+    "plans": {
+      "noPlanHeading": "Elige un plan para empezar",
+      "noPlanSubheading": "Desbloquea uploads con IA, generación de vídeo y estrategia de contenido",
+      "yourPlan": "Tu plan",
+      "wantUpgrade": "¿Quieres mejorar tu plan o añadir créditos?",
+      "currentPlan": "Plan actual",
+      "upgradeTo": "Mejorar a {plan}",
+      "getPlan": "Obtener {plan}"
+    },
+    "profile": {
+      "heading": "Perfil",
+      "fullName": "Nombre completo",
+      "email": "Correo electrónico",
+      "changePassword": "Cambiar contraseña",
+      "currentPassword": "Contraseña actual",
+      "newPassword": "Nueva contraseña",
+      "confirmPassword": "Confirmar nueva contraseña",
+      "saveChanges": "Guardar cambios"
+    }
   }
 }

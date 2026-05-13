@@ -1,4 +1,5 @@
 import LayoutClient from "@/app/dashboard/LayoutClient";
+import PaywallGuard from "@/app/dashboard/PaywallGuard";
 import { serverGetUser } from "@/app/utils/serverFetch";
 import { redirect } from "@/i18n/navigation";
 import { PlanProvider } from "@/app/dashboard/PlanContext";
@@ -17,7 +18,9 @@ export default async function DashboardLayout({
   }
   return (
     <PlanProvider>
-      <LayoutClient initialUser={initialUser}>{children}</LayoutClient>
+      <PaywallGuard>
+        <LayoutClient initialUser={initialUser}>{children}</LayoutClient>
+      </PaywallGuard>
     </PlanProvider>
   );
 }

@@ -57,3 +57,13 @@ export async function serverGetUser(): Promise<ServerUser> {
   const payload = r.data as { user?: ServerUser | null } | null;
   return r.ok && payload && payload.user ? payload.user : null;
 }
+
+// Convenience: check if current user has an active package on the server.
+// Returns true if hasAccess + packageInstanceId are present, false otherwise.
+// Returns null on network/auth error (caller should treat as unauthenticated).
+export async function serverGetActivePackage(): Promise<boolean | null> {
+  const r = await serverFetchJson('/api/user/check-package', { method: 'GET' });
+  if (!r.ok) return null;
+  const data = r.data as { hasAccess?: boolean; packageInstanceId?: string | null } | null;
+  return Boolean(data?.hasAccess && data?.packageInstanceId);
+}

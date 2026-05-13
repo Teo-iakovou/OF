@@ -5,7 +5,11 @@ const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   provider: { type: String, enum: ["email", "google"], default: "email" },
-  googleId: { type: String, default: null, unique: true, sparse: true },
+  googleId: {
+    type: String,
+    default: null,
+    index: { unique: true, partialFilterExpression: { googleId: { $type: "string" } } },
+  },
   firstName: { type: String, default: "", maxlength: 60 },
   lastName: { type: String, default: "", maxlength: 60 },
   activePackageInstanceId: { type: mongoose.Schema.Types.ObjectId, default: null },

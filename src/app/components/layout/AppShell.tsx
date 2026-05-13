@@ -38,17 +38,18 @@ function AppShellInner({ children }: AppShellProps) {
     pathWithoutLocale === "/cookies";
   const isDashboardRoute = pathWithoutLocale.startsWith("/dashboard");
   const isAiDashboardRoute = pathWithoutLocale.startsWith("/dashboard/ai");
+  const isAccountRoute = pathWithoutLocale.startsWith("/account");
 
   return (
     <AuthModalProvider>
-      {!isDashboardRoute && !useLandingShell && (
+      {!isDashboardRoute && !isAccountRoute && !useLandingShell && (
         <Navbar onCartClick={openCart} />
       )}
 
       <main className="flex-grow">{children}</main>
 
       <RouteTransitionOverlay />
-      {!isDashboardRoute && !isAiDashboardRoute && !useLandingShell && <Footer />}
+      {!isDashboardRoute && !isAiDashboardRoute && !isAccountRoute && !useLandingShell && <Footer />}
 
       <ConsentBanner />
       <ConsentModal />

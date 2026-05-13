@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronUp, CircleHelp, LogOut, Settings } from "lucide-react";
+import { ChevronUp, CircleHelp, CreditCard, LogOut, Settings, User } from "lucide-react";
 import { logoutClient } from "@/app/utils/authClient";
 import { useUser } from "@/app/hooks/useUser";
 import type { SettingsSection } from "@/app/components/dashboard/sidebar/SettingsModal";
@@ -93,6 +93,22 @@ export default function ProfileMenuButton({
             role="menu"
             className="absolute left-full top-1/2 z-50 ml-3 min-w-[230px] -translate-y-[70%] rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-1.5 shadow-[0_12px_26px_rgba(0,0,0,0.26)]"
           >
+            <Link
+              href="/account/profile"
+              onClick={() => setMenuOpen(false)}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--hg-text)] transition hover:bg-white/5"
+            >
+              <User className="h-4 w-4 text-slate-400" />
+              My Account
+            </Link>
+            <Link
+              href="/account/plans"
+              onClick={() => setMenuOpen(false)}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--hg-text)] transition hover:bg-white/5"
+            >
+              <CreditCard className="h-4 w-4 text-slate-400" />
+              Plans &amp; Billing
+            </Link>
             <button
               type="button"
               onClick={() => {

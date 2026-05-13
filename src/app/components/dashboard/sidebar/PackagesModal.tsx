@@ -50,7 +50,7 @@ const PLANS = [
   },
   {
     id: "ultimate",
-    name: "Elite",
+    name: "Ultimate",
     price: "$399",
     bestFor: "Power users and agency teams",
     includes: [
@@ -60,7 +60,7 @@ const PLANS = [
       "Highest priority processing and premium support",
     ],
     highlights: ["Best value for teams", "Maximum quotas", "Priority support"],
-    cta: "Upgrade to Elite",
+    cta: "Upgrade to Ultimate",
     badge: "Best value",
     featured: false,
   },

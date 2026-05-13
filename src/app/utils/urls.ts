@@ -1,1 +1,1 @@
-export const PACKAGES_URL = "/#packages";
+export const PACKAGES_URL = "/account/plans";
