@@ -6,6 +6,8 @@ import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import SelectActiveInstance from "@/app/components/dashboard/SelectActiveInstance";
 import { formatRemaining } from "@/app/utils/quotaDisplay";
 import { PACKAGES_URL } from "@/app/utils/urls";
+import { resolveQuotaContract } from "@/app/utils/quotaContract";
+import OutOfCreditsModal from "@/app/components/dashboard/OutOfCreditsModal";
 
 import Reveal from "@/app/components/common/Reveal";
 import Link from "next/link";
@@ -28,16 +30,23 @@ export default function UploadPage() {
   } = useReportDrawer();
 
   const [uploadsLeft, setUploadsLeft] = useState<number | null>(null);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
   const { data: planData, loading: planLoading, refresh: refreshPlan } = usePlanInfo();
   const activePackageInstanceId = planData?.packageInstanceId ?? null;
   const hasAccess = planData?.hasAccess ?? false;
   const needsSelection = Boolean(planData?.needsInstanceSelection);
 
-  
+  const uploadsRemaining = resolveQuotaContract(planData).uploads.remaining;
 
   useEffect(() => {
     setUploadsLeft(typeof planData?.uploadsRemaining === "number" ? planData.uploadsRemaining : null);
   }, [planData]);
+
+  useEffect(() => {
+    if (!planLoading && uploadsRemaining !== null && uploadsRemaining <= 0 && hasAccess) {
+      setShowCreditsModal(true);
+    }
+  }, [planLoading, uploadsRemaining, hasAccess]);
 
   useEffect(() => {
     openDrawerFromQuery();
@@ -122,12 +131,21 @@ export default function UploadPage() {
                 <div className="mt-3 rounded-xl hg-surface-soft px-3 py-2 text-sm hg-muted">
                   You&apos;ve used all your uploads. Upgrade your plan to continue.
                 </div>
-                <Link
-                  href={PACKAGES_URL}
-                  className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#04131d] hover:opacity-90"
-                >
-                  Manage billing →
-                </Link>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreditsModal(true)}
+                    className="inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#04131d] hover:opacity-90"
+                  >
+                    Buy credits
+                  </button>
+                  <Link
+                    href={PACKAGES_URL}
+                    className="inline-flex rounded-xl border border-[var(--hg-border)] px-4 py-3 text-sm font-medium text-white hover:border-[#50C0F0] hover:text-[#50C0F0]"
+                  >
+                    Manage billing →
+                  </Link>
+                </div>
               </Reveal>
             ) : (
               <div className="space-y-7 md:space-y-8">
@@ -173,6 +191,11 @@ export default function UploadPage() {
           if (!next) closeDrawer();
         }}
         resultId={reportResultId}
+      />
+      <OutOfCreditsModal
+        type="uploads"
+        open={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
       />
     </div>
   );

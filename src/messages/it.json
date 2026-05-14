@@ -400,5 +400,30 @@
       "confirmPassword": "Conferma nuova password",
       "saveChanges": "Salva modifiche"
     }
+  },
+  "outOfCredits": {
+    "uploads": {
+      "title": "Crediti di caricamento esauriti",
+      "subtitle": "Hai usato tutti i crediti di caricamento per questo periodo."
+    },
+    "ai": {
+      "title": "Token AI esauriti",
+      "subtitle": "Hai usato tutti i token AI per questo periodo."
+    },
+    "videos": {
+      "title": "Crediti video esauriti",
+      "subtitle": "Hai usato tutti i crediti video per questo periodo.",
+      "inlineMessage": "Hai usato tutti i crediti video. Migliora il tuo piano per continuare."
+    },
+    "addCreditsHeading": "Aggiungi crediti",
+    "buyCredits": "Acquista crediti",
+    "manageBilling": "Gestisci fatturazione →",
+    "or": "oppure",
+    "upgradePlan": "Migliora piano",
+    "cancel": "Annulla",
+    "buy": "Acquista",
+    "loading": "Caricamento opzioni…",
+    "errorLoading": "Impossibile caricare le opzioni.",
+    "retry": "Riprova"
   }
 }

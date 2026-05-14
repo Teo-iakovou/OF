@@ -6,6 +6,7 @@ const PackageInstance = require("../models/packageInstance");
 const WebhookEvent = require("../models/webhookEvent");
 const mongoose = require("mongoose");
 const { ADDON_PRICES, getAddonPack } = require("../config/addons");
+const { getAllAddonPrices } = require("../services/stripeAddonService");
 const { getSadTalkerPlanLimit } = require("./userController");
 const { planLimit } = require("../middleware/chatLimits");
 const { sendErr } = require("../utils/sendErr");
@@ -910,12 +911,24 @@ const verifyAddonSession = async (req, res) => {
   }
 };
 
+// GET /api/checkout/addon-prices
+const getAddonPrices = async (req, res) => {
+  try {
+    const prices = await getAllAddonPrices();
+    return res.json(prices);
+  } catch (err) {
+    console.error("[addon-prices] error:", err);
+    return res.status(500).json({ error: "Failed to fetch addon prices" });
+  }
+};
+
 module.exports = {
   createCheckoutSession,
   createAddonCheckoutSession,
   handleStripeWebhook,
   verifyCheckoutSession,
   verifyAddonSession,
+  getAddonPrices,
 };
 
 // Manual test checklist:

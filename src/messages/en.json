@@ -400,5 +400,30 @@
       "confirmPassword": "Confirm new password",
       "saveChanges": "Save changes"
     }
+  },
+  "outOfCredits": {
+    "uploads": {
+      "title": "Out of upload credits",
+      "subtitle": "You've used all your upload credits for this period."
+    },
+    "ai": {
+      "title": "Out of AI tokens",
+      "subtitle": "You've used all your AI tokens for this period."
+    },
+    "videos": {
+      "title": "Out of video credits",
+      "subtitle": "You've used all your video credits for this period.",
+      "inlineMessage": "You've used all your video credits. Upgrade your plan to continue."
+    },
+    "addCreditsHeading": "Add credits",
+    "buyCredits": "Buy credits",
+    "manageBilling": "Manage billing →",
+    "or": "or",
+    "upgradePlan": "Upgrade plan",
+    "cancel": "Cancel",
+    "buy": "Buy",
+    "loading": "Loading options…",
+    "errorLoading": "Could not load options.",
+    "retry": "Try again"
   }
 }

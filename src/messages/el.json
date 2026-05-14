@@ -400,5 +400,30 @@
       "confirmPassword": "Επιβεβαίωση νέου κωδικού",
       "saveChanges": "Αποθήκευση αλλαγών"
     }
+  },
+  "outOfCredits": {
+    "uploads": {
+      "title": "Εξαντλήθηκαν τα credits ανεβάσματος",
+      "subtitle": "Χρησιμοποιήσατε όλα τα credits ανεβάσματος για αυτήν την περίοδο."
+    },
+    "ai": {
+      "title": "Εξαντλήθηκαν τα tokens AI",
+      "subtitle": "Χρησιμοποιήσατε όλα τα tokens AI για αυτήν την περίοδο."
+    },
+    "videos": {
+      "title": "Εξαντλήθηκαν τα credits βίντεο",
+      "subtitle": "Χρησιμοποιήσατε όλα τα credits βίντεο για αυτήν την περίοδο.",
+      "inlineMessage": "Χρησιμοποιήσατε όλα τα credits βίντεο. Αναβαθμίστε το πλάνο σας για να συνεχίσετε."
+    },
+    "addCreditsHeading": "Προσθήκη credits",
+    "buyCredits": "Αγορά credits",
+    "manageBilling": "Διαχείριση χρέωσης →",
+    "or": "ή",
+    "upgradePlan": "Αναβάθμιση πλάνου",
+    "cancel": "Ακύρωση",
+    "buy": "Αγορά",
+    "loading": "Φόρτωση επιλογών…",
+    "errorLoading": "Δεν ήταν δυνατή η φόρτωση επιλογών.",
+    "retry": "Δοκιμάστε ξανά"
   }
 }

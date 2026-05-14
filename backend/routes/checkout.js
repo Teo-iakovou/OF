@@ -5,6 +5,7 @@ const {
   createCheckoutSession,
   createAddonCheckoutSession,
   verifyCheckoutSession,
+  getAddonPrices,
 } = require("../controllers/checkoutController");
 const { requireAuth } = require("../middleware/requireAuth");
 const { verifySessionLimiter } = require("../middleware/rateLimiters");
@@ -13,6 +14,9 @@ const { verifySessionLimiter } = require("../middleware/rateLimiters");
 router.post("/create-checkout-session", requireAuth, createCheckoutSession);
 // Create a Stripe Checkout session for addon packs
 router.post("/create-addon-checkout-session", requireAuth, createAddonCheckoutSession);
+
+// Get all addon prices from Stripe (cached 5 min)
+router.get("/addon-prices", requireAuth, getAddonPrices);
 
 // Verify a session (client convenience after redirect) — requires the session owner
 router.get("/verify-session", verifySessionLimiter, requireAuth, verifyCheckoutSession);

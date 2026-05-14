@@ -19,6 +19,7 @@ import type {
 import { getUserResultById, formatContentInfo, submitMessageFeedback, trackEvent } from "@/app/utils/api";
 import { PACKAGES_URL } from "@/app/utils/urls";
 import { useFloatingChatSafe } from "@/app/components/AIchat/FloatingChatContext";
+import OutOfCreditsModal from "@/app/components/dashboard/OutOfCreditsModal";
 import { QuickPromptsBar } from "@/app/components/AIchat/QuickPromptsBar";
 import { AssistantFooter } from "@/app/components/AIchat/AssistantFooter";
 
@@ -125,6 +126,7 @@ function CoachChat({
 
   const [error, setError] = useState<string | null>(null);
   const [isLimited, setIsLimited] = useState(false);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [isContextLimited, setIsContextLimited] = useState(false);
   const [contextNearLimit, setContextNearLimit] = useState(false);
   const [contextInfo, setContextInfo] = useState<{ used?: number; limit?: number } | null>(null);
@@ -362,6 +364,7 @@ function tokenizeWordsWithSpaces(s: string) {
         case 402: {
           const data = res.data as CoachChatLimitData;
           setIsLimited(true);
+          setShowCreditsModal(true);
           setError(data.error || "You’ve reached your plan’s chat limit.");
           setIsSending(false);
           if (!conversation?._id) setConversation(null);
@@ -835,11 +838,24 @@ function tokenizeWordsWithSpaces(s: string) {
           <div className="mb-3 rounded-xl border border-[var(--hg-accent)]/30 bg-[var(--hg-accent)]/10 px-3 py-2 text-xs text-[var(--hg-accent)]">
             <span className="font-semibold">Monthly limit reached</span>
             {" — "}
+            <button
+              type="button"
+              onClick={() => setShowCreditsModal(true)}
+              className="underline underline-offset-2 hover:opacity-80"
+            >
+              buy tokens
+            </button>
+            {" or "}
             <a href={PACKAGES_URL} className="underline underline-offset-2 hover:opacity-80">
-              upgrade to keep coaching
+              upgrade plan
             </a>
           </div>
         )}
+        <OutOfCreditsModal
+          type="ai"
+          open={showCreditsModal}
+          onClose={() => setShowCreditsModal(false)}
+        />
 
         {(() => {
           if (!isNearMonthlyLimit || isLimited || dismissedPreview) return null;

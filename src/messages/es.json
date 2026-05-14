@@ -400,5 +400,30 @@
       "confirmPassword": "Confirmar nueva contraseña",
       "saveChanges": "Guardar cambios"
     }
+  },
+  "outOfCredits": {
+    "uploads": {
+      "title": "Sin créditos de subida",
+      "subtitle": "Has usado todos tus créditos de subida para este período."
+    },
+    "ai": {
+      "title": "Sin tokens de IA",
+      "subtitle": "Has usado todos tus tokens de IA para este período."
+    },
+    "videos": {
+      "title": "Sin créditos de vídeo",
+      "subtitle": "Has usado todos tus créditos de vídeo para este período.",
+      "inlineMessage": "Has usado todos tus créditos de vídeo. Mejora tu plan para continuar."
+    },
+    "addCreditsHeading": "Añadir créditos",
+    "buyCredits": "Comprar créditos",
+    "manageBilling": "Gestionar facturación →",
+    "or": "o",
+    "upgradePlan": "Mejorar plan",
+    "cancel": "Cancelar",
+    "buy": "Comprar",
+    "loading": "Cargando opciones…",
+    "errorLoading": "No se pudieron cargar las opciones.",
+    "retry": "Reintentar"
   }
 }

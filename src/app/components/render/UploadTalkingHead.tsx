@@ -1,16 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Copy, Sparkles } from "lucide-react";
 
 import { useUser } from "@/app/hooks/useUser";
 import UpgradeRequiredBanner from "@/app/components/common/UpgradeRequiredBanner";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
-import { createAddonCheckoutSession } from "@/app/utils/api";
+import OutOfCreditsModal from "@/app/components/dashboard/OutOfCreditsModal";
 import { getRemaining } from "@/app/utils/quota";
 import { resolveQuotaContract } from "@/app/utils/quotaContract";
+import { PACKAGES_URL } from "@/app/utils/urls";
 import TalkingHeadResultDrawer, {
   type TalkingHeadRecentItem,
 } from "@/app/components/dashboard/talking-head/TalkingHeadResultDrawer";
@@ -43,6 +45,7 @@ const statusClass: Record<TalkingHeadRecentItem["status"], string> = {
 export default function UploadTalkingHead() {
   useUser({ required: true });
   const locale = useLocale();
+  const t = useTranslations("outOfCredits");
   const { data: planData, refresh: refreshPlan, hasActiveInstance } = usePlanInfo();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -80,9 +83,14 @@ export default function UploadTalkingHead() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRecent, setSelectedRecent] = useState<TalkingHeadRecentItem | null>(null);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
 
   const isOutOfCredits =
     forceUpsell || (typeof videosRemaining === "number" ? videosRemaining <= 0 : false);
+
+  useEffect(() => {
+    if (isOutOfCredits) setShowCreditsModal(true);
+  }, [isOutOfCredits]);
 
   const canGenerate = useMemo(() => {
     return !!imageFile && !!audioFile && !heygenLoading;
@@ -255,57 +263,35 @@ export default function UploadTalkingHead() {
 
   return (
     <div className="space-y-8 pb-20">
+      <OutOfCreditsModal
+        type="videos"
+        open={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
+      />
+
       {isOutOfCredits ? (
-        <section className="rounded-2xl hg-surface p-5 text-white space-y-3">
-          <div className="space-y-1">
-            <h3 className="text-lg font-semibold">You’re out of video credits</h3>
-            <p className="text-sm hg-muted">Buy more to continue generating videos.</p>
+        <section className="mx-auto w-full max-w-3xl rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 text-white">
+          <h2 className="text-xl font-semibold">AI Video Avatar</h2>
+          <div className="mt-3 rounded-xl hg-surface-soft px-3 py-2 text-sm hg-muted">
+            {t("videos.inlineMessage")}
           </div>
-          {error === "You're out of video credits." ? (
-            <div className="rounded-md hg-surface-soft px-3 py-2 text-xs hg-muted">
-              {error}
-              {errorRequestId ? <div className="mt-1">Support ID: {errorRequestId}</div> : null}
-            </div>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            {[
-              { label: "Buy 5", pack: "pack_5" },
-              { label: "Buy 15", pack: "pack_15" },
-              { label: "Buy 30", pack: "pack_30", badge: "Best value" },
-            ].map((pack) => (
-              <button
-                key={pack.pack}
-                type="button"
-                onClick={async () => {
-                  if (!packageInstanceId) return;
-                  try {
-                    const res = await createAddonCheckoutSession({
-                      addonType: "sadtalkerVideos",
-                      addonPack: pack.pack,
-                      packageInstanceId,
-                      locale,
-                    });
-                    if (res?.url) window.location.href = res.url;
-                  } catch (err: unknown) {
-                    const message = err instanceof Error ? err.message : "Failed to start checkout";
-                    setError(message);
-                  }
-                }}
-                disabled={!packageInstanceId}
-                className="rounded-full border border-[var(--hg-border)] px-4 py-2 text-xs font-semibold hg-muted hover:border-[var(--hg-accent)] hover:text-[var(--hg-accent)] disabled:opacity-50"
-              >
-                {pack.label}
-                {pack.badge ? (
-                  <span className="ml-2 rounded-full border border-[var(--hg-border)] px-2 py-0.5 text-[10px] uppercase tracking-wide hg-muted-2">
-                    {pack.badge}
-                  </span>
-                ) : null}
-              </button>
-            ))}
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setShowCreditsModal(true)}
+              className="inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#04131d] hover:opacity-90"
+            >
+              {t("buyCredits")}
+            </button>
+            <Link
+              href={PACKAGES_URL}
+              className="inline-flex rounded-xl border border-[var(--hg-border)] px-4 py-3 text-sm font-medium text-white hover:border-[#50C0F0] hover:text-[#50C0F0]"
+            >
+              {t("manageBilling")}
+            </Link>
           </div>
         </section>
-      ) : null}
-
+      ) : (
       <section className="mx-auto w-full max-w-3xl rounded-2xl hg-surface p-5 md:p-6 text-white">
         <div className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
@@ -491,8 +477,9 @@ export default function UploadTalkingHead() {
           </div>
         ) : null}
       </section>
+      )}
 
-      <section className="w-full pb-8 pt-1 md:pt-2">
+      {!isOutOfCredits && <section className="w-full pb-8 pt-1 md:pt-2">
         <div className="flex items-baseline justify-between border-b border-[var(--hg-border-2)] pb-4">
           <div className="space-y-1">
             <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">Generated Results</p>
@@ -592,7 +579,7 @@ export default function UploadTalkingHead() {
             })}
           </div>
         ) : null}
-      </section>
+      </section>}
 
       <TalkingHeadResultDrawer open={drawerOpen} onOpenChange={setDrawerOpen} item={selectedRecent} />
     </div>
