@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { fetchJson } from "@/app/utils/fetcher";
@@ -12,6 +12,25 @@ import { checkUserPackage } from "@/app/utils/api";
 const loginEndpoint = "/api/auth/login";
 const registerEndpoint = "/api/auth/register";
 const meEndpoint = "/api/auth/me";
+
+async function parseErrorResponse(
+  res: Response,
+  t: (key: string) => string,
+): Promise<string> {
+  try {
+    const data = await res.json();
+    if (typeof data?.error === "string" && data.error.length > 0) {
+      return data.error;
+    }
+  } catch {
+    // Response wasn't JSON — fall through to status-based fallback
+  }
+  if (res.status === 429) return t("errors.tooManyAttempts");
+  if (res.status === 401) return t("errors.invalidCredentials");
+  if (res.status === 403) return t("errors.accessDenied");
+  if (res.status === 500) return t("errors.serverError");
+  return "";
+}
 
 type AuthFormProps = {
   mode?: "login" | "signup";
@@ -64,7 +83,7 @@ export default function AuthForm({
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const msg = await res.text();
+        const msg = await parseErrorResponse(res, t);
         throw new Error(msg || t(mode === "signup" ? "errors.signUpFailed" : "errors.signInFailed"));
       }
 
@@ -194,7 +213,12 @@ export default function AuthForm({
           </div>
         </div>
       )}
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && (
+        <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{error}</span>
+        </div>
+      )}
       <button
         type="submit"
         disabled={!isValid || loading}

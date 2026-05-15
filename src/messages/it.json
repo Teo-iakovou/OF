@@ -48,7 +48,12 @@
       "signInFailed": "Accesso non riuscito. Controlla email e password.",
       "signUpFailed": "Registrazione non riuscita. Riprova.",
       "verifyFailed": "Impossibile verificare la sessione. Abilita i cookie e riprova.",
-      "passwordMismatch": "Le password non corrispondono."
+      "passwordMismatch": "Le password non corrispondono.",
+      "tooManyAttempts": "Troppi tentativi. Riprova tra qualche minuto.",
+      "invalidCredentials": "Credenziali non valide.",
+      "accessDenied": "Accesso negato.",
+      "serverError": "Errore del server. Riprova.",
+      "generic": "Qualcosa è andato storto. Riprova."
     }
   },
   "landing": {

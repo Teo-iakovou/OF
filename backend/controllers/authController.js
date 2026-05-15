@@ -10,14 +10,18 @@ async function signup(req, res) {
   try {
     const parsed = signupSchema.safeParse(req.body || {});
     if (!parsed.success) {
-      return sendErr(req, res, 400, "Invalid input");
+      const issues = parsed.error.issues || [];
+      const emailIssue = issues.find((i) => i.path[0] === "email");
+      const passwordIssue = issues.find((i) => i.path[0] === "password");
+      if (emailIssue) return sendErr(req, res, 400, "Please enter a valid email address.");
+      if (passwordIssue) return sendErr(req, res, 400, "Password must be at least 8 characters.");
+      return sendErr(req, res, 400, "Please check your input and try again.");
     }
     const { email, password, name } = parsed.data;
     const normalizedEmail = email.toLowerCase().trim();
     const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
-      // Generic message — don't reveal whether the email is already registered
-      return sendErr(req, res, 409, "Unable to create account");
+      return sendErr(req, res, 409, "An account with this email already exists. Try signing in instead.");
     }
     const [firstName = "", ...rest] = typeof name === "string" ? name.trim().split(/\s+/) : [];
     const lastName = rest.join(" ");
@@ -36,7 +40,7 @@ async function signup(req, res) {
     return res.status(201).json({ id: user._id.toString(), email: user.email, plan: user.purchasedPackage || null });
   } catch (e) {
     if (AUTH_DEBUG) { try { console.error("[auth] signup error", e?.message || e); } catch {} }
-    return sendErr(req, res, 500, "Signup failed");
+    return sendErr(req, res, 500, "Something went wrong. Please try again.");
   }
 }
 
@@ -44,7 +48,10 @@ async function login(req, res) {
   try {
     const parsed = loginSchema.safeParse(req.body || {});
     if (!parsed.success) {
-      return sendErr(req, res, 400, "Invalid input");
+      const issues = parsed.error.issues || [];
+      const emailIssue = issues.find((i) => i.path[0] === "email");
+      if (emailIssue) return sendErr(req, res, 400, "Please enter a valid email address.");
+      return sendErr(req, res, 400, "Please check your input and try again.");
     }
     const { email, password } = parsed.data;
     const normalizedEmail = email.toLowerCase().trim();
@@ -68,7 +75,7 @@ async function login(req, res) {
     return res.json({ id: user._id.toString(), email: user.email, plan: user.purchasedPackage || null });
   } catch (e) {
     if (AUTH_DEBUG) { try { console.error("[auth] login error", e?.message || e); } catch {} }
-    return sendErr(req, res, 500, "Login failed");
+    return sendErr(req, res, 500, "Something went wrong. Please try again.");
   }
 }
 

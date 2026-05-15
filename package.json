@@ -32,13 +32,11 @@
     "react-confirm-alert": "^3.0.6",
     "react-dom": "^18.3.1",
     "react-grid-layout": "^1.5.1",
-    "react-hot-toast": "^2.5.2",
     "react-icons": "^5.4.0",
     "react-resizable": "^3.0.5",
     "react-scrollspy": "^3.4.3",
     "react-share": "^5.1.2",
     "react-spinners": "^0.15.0",
-    "react-toastify": "^11.0.3",
     "sonner": "^2.0.7"
   },
   "devDependencies": {

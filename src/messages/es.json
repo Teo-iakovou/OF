@@ -48,7 +48,12 @@
       "signInFailed": "Error al iniciar sesión. Verifica tu correo y contraseña.",
       "signUpFailed": "Error al crear cuenta. Inténtalo de nuevo.",
       "verifyFailed": "No se pudo verificar tu sesión. Activa cookies e inténtalo de nuevo.",
-      "passwordMismatch": "Las contraseñas no coinciden."
+      "passwordMismatch": "Las contraseñas no coinciden.",
+      "tooManyAttempts": "Demasiados intentos. Por favor, inténtalo de nuevo en unos minutos.",
+      "invalidCredentials": "Credenciales inválidas.",
+      "accessDenied": "Acceso denegado.",
+      "serverError": "Error del servidor. Por favor, inténtalo de nuevo.",
+      "generic": "Algo salió mal. Por favor, inténtalo de nuevo."
     }
   },
   "landing": {
