@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { useLocale } from "next-intl";
-import { Check } from "lucide-react";
+import { Check, Crown, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { Outfit } from "next/font/google";
+import { motion } from "framer-motion";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import { startCheckout } from "@/app/utils/api";
 import { resolveQuotaContract } from "@/app/utils/quotaContract";
+
+const priceFont = Outfit({ subsets: ["latin"], weight: ["700", "800"] });
 
 const PLAN_DISPLAY_NAMES: Record<string, string> = {
   lite: "Lite",
@@ -18,6 +22,7 @@ const PLANS = [
     id: "lite",
     name: "Lite",
     price: "$99",
+    period: "/one-time",
     description: "Best for getting started and testing AI analysis",
     includes: [
       "AI image analysis with platform strategy",
@@ -25,13 +30,16 @@ const PLANS = [
       "History and reports",
       "Face enrollment protection",
     ],
-    badge: null,
+    highlights: ["Uploads included", "Fast results", "Email support (basic)"],
+    badge: null as string | null,
     featured: false,
+    icon: ShieldCheck,
   },
   {
     id: "pro",
     name: "Pro",
     price: "$189",
+    period: "/one-time",
     description: "Best for consistent creators posting weekly",
     includes: [
       "Everything in Lite",
@@ -39,13 +47,16 @@ const PLANS = [
       "Advanced platform-specific strategy",
       "Priority processing and better support",
     ],
-    badge: "Most Popular",
+    highlights: ["Most popular", "More AI capacity", "Faster turnaround"],
+    badge: "Most Popular" as string | null,
     featured: true,
+    icon: Sparkles,
   },
   {
     id: "ultimate",
     name: "Ultimate",
     price: "$399",
+    period: "/one-time",
     description: "Best for power users and agency teams",
     includes: [
       "Everything in Pro",
@@ -53,10 +64,12 @@ const PLANS = [
       "Talking Head video credits included",
       "Premium support",
     ],
-    badge: "Best Value",
+    highlights: ["Best value for teams", "Highest priority", "Agency-ready scale"],
+    badge: "Best Value" as string | null,
     featured: false,
+    icon: Crown,
   },
-] as const;
+];
 
 function QuotaBar({
   label,
@@ -115,9 +128,9 @@ export default function AccountPlansPage() {
     return (
       <div className="space-y-4">
         <div className="h-8 w-48 animate-pulse rounded-xl bg-white/10" />
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-72 animate-pulse rounded-2xl bg-white/5" />
+            <div key={i} className="h-[400px] animate-pulse rounded-3xl bg-white/5" />
           ))}
         </div>
       </div>
@@ -174,8 +187,8 @@ export default function AccountPlansPage() {
       </div>
 
       {/* Plan cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        {PLANS.map((plan) => {
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 md:gap-6">
+        {PLANS.map((plan, i) => {
           const isCurrent = hasActiveInstance && activePlanKey === plan.id;
           const busy = loadingPlan === plan.id;
           const ctaLabel = isCurrent
@@ -185,57 +198,115 @@ export default function AccountPlansPage() {
               : `Get ${plan.name}`;
 
           return (
-            <article
+            <motion.div
               key={plan.id}
-              className={[
-                "relative flex flex-col rounded-2xl border p-5 transition",
-                plan.featured
-                  ? "border-[var(--hg-accent)]/50 bg-[var(--hg-surface-2)] shadow-[0_10px_32px_rgba(80,192,240,0.12)]"
-                  : "border-[var(--hg-border)] bg-white/5",
-                isCurrent ? "ring-1 ring-[#50C0F0]/30" : "",
-              ].join(" ")}
+              initial={{ opacity: 0, y: 32 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: i * 0.08, ease: "easeOut" }}
+              className="flex"
             >
-              {plan.badge ? (
-                <div className="absolute right-4 top-0 -translate-y-1/2 bg-[var(--hg-surface-2)] px-1">
-                  <span className="inline-block rounded-full border border-[var(--hg-border)] bg-[var(--hg-accent)]/15 px-2.5 py-0.5 text-[11px] font-medium text-[#9fd9f3]">
-                    {plan.badge}
-                  </span>
-                </div>
-              ) : null}
-
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
-                <p className="text-2xl font-bold text-white">{plan.price}</p>
-                <p className="text-xs text-slate-500">/one-time</p>
-              </div>
-
-              <p className="mt-3 text-sm text-slate-400">{plan.description}</p>
-
-              <ul className="mt-4 flex-1 space-y-2">
-                {plan.includes.map((feat) => (
-                  <li key={feat} className="flex items-start gap-2 text-sm text-slate-300">
-                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#50C0F0]" />
-                    <span>{feat}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                type="button"
-                disabled={isCurrent || busy || loadingPlan !== null}
-                onClick={() => handleCheckout(plan.id)}
+              <motion.article
+                whileHover={{ y: -4, transition: { duration: 0.22 } }}
                 className={[
-                  "mt-5 w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition",
-                  isCurrent
-                    ? "cursor-default border border-[#50C0F0]/30 bg-transparent text-[#50C0F0]/60"
-                    : plan.featured
-                      ? "bg-[#50C0F0] text-[#07131d] hover:opacity-90 disabled:opacity-60"
-                      : "border border-[var(--hg-border)] bg-white/5 text-white hover:border-[var(--hg-accent)]/40 hover:bg-white/10 disabled:opacity-60",
+                  "group relative isolate flex min-h-[400px] flex-col w-full rounded-3xl border p-4 md:p-5",
+                  "transition-colors duration-200 hover:border-[var(--hg-accent)]/50 hover:shadow-[0_14px_30px_rgba(80,192,240,0.16)]",
+                  plan.featured
+                    ? "border-[var(--hg-border)] bg-[var(--hg-surface-2)] shadow-[0_18px_45px_rgba(0,0,0,0.38)]"
+                    : "border-[var(--hg-border)] bg-[var(--hg-surface)] shadow-[0_18px_45px_rgba(0,0,0,0.35)]",
+                  isCurrent ? "ring-1 ring-[#50C0F0]/30" : "",
                 ].join(" ")}
               >
-                {busy ? "Redirecting…" : ctaLabel}
-              </button>
-            </article>
+                {/* Featured radial gradient */}
+                {plan.featured ? (
+                  <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(900px_circle_at_50%_-20%,rgba(80,192,240,0.14),transparent_55%)]" />
+                ) : null}
+
+                {/* Badge */}
+                {plan.badge ? (
+                  <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2">
+                    <div
+                      className={`rounded-full px-2 ${
+                        plan.featured ? "bg-[var(--hg-surface-2)]" : "bg-[var(--hg-surface)]"
+                      }`}
+                    >
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-accent)_14%,transparent)] px-3 py-1 text-[11px] font-semibold tracking-wide text-[#9fd9f3] shadow-[0_10px_22px_rgba(80,192,240,0.14)]">
+                        <Zap className="h-3.5 w-3.5" aria-hidden="true" />
+                        {plan.badge}
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Plan icon */}
+                <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--hg-border)] bg-white/[0.03]">
+                  <plan.icon
+                    className={`h-6 w-6 ${plan.featured ? "text-[var(--hg-accent)]" : "text-white/80"}`}
+                    aria-hidden="true"
+                  />
+                </div>
+
+                {/* Plan name + description */}
+                <div className="space-y-1.5">
+                  <h3 className="text-xl font-semibold text-white">{plan.name}</h3>
+                  <p className="text-sm text-[var(--hg-muted)]">{plan.description}</p>
+                </div>
+
+                {/* Price */}
+                <div className="mt-4 mb-6">
+                  <div className="flex items-baseline gap-1">
+                    <span className={`${priceFont.className} text-3xl md:text-4xl font-extrabold leading-none text-white`}>
+                      {plan.price}
+                    </span>
+                    <span className="text-base text-[var(--hg-muted)]">{plan.period}</span>
+                  </div>
+                </div>
+
+                {/* Includes */}
+                <div className="mb-4 text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">
+                  Includes
+                </div>
+                <ul className="mb-6 space-y-3">
+                  {plan.includes.map((feat) => (
+                    <li key={feat} className="flex items-start gap-3.5 text-sm md:text-[15px] leading-6 text-[var(--hg-muted)]">
+                      <Check className="h-5 w-5 shrink-0 text-[var(--hg-accent)] mt-0.5" aria-hidden="true" />
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Highlights */}
+                <div className="mb-3 text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">
+                  Highlights
+                </div>
+                <div className="mb-8 flex flex-wrap gap-2">
+                  {plan.highlights.map((highlight) => (
+                    <span
+                      key={highlight}
+                      className="inline-flex items-center rounded-full border border-[var(--hg-border)] bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-white/90"
+                    >
+                      {highlight}
+                    </span>
+                  ))}
+                </div>
+
+                {/* CTA */}
+                <button
+                  type="button"
+                  disabled={isCurrent || busy || loadingPlan !== null}
+                  onClick={() => handleCheckout(plan.id)}
+                  className={[
+                    "mt-auto h-12 w-full rounded-2xl text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hg-accent)]",
+                    isCurrent
+                      ? "cursor-default border border-[#50C0F0]/30 bg-transparent text-[#50C0F0]/60"
+                      : plan.featured
+                        ? "bg-[var(--hg-accent)] text-[#04131d] hover:opacity-90 shadow-[0_10px_26px_rgba(80,192,240,0.35)] disabled:opacity-60"
+                        : "bg-[var(--hg-surface-2)] text-white border border-[var(--hg-border)] hover:border-[var(--hg-accent)]/50 group-hover:shadow-[inset_0_0_0_1px_rgba(80,192,240,0.35)] disabled:opacity-60",
+                  ].join(" ")}
+                >
+                  {busy ? "Redirecting…" : ctaLabel}
+                </button>
+              </motion.article>
+            </motion.div>
           );
         })}
       </div>
