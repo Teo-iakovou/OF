@@ -39,6 +39,7 @@
     "emailFootnote": "Your password is encrypted and never shared.",
     "signingIn": "Signing you in...",
     "creatingAccount": "Creating your account...",
+    "forgotPassword": "Forgot password?",
     "goToSignup": "Need an account? Sign up",
     "goToLogin": "Already have an account? Sign in",
     "termsLine": "By continuing, you agree to our",
@@ -404,6 +405,37 @@
       "newPassword": "New password",
       "confirmPassword": "Confirm new password",
       "saveChanges": "Save changes"
+    }
+  },
+  "authScreen": {
+    "tagline": "Create content that converts.",
+    "headingLine1": "Create content",
+    "headingLine2": "that converts.",
+    "leftSubheading": "AI-powered analysis for content creators.",
+    "features": [
+      "AI strategy from one upload",
+      "Captions, hashtags, posting windows",
+      "Talking-head video avatar",
+      "History and consistent scale"
+    ],
+    "tabs": {
+      "signIn": "Sign in",
+      "createAccount": "Create account"
+    },
+    "signIn": {
+      "heading": "Welcome back",
+      "subheading": "Sign in to your Echofy account."
+    },
+    "createAccount": {
+      "heading": "Get started free",
+      "subheading": "Create your Echofy account today."
+    },
+    "forgotPassword": "Forgot password?",
+    "orDivider": "or",
+    "switchHint": {
+      "noAccount": "Don't have an account?",
+      "haveAccount": "Already have an account?",
+      "createOne": "Create one"
     }
   },
   "outOfCredits": {

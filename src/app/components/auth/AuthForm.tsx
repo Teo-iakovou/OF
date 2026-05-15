@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { fetchJson } from "@/app/utils/fetcher";
@@ -39,6 +39,7 @@ type AuthFormProps = {
   onSuccess?: () => void;
   footnote?: string;
   submitLabel?: string;
+  showForgotPassword?: boolean;
 };
 
 export default function AuthForm({
@@ -48,6 +49,7 @@ export default function AuthForm({
   onSuccess,
   footnote,
   submitLabel,
+  showForgotPassword = false,
 }: AuthFormProps) {
   const t = useTranslations("auth");
   const router = useRouter();
@@ -133,45 +135,59 @@ export default function AuthForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       {mode === "signup" && (
         <div>
-          <label htmlFor="auth-name" className="mb-1 block text-sm text-[var(--hg-muted)]">
+          <label htmlFor="auth-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[var(--hg-muted)]">
             {t("nameLabel")}
           </label>
-          <input
-            id="auth-name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[var(--hg-accent)]/60"
-            placeholder={t("namePlaceholder")}
-            required
-          />
+          <div className="relative">
+            <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--hg-muted)]" />
+            <input
+              id="auth-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] py-2.5 pl-10 pr-3 text-white focus:outline-none focus:ring-2 focus:ring-[var(--hg-accent)]/60"
+              placeholder={t("namePlaceholder")}
+              required
+            />
+          </div>
         </div>
       )}
       <div>
-        <label htmlFor="auth-email" className="mb-1 block text-sm text-[var(--hg-muted)]">
+        <label htmlFor="auth-email" className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[var(--hg-muted)]">
           {t("emailLabel")}
         </label>
-        <input
-          id="auth-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[var(--hg-accent)]/60"
-          placeholder={t("emailPlaceholder")}
-          required
-        />
+        <div className="relative">
+          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--hg-muted)]" />
+          <input
+            id="auth-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] py-2.5 pl-10 pr-3 text-white focus:outline-none focus:ring-2 focus:ring-[var(--hg-accent)]/60"
+            placeholder={t("emailPlaceholder")}
+            required
+          />
+        </div>
       </div>
       <div>
-        <label htmlFor="auth-password" className="mb-1 block text-sm text-[var(--hg-muted)]">
-          {t("passwordLabel")}
-        </label>
+        <div className="mb-1.5 flex items-center justify-between">
+          <label htmlFor="auth-password" className="block text-xs font-semibold uppercase tracking-widest text-[var(--hg-muted)]">
+            {t("passwordLabel")}
+          </label>
+          {showForgotPassword && (
+            <a href="/forgot-password" className="text-xs text-[#9fd9f3] hover:underline">
+              {t("forgotPassword")}
+            </a>
+          )}
+        </div>
         <div className="relative">
+          <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--hg-muted)]" />
           <input
             id="auth-password"
             type={showPassword ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] px-3 py-2 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-[var(--hg-accent)]/60"
+            className="w-full rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] py-2.5 pl-10 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-[var(--hg-accent)]/60"
             placeholder={t("passwordPlaceholder")}
             required
             minLength={8}
@@ -188,16 +204,17 @@ export default function AuthForm({
       </div>
       {mode === "signup" && (
         <div>
-          <label htmlFor="auth-confirm-password" className="mb-1 block text-sm text-[var(--hg-muted)]">
+          <label htmlFor="auth-confirm-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[var(--hg-muted)]">
             {t("confirmPasswordLabel")}
           </label>
           <div className="relative">
+            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--hg-muted)]" />
             <input
               id="auth-confirm-password"
               type={showConfirmPassword ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] px-3 py-2 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-[var(--hg-accent)]/60"
+              className="w-full rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] py-2.5 pl-10 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-[var(--hg-accent)]/60"
               placeholder={t("confirmPasswordPlaceholder")}
               required
               minLength={8}
@@ -222,7 +239,7 @@ export default function AuthForm({
       <button
         type="submit"
         disabled={!isValid || loading}
-        className="w-full rounded-xl bg-[var(--hg-accent)] py-2.5 font-semibold text-[#07131d] shadow-lg transition disabled:opacity-60"
+        className="h-12 w-full rounded-xl bg-[var(--hg-accent)] font-semibold text-[#07131d] shadow-lg transition disabled:opacity-60"
       >
         {loading
           ? t(mode === "signup" ? "creatingAccount" : "signingIn")

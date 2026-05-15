@@ -1,6 +1,6 @@
 "use client";
 
-import AuthPageShell from "@/app/components/auth/AuthPageShell";
+import AuthScreen from "@/app/components/auth/AuthScreen";
 
 export default function SignupPageContent({
   redirectTo,
@@ -9,5 +9,5 @@ export default function SignupPageContent({
   redirectTo?: string;
   intent?: string;
 }) {
-  return <AuthPageShell mode="signup" redirectTo={redirectTo} intent={intent} />;
+  return <AuthScreen initialMode="signup" redirectTo={redirectTo} intent={intent} />;
 }

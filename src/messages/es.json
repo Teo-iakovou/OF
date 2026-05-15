@@ -39,6 +39,7 @@
     "emailFootnote": "Tu contraseña está cifrada y nunca se comparte.",
     "signingIn": "Iniciando sesión...",
     "creatingAccount": "Creando tu cuenta...",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
     "goToSignup": "¿Necesitas cuenta? Regístrate",
     "goToLogin": "¿Ya tienes cuenta? Inicia sesión",
     "termsLine": "Al continuar, aceptas nuestros",
@@ -404,6 +405,37 @@
       "newPassword": "Nueva contraseña",
       "confirmPassword": "Confirmar nueva contraseña",
       "saveChanges": "Guardar cambios"
+    }
+  },
+  "authScreen": {
+    "tagline": "Crea contenido que convierte.",
+    "headingLine1": "Crea contenido",
+    "headingLine2": "que convierte.",
+    "leftSubheading": "Análisis con IA para creadores de contenido.",
+    "features": [
+      "Estrategia IA desde una subida",
+      "Pies de foto, hashtags, ventanas de publicación",
+      "Avatar de vídeo talking-head",
+      "Historial y escala consistente"
+    ],
+    "tabs": {
+      "signIn": "Iniciar sesión",
+      "createAccount": "Crear cuenta"
+    },
+    "signIn": {
+      "heading": "Bienvenido de nuevo",
+      "subheading": "Inicia sesión en tu cuenta de Echofy."
+    },
+    "createAccount": {
+      "heading": "Empieza gratis",
+      "subheading": "Crea tu cuenta de Echofy hoy."
+    },
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "orDivider": "o",
+    "switchHint": {
+      "noAccount": "¿No tienes cuenta?",
+      "haveAccount": "¿Ya tienes cuenta?",
+      "createOne": "Créala"
     }
   },
   "outOfCredits": {
