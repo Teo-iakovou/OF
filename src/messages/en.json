@@ -462,5 +462,49 @@
     "loading": "Loading options…",
     "errorLoading": "Could not load options.",
     "retry": "Try again"
+  },
+  "dashboard": {
+    "sidebar": {
+      "collapse": "Collapse sidebar",
+      "expand": "Expand sidebar",
+      "packages": "Packages",
+      "profile": "Profile",
+      "menu": {
+        "myAccount": "My Account",
+        "plansBilling": "Plans & Billing",
+        "settings": "Settings",
+        "helpCenter": "Help Center",
+        "cookiePreferences": "Cookie preferences",
+        "logOut": "Log out",
+        "loggingOut": "Logging out..."
+      }
+    },
+    "noPlan": {
+      "heading": "You don't have an active plan yet",
+      "subheading": "Pick a plan to unlock uploads, AI chat, and talking head tools.",
+      "cta": "Explore plans →",
+      "stepsHeading": "Get started in 3 steps",
+      "stepLabel": "Step {num}",
+      "steps": [
+        { "title": "Choose a plan", "detail": "Pick Lite or Pro based on your workflow." },
+        { "title": "Upload your first content", "detail": "Drop in a photo or promo image to analyze instantly." },
+        { "title": "Get your strategy", "detail": "Receive captions, posting times, and platform guidance." }
+      ],
+      "lockedBadge": "Locked Preview",
+      "lockedCards": [
+        { "title": "AI Uploads", "desc": "Turn raw photos into cross-platform plans with instant insights." },
+        { "title": "AI Coach Chat", "desc": "Ask strategic questions and fine-tune campaigns in plain language." },
+        { "title": "Talking Head Studio", "desc": "Generate SadTalker videos for promos and personalized shoutouts." }
+      ],
+      "demoHeading": "Strategy Summary Demo",
+      "demoLine1": "Post on Instagram at 18:00 for best engagement.",
+      "demoBackup": "Backup slot: TikTok at 21:00 for late-night momentum.",
+      "demoCtaLabel": "CTA idea",
+      "demoCtaText": "Share a sneak peek with your top fans before midnight.",
+      "demoHashtagsLabel": "Hashtags",
+      "demoHashtags": "#CreatorLife #ExclusiveDrop #BehindTheScenes",
+      "demoCaptionLabel": "Demo caption",
+      "demoCaption": "🔥 New drop tonight! Set your reminders now and be ready for the reveal."
+    }
   }
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ChevronUp, CircleHelp, CreditCard, LogOut, Settings, User } from "lucide-react";
 import { logoutClient } from "@/app/utils/authClient";
 import { useUser } from "@/app/hooks/useUser";
@@ -20,6 +21,7 @@ export default function ProfileMenuButton({
   onOpenSettings,
 }: ProfileMenuButtonProps) {
   const router = useRouter();
+  const t = useTranslations("dashboard");
   const { user } = useUser({ required: false });
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -67,7 +69,7 @@ export default function ProfileMenuButton({
           } ${menuOpen ? "border-[var(--hg-border)] bg-[var(--hg-surface-2)]/65" : "hover:border-[var(--hg-border)]/80 hover:bg-[var(--hg-surface-2)]/50"}`}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          title="Profile"
+          title={t("sidebar.profile")}
         >
           <span
             className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--hg-border)] bg-[linear-gradient(180deg,color-mix(in_oklab,var(--hg-surface-2)_95%,transparent),#0f1726)] text-sm font-semibold text-white/75 shadow-sm transition-all duration-200 group-hover:border-[var(--hg-accent)]/35 group-hover:text-white"
@@ -77,7 +79,7 @@ export default function ProfileMenuButton({
           {expanded ? (
             <>
               <span className="text-sm font-medium text-slate-300 group-hover:text-[#9eddf8]">
-                Profile
+                {t("sidebar.profile")}
               </span>
               <ChevronUp
                 className={`ml-auto h-4 w-4 text-slate-500 transition ${
@@ -99,7 +101,7 @@ export default function ProfileMenuButton({
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--hg-text)] transition hover:bg-white/5"
             >
               <User className="h-4 w-4 text-slate-400" />
-              My Account
+              {t("sidebar.menu.myAccount")}
             </Link>
             <Link
               href="/account/plans"
@@ -107,7 +109,7 @@ export default function ProfileMenuButton({
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--hg-text)] transition hover:bg-white/5"
             >
               <CreditCard className="h-4 w-4 text-slate-400" />
-              Plans &amp; Billing
+              {t("sidebar.menu.plansBilling")}
             </Link>
             <button
               type="button"
@@ -118,7 +120,7 @@ export default function ProfileMenuButton({
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--hg-text)] transition hover:bg-white/5"
             >
               <Settings className="h-4 w-4 text-slate-400" />
-              Settings
+              {t("sidebar.menu.settings")}
             </button>
             <Link
               href="mailto:support@yourapp.com"
@@ -126,7 +128,7 @@ export default function ProfileMenuButton({
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--hg-text)] transition hover:bg-white/5"
             >
               <CircleHelp className="h-4 w-4 text-slate-400" />
-              Help Center
+              {t("sidebar.menu.helpCenter")}
             </Link>
             <button
               type="button"
@@ -137,7 +139,7 @@ export default function ProfileMenuButton({
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--hg-text)] transition hover:bg-white/5"
             >
               <CircleHelp className="h-4 w-4 text-slate-400" />
-              Cookie preferences
+              {t("sidebar.menu.cookiePreferences")}
             </button>
             <button
               type="button"
@@ -146,7 +148,7 @@ export default function ProfileMenuButton({
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-60"
             >
               <LogOut className="h-4 w-4" />
-              {loggingOut ? "Logging out..." : "Log out"}
+              {loggingOut ? t("sidebar.menu.loggingOut") : t("sidebar.menu.logOut")}
             </button>
           </div>
         ) : null}

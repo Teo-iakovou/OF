@@ -462,5 +462,49 @@
     "loading": "Φόρτωση επιλογών…",
     "errorLoading": "Δεν ήταν δυνατή η φόρτωση επιλογών.",
     "retry": "Δοκιμάστε ξανά"
+  },
+  "dashboard": {
+    "sidebar": {
+      "collapse": "Σύμπτυξη πλευρικής μπάρας",
+      "expand": "Ανάπτυξη πλευρικής μπάρας",
+      "packages": "Πακέτα",
+      "profile": "Προφίλ",
+      "menu": {
+        "myAccount": "Ο λογαριασμός μου",
+        "plansBilling": "Πλάνα & Χρέωση",
+        "settings": "Ρυθμίσεις",
+        "helpCenter": "Κέντρο βοήθειας",
+        "cookiePreferences": "Προτιμήσεις cookies",
+        "logOut": "Αποσύνδεση",
+        "loggingOut": "Αποσύνδεση..."
+      }
+    },
+    "noPlan": {
+      "heading": "Δεν έχετε ενεργό πλάνο ακόμα",
+      "subheading": "Επιλέξτε ένα πλάνο για να ξεκλειδώσετε uploads, AI chat και talking head tools.",
+      "cta": "Δείτε τα πλάνα →",
+      "stepsHeading": "Ξεκινήστε σε 3 βήματα",
+      "stepLabel": "Βήμα {num}",
+      "steps": [
+        { "title": "Επιλέξτε πλάνο", "detail": "Διαλέξτε Lite ή Pro ανάλογα με το workflow σας." },
+        { "title": "Ανεβάστε το πρώτο σας περιεχόμενο", "detail": "Προσθέστε μια φωτογραφία ή promo εικόνα για άμεση ανάλυση." },
+        { "title": "Αποκτήστε τη στρατηγική σας", "detail": "Λάβετε λεζάντες, ώρες δημοσίευσης και καθοδήγηση ανά πλατφόρμα." }
+      ],
+      "lockedBadge": "Κλειδωμένη Προεπισκόπηση",
+      "lockedCards": [
+        { "title": "AI Uploads", "desc": "Μετατρέψτε ακατέργαστες φωτογραφίες σε cross-platform πλάνα με άμεσα insights." },
+        { "title": "AI Coach Chat", "desc": "Κάντε στρατηγικές ερωτήσεις και βελτιώστε καμπάνιες σε απλή γλώσσα." },
+        { "title": "Talking Head Studio", "desc": "Δημιουργήστε SadTalker βίντεο για promos και προσωποποιημένα shoutouts." }
+      ],
+      "demoHeading": "Demo Σύνοψης Στρατηγικής",
+      "demoLine1": "Δημοσίευση στο Instagram στις 18:00 για τη μεγαλύτερη εμπλοκή.",
+      "demoBackup": "Εναλλακτικό slot: TikTok στις 21:00 για late-night momentum.",
+      "demoCtaLabel": "Ιδέα CTA",
+      "demoCtaText": "Μοιραστείτε μια γεύση με τους κορυφαίους fans σας πριν τα μεσάνυχτα.",
+      "demoHashtagsLabel": "Hashtags",
+      "demoHashtags": "#CreatorLife #ExclusiveDrop #BehindTheScenes",
+      "demoCaptionLabel": "Demo λεζάντα",
+      "demoCaption": "🔥 Νέα κυκλοφορία απόψε! Ρυθμίστε τις ειδοποιήσεις σας και να είστε έτοιμοι."
+    }
   }
 }

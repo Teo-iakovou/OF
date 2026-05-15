@@ -34,6 +34,7 @@ export default function DashboardSidebar({
   onOpenSettings?: (section?: SettingsSection) => void;
 }) {
   const t = useTranslations("dashboardNav");
+  const tDash = useTranslations("dashboard");
   const pathname = usePathname();
   const { hasActiveInstance } = usePlanInfo();
   const [packagesOpen, setPackagesOpen] = useState(false);
@@ -77,8 +78,8 @@ export default function DashboardSidebar({
           tabIndex={0}
           className="flex h-10 w-10 cursor-pointer select-none items-center justify-center rounded-full border border-transparent bg-[var(--hg-surface)]/35 text-slate-400 transition hover:border-[var(--hg-border)] hover:text-[#50C0F0]"
           onClick={() => setExpanded(!expanded)}
-          aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
-          title={expanded ? "Collapse sidebar" : "Expand sidebar"}
+          aria-label={expanded ? tDash("sidebar.collapse") : tDash("sidebar.expand")}
+          title={expanded ? tDash("sidebar.collapse") : tDash("sidebar.expand")}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") setExpanded(!expanded);
           }}
@@ -160,7 +161,7 @@ export default function DashboardSidebar({
           type="button"
           onClick={() => setPackagesOpen(true)}
           className="group relative flex w-full items-center gap-3 rounded-2xl border border-transparent px-3 py-2.5 text-left text-[15px] font-medium transition-all duration-200 hover:border-[var(--hg-border)]/80 hover:bg-[var(--hg-surface-2)]/65"
-          title="Packages"
+          title={tDash("sidebar.packages")}
         >
           {packagesOpen ? (
             <span className="absolute left-0 top-1/2 h-7 w-[2px] -translate-y-1/2 rounded-full bg-[#50C0F0]" />
@@ -175,12 +176,12 @@ export default function DashboardSidebar({
           />
           {expanded ? (
             <span className={packagesOpen ? "text-[#50C0F0]" : "text-slate-300 group-hover:text-[#50C0F0]"}>
-              Packages
+              {tDash("sidebar.packages")}
             </span>
           ) : null}
           {!expanded ? (
             <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto bg-[var(--hg-surface-2)] border border-[var(--hg-border)] text-white px-3 py-1 rounded shadow-lg text-xs font-semibold z-50 transition whitespace-nowrap">
-              Packages
+              {tDash("sidebar.packages")}
             </div>
           ) : null}
         </button>

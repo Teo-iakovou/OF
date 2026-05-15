@@ -462,5 +462,49 @@
     "loading": "Caricamento opzioni…",
     "errorLoading": "Impossibile caricare le opzioni.",
     "retry": "Riprova"
+  },
+  "dashboard": {
+    "sidebar": {
+      "collapse": "Comprimi barra laterale",
+      "expand": "Espandi barra laterale",
+      "packages": "Pacchetti",
+      "profile": "Profilo",
+      "menu": {
+        "myAccount": "Il mio account",
+        "plansBilling": "Piani e fatturazione",
+        "settings": "Impostazioni",
+        "helpCenter": "Centro assistenza",
+        "cookiePreferences": "Preferenze cookie",
+        "logOut": "Esci",
+        "loggingOut": "Uscita in corso..."
+      }
+    },
+    "noPlan": {
+      "heading": "Non hai ancora un piano attivo",
+      "subheading": "Scegli un piano per sbloccare upload, AI chat e talking head tools.",
+      "cta": "Esplora piani →",
+      "stepsHeading": "Inizia in 3 passi",
+      "stepLabel": "Passo {num}",
+      "steps": [
+        { "title": "Scegli un piano", "detail": "Scegli Lite o Pro in base al tuo flusso di lavoro." },
+        { "title": "Carica il tuo primo contenuto", "detail": "Aggiungi una foto o immagine promozionale per analizzarla subito." },
+        { "title": "Ottieni la tua strategia", "detail": "Ricevi caption, orari di pubblicazione e guida per piattaforma." }
+      ],
+      "lockedBadge": "Anteprima bloccata",
+      "lockedCards": [
+        { "title": "AI Uploads", "desc": "Trasforma foto grezze in piani multi-piattaforma con insight istantanei." },
+        { "title": "AI Coach Chat", "desc": "Poni domande strategiche e affina campagne in linguaggio semplice." },
+        { "title": "Talking Head Studio", "desc": "Genera video SadTalker per promo e saluti personalizzati." }
+      ],
+      "demoHeading": "Demo riepilogo strategia",
+      "demoLine1": "Pubblica su Instagram alle 18:00 per il massimo engagement.",
+      "demoBackup": "Slot alternativo: TikTok alle 21:00 per il momentum notturno.",
+      "demoCtaLabel": "Idea CTA",
+      "demoCtaText": "Condividi un'anteprima con i tuoi top fan prima di mezzanotte.",
+      "demoHashtagsLabel": "Hashtag",
+      "demoHashtags": "#CreatorLife #ExclusiveDrop #BehindTheScenes",
+      "demoCaptionLabel": "Caption demo",
+      "demoCaption": "🔥 Nuovo lancio stasera! Imposta i promemoria e preparati per il reveal."
+    }
   }
 }
