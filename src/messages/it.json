@@ -667,7 +667,7 @@
       "heading": "Cronologia upload",
       "subheading": "Rivedi le analisi passate, affina gli insight e mantieni la tua strategia.",
       "tabUploads": "Foto caricate",
-      "tabVideos": "Avatar Video",
+      "tabVideos": "AI Video Avatar",
       "selectPackageHeading": "Seleziona un pacchetto",
       "selectPackageDesc": "Scegli un pacchetto attivo per vedere gli insight di quel piano.",
       "viewPackages": "Vedi pacchetti",
@@ -675,7 +675,7 @@
       "noInsightsHeading": "Nessun insight ancora",
       "noInsightsDesc": "Carica la tua prima immagine per generare la tua prima strategia.",
       "uploadContent": "Carica contenuto",
-      "talkingHeadHeading": "Cronologia Talking Head",
+      "talkingHeadHeading": "Cronologia AI Video Avatar",
       "generateNew": "Genera nuovo",
       "noVideos": "I tuoi video generati appariranno qui.",
       "play": "Riproduci",
@@ -687,7 +687,9 @@
       "rowLabel": "Analisi",
       "tableDelete": "Elimina",
       "confirmDeleteTitle": "Elimina analisi",
-      "confirmDeleteMessage": "Sei sicuro di voler eliminare questa analisi? Questa azione non può essere annullata."
+      "confirmDeleteMessage": "Sei sicuro di voler eliminare questa analisi? Questa azione non può essere annullata.",
+      "confirmDeleteConfirm": "Elimina",
+      "confirmDeleteCancel": "Annulla"
     },
     "billing": {
       "noActivePlanHeading": "Nessun piano attivo",

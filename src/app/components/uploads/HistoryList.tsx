@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import HistoryCard from "./HistoryCard";
 import ConfirmModal from "@/app/components/common/ConfirmModal";
 
@@ -34,6 +35,7 @@ const HistoryList: React.FC<Props> = ({
   onDeleteClick,
   onOpenClick, // NEW
 }) => {
+  const t = useTranslations("dashboard.history");
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
@@ -66,8 +68,10 @@ const HistoryList: React.FC<Props> = ({
 
       <ConfirmModal
         isOpen={modalOpen}
-        title="Delete Analysis"
-        message="Are you sure you want to delete this analysis? This action cannot be undone."
+        title={t("confirmDeleteTitle")}
+        message={t("confirmDeleteMessage")}
+        confirmLabel={t("confirmDeleteConfirm")}
+        cancelLabel={t("confirmDeleteCancel")}
         onCancel={() => setModalOpen(false)}
         onConfirm={confirmDelete}
       />

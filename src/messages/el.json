@@ -667,7 +667,7 @@
       "heading": "Ιστορικό Upload",
       "subheading": "Ελέγξτε παλαιότερες αναλύσεις, βελτιώστε insights και διατηρήστε τη στρατηγική σας.",
       "tabUploads": "Φωτογραφίες",
-      "tabVideos": "Avatar Video",
+      "tabVideos": "AI Video Avatar",
       "selectPackageHeading": "Επιλέξτε πακέτο",
       "selectPackageDesc": "Επιλέξτε ενεργό πακέτο για να δείτε τα insights του.",
       "viewPackages": "Δείτε πακέτα",
@@ -675,7 +675,7 @@
       "noInsightsHeading": "Δεν υπάρχουν insights ακόμα",
       "noInsightsDesc": "Ανεβάστε την πρώτη σας εικόνα για να δημιουργήσετε τη στρατηγική σας.",
       "uploadContent": "Ανέβασμα περιεχομένου",
-      "talkingHeadHeading": "Ιστορικό Talking Head",
+      "talkingHeadHeading": "Ιστορικό AI Video Avatar",
       "generateNew": "Νέα δημιουργία",
       "noVideos": "Τα βίντεό σας θα εμφανιστούν εδώ.",
       "play": "Αναπαραγωγή",
@@ -687,7 +687,9 @@
       "rowLabel": "Ανάλυση",
       "tableDelete": "Διαγραφή",
       "confirmDeleteTitle": "Διαγραφή Ανάλυσης",
-      "confirmDeleteMessage": "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτή την ανάλυση; Η ενέργεια αυτή δεν αναιρείται."
+      "confirmDeleteMessage": "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτή την ανάλυση; Η ενέργεια αυτή δεν αναιρείται.",
+      "confirmDeleteConfirm": "Διαγραφή",
+      "confirmDeleteCancel": "Άκυρο"
     },
     "billing": {
       "noActivePlanHeading": "Δεν υπάρχει ενεργό πλάνο",

@@ -5,6 +5,8 @@ interface ConfirmModalProps {
   isOpen: boolean;
   title?: string;
   message?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -13,6 +15,8 @@ const ConfirmModal = ({
   isOpen,
   title = "Confirm Action",
   message = "Are you sure you want to proceed?",
+  confirmLabel = "Delete",
+  cancelLabel = "Cancel",
   onConfirm,
   onCancel,
 }: ConfirmModalProps) => {
@@ -28,13 +32,13 @@ const ConfirmModal = ({
             onClick={onCancel}
             className="px-4 py-2 text-sm bg-gray-700 text-white rounded-md hover:bg-gray-600"
           >
-            Cancel
+            {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
             className="px-4 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"
           >
-            Delete
+            {confirmLabel}
           </button>
         </div>
       </div>

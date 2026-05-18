@@ -237,6 +237,8 @@ const HistoryTable = ({ history, onDeleteClick, onOpenClick }: Props) => {
         isOpen={modalOpen}
         title={t("confirmDeleteTitle")}
         message={t("confirmDeleteMessage")}
+        confirmLabel={t("confirmDeleteConfirm")}
+        cancelLabel={t("confirmDeleteCancel")}
         onCancel={() => setModalOpen(false)}
         onConfirm={confirmDelete}
       />
