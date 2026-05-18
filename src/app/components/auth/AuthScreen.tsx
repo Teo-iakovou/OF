@@ -2,14 +2,13 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Check, ChevronDown, Globe } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import AuthForm from "@/app/components/auth/AuthForm";
 import { AnimatePresence, motion } from "framer-motion";
+import LocaleSwitcher from "@/app/components/common/LocaleSwitcher";
 
-const supportedLocales = ["en", "el", "es", "it"] as const;
-type SupportedLocale = (typeof supportedLocales)[number];
 
 type AuthScreenProps = {
   initialMode: "signin" | "signup";
@@ -48,14 +47,11 @@ function EchofyWordmark({ size = 20 }: { size?: number }) {
 export default function AuthScreen({ initialMode, redirectTo, intent }: AuthScreenProps) {
   const t = useTranslations("authScreen");
   const tAuth = useTranslations("auth");
-  const tNav = useTranslations("navbar");
-  const locale = useLocale() as SupportedLocale;
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
-  const [langOpen, setLangOpen] = useState(false);
   const [oauthReady, setOauthReady] = useState<boolean | null>(null);
 
   const query = useMemo(() => {
@@ -77,11 +73,6 @@ export default function AuthScreen({ initialMode, redirectTo, intent }: AuthScre
       cancelled = true;
     };
   }, []);
-
-  const onLocaleChange = (nextLocale: SupportedLocale) => {
-    router.replace(`${pathname}${query}`, { locale: nextLocale });
-    setLangOpen(false);
-  };
 
   const googleOauthHref = () => {
     const params = new URLSearchParams();
@@ -190,35 +181,7 @@ export default function AuthScreen({ initialMode, redirectTo, intent }: AuthScre
       <div className="relative flex flex-1 flex-col bg-[var(--hg-bg)] md:w-1/2">
         {/* Top bar: lang switcher */}
         <div className="flex justify-end px-6 pt-6">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setLangOpen((v) => !v)}
-              className="inline-flex h-9 items-center gap-1 rounded-full border border-[var(--hg-border)] bg-[var(--hg-surface)] px-3 text-xs font-medium text-[var(--hg-muted)] transition-all duration-150 hover:text-[var(--hg-text)]"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              {tNav(`languages.${locale}`)}
-              <ChevronDown className="h-3.5 w-3.5" />
-            </button>
-            {langOpen && (
-              <div className="absolute right-0 top-10 z-20 w-24 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-1 shadow-lg shadow-black/20">
-                {supportedLocales.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => onLocaleChange(item)}
-                    className={`flex w-full items-center justify-center rounded-lg px-2 py-1.5 text-xs font-medium ${
-                      item === locale
-                        ? "bg-[var(--hg-surface-2)] text-[var(--hg-text)]"
-                        : "text-[var(--hg-muted)] hover:bg-[var(--hg-surface-2)] hover:text-[var(--hg-text)]"
-                    }`}
-                  >
-                    {tNav(`languages.${item}`)}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <LocaleSwitcher variant="pill" />
         </div>
 
         {/* Centered form content */}

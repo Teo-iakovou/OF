@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Spinner from "@/app/components/dashboard/loading spinner/page";
 import SelectActiveInstance from "@/app/components/dashboard/SelectActiveInstance";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
@@ -27,14 +27,15 @@ const formatRemainingTokens = (
   remaining: number | null,
   limit: number | null,
   isUnlimited = false,
+  unlimitedLabel = "Unlimited",
 ) => {
-  if (isUnlimited) return "Unlimited";
+  if (isUnlimited) return unlimitedLabel;
   if (limit === null) return "—";
   return formatTokenCount(remaining);
 };
 
-const formatStatus = (status?: string | null) => {
-  if (!status) return "Active";
+const formatStatus = (status?: string | null, activeLabel = "Active") => {
+  if (!status) return activeLabel;
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
@@ -56,17 +57,17 @@ const PURCHASABLE_PLANS = [
 ] as const;
 
 const ADDON_PACKS: Array<{
-  label: string;
+  labelKey: string;
   type: AddonType;
   pack: string;
-  badge?: string;
+  badgeKey?: string;
 }> = [
-  { label: "5 Uploads", type: "uploads", pack: "pack_5" },
-  { label: "20 Uploads", type: "uploads", pack: "pack_20", badge: "Best value" },
-  { label: "100k Chat Tokens", type: "chat", pack: "pack_100k" },
-  { label: "5 Videos", type: "sadtalkerVideos", pack: "pack_5" },
-  { label: "15 Videos", type: "sadtalkerVideos", pack: "pack_15" },
-  { label: "30 Videos", type: "sadtalkerVideos", pack: "pack_30", badge: "Best value" },
+  { labelKey: "addonLabel5Uploads", type: "uploads", pack: "pack_5" },
+  { labelKey: "addonLabel20Uploads", type: "uploads", pack: "pack_20", badgeKey: "addonBadgeBestValue" },
+  { labelKey: "addonLabel100kChat", type: "chat", pack: "pack_100k" },
+  { labelKey: "addonLabel5Videos", type: "sadtalkerVideos", pack: "pack_5" },
+  { labelKey: "addonLabel15Videos", type: "sadtalkerVideos", pack: "pack_15" },
+  { labelKey: "addonLabel30Videos", type: "sadtalkerVideos", pack: "pack_30", badgeKey: "addonBadgeBestValue" },
 ];
 
 type BillingPanelProps = {
@@ -75,6 +76,7 @@ type BillingPanelProps = {
 };
 
 export default function BillingPanel({ embedded = false, refreshToken = 0 }: BillingPanelProps) {
+  const t = useTranslations("dashboard.billing");
   const locale = useLocale();
   const { data: planData, loading: planLoading, refresh: refreshPlan, hasActiveInstance } =
     usePlanInfo();
@@ -117,7 +119,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
       const list = await fetchActivePackageInstances();
       setInstances(list);
     } catch {
-      setErrorMessage("Unauthorized. Please sign in again.");
+      setErrorMessage(t("unauthorized"));
     }
   }, []);
 
@@ -145,7 +147,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
       }
       await Promise.all([refreshPlan(true), refreshAll()]);
     } catch {
-      setErrorMessage("Failed to select package instance.");
+      setErrorMessage(t("failedSelectInstance"));
     } finally {
       setActionKey(null);
     }
@@ -170,18 +172,16 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
         window.location.href = res.url;
         return;
       }
-      setErrorMessage("Missing checkout URL.");
+      setErrorMessage(t("missingCheckoutUrl"));
     } catch (err: unknown) {
       const payload = (err as { payload?: { error?: string; requestId?: string } })?.payload;
       const error = typeof payload?.error === "string" ? payload.error : null;
       const requestId = typeof payload?.requestId === "string" ? payload.requestId : null;
       setErrorRequestId(requestId);
       if (error === "ADDON_PRICE_NOT_CONFIGURED") {
-        setErrorMessage(
-          "This add-on is temporarily unavailable due to configuration. Please contact support and share Support ID.",
-        );
+        setErrorMessage(t("addonUnavailable"));
       } else {
-        setErrorMessage("Failed to create add-on checkout session.");
+        setErrorMessage(t("addonCheckoutFailed"));
       }
     } finally {
       setActionKey(null);
@@ -201,11 +201,11 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
   if (!planLoading && !hasActiveInstance && !embedded) {
     return (
       <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-        <h2 className="text-lg font-semibold text-white">No active plan</h2>
+        <h2 className="text-lg font-semibold text-white">{t("noActivePlanHeading")}</h2>
         <p className="mt-2 text-sm text-gray-400">
-          You need an active package to buy add-ons.{" "}
+          {t("noActivePlanDesc")}{" "}
           <a href="/account/plans" className="text-[#50C0F0] underline hover:opacity-80">
-            View plans →
+            {t("viewPlans")}
           </a>
         </p>
       </section>
@@ -219,13 +219,13 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
           <p className="text-sm text-rose-100">{errorMessage}</p>
           {errorRequestId ? (
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-rose-200">
-              <span>Support ID: {errorRequestId}</span>
+              <span>{t("supportId", { id: errorRequestId })}</span>
               <button
                 type="button"
                 onClick={() => navigator.clipboard.writeText(errorRequestId)}
                 className="rounded-md border border-rose-200/60 px-2 py-1 text-[11px] uppercase tracking-wide hover:border-rose-100"
               >
-                Copy
+                {t("copy")}
               </button>
             </div>
           ) : null}
@@ -242,7 +242,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
         </div>
       ) : instances.length === 0 ? (
         <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <p className="text-sm text-gray-200">No active packages.</p>
+          <p className="text-sm text-gray-200">{t("noActivePackages")}</p>
         </section>
       ) : (
         <div className="space-y-4">
@@ -270,49 +270,49 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
                     <div className="text-sm text-gray-400 uppercase tracking-wide">{headerLabel}</div>
                     <h2 className="text-lg font-semibold text-white">{formatStatus(instance.status)}</h2>
                     <p className="text-xs text-gray-400">
-                      Created {new Date(instance.createdAt).toLocaleDateString()}
+                      {t("createdAt", { date: new Date(instance.createdAt).toLocaleDateString(locale) })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-300">{isSelected ? "Selected" : "Not selected"}</span>
+                    <span className="text-xs text-gray-300">{isSelected ? t("selected") : t("notSelected")}</span>
                     <button
                       type="button"
                       onClick={() => handleSelectInstance(instance.id)}
                       disabled={isSelected || actionKey === `select:${instance.id}`}
                       className="rounded-full border border-white/20 px-3 py-1 text-xs text-white hover:border-white/40 disabled:opacity-50"
                     >
-                      {isSelected ? "Selected" : "Select"}
+                      {isSelected ? t("selected") : t("select")}
                     </button>
                   </div>
                 </div>
 
                 <div className="text-sm text-gray-200 grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <div>Uploads: {uploadRemaining}</div>
+                  <div>{t("uploads")}: {isUploadUnlimited ? t("unlimited") : uploadRemaining}</div>
                   <div>
                     <div>
-                      AI Tokens:{" "}
+                      {t("aiTokens")}:{" "}
                       {formatRemainingTokens(
                         typeof chatRemainingRaw === "number" ? chatRemainingRaw : null,
                         quotas.aiTokens.effectiveLimit,
                         isChatUnlimited,
+                        t("unlimited"),
                       )}{" "}
-                      tokens
+                      {t("tokensUnit")}
                     </div>
                     <div className="mt-1 text-xs text-gray-400">
-                      Monthly package usage. Context tokens are tracked per conversation in AI Chat.
+                      {t("tokensMonthlyDesc")}
                     </div>
                     {isChatUnlimited ? (
                       <div className="mt-1 text-xs text-gray-400">
-                        Unlimited plan tokens — each conversation has a memory limit. When it fills
-                        up, summarize to continue.
+                        {t("tokensUnlimitedDesc")}
                       </div>
                     ) : null}
                   </div>
-                  <div>Videos: {isVideoUnlimited ? "Unlimited" : videoRemaining}</div>
+                  <div>{t("videos")}: {isVideoUnlimited ? t("unlimited") : videoRemaining}</div>
                 </div>
 
                 <div className="border-t border-white/10 pt-4">
-                  <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Buy add-ons</p>
+                  <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">{t("buyAddons")}</p>
                   <div className="flex flex-wrap gap-2">
                     {ADDON_PACKS.map((pack) => {
                       const key = `${instance.id}:${pack.type}:${pack.pack}`;
@@ -320,7 +320,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
                       const isIncluded =
                         (pack.type === "chat" && isChatUnlimited) ||
                         (pack.type === "uploads" && isUploadUnlimited);
-                      const label = isIncluded ? "Included" : pack.label;
+                      const label = isIncluded ? t("included") : t(pack.labelKey as Parameters<typeof t>[0]);
                       return (
                         <button
                           key={key}
@@ -329,10 +329,10 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
                           onClick={() => handleAddonPurchase(instance.id, pack.type, pack.pack)}
                           className="rounded-full border border-white/20 px-3 py-1 text-xs text-white hover:border-white/40 disabled:opacity-50"
                         >
-                          {busy ? "Redirecting…" : label}
-                          {pack.badge ? (
+                          {busy ? t("redirecting") : label}
+                          {pack.badgeKey ? (
                             <span className="ml-2 rounded-full border border-white/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/70">
-                              {pack.badge}
+                              {t(pack.badgeKey as Parameters<typeof t>[0])}
                             </span>
                           ) : null}
                         </button>
@@ -341,7 +341,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
                   </div>
                   {disabled ? (
                     <p className="mt-2 text-xs text-gray-400">
-                      Add-ons are only available for active packages.
+                      {t("addonsDisabled")}
                     </p>
                   ) : null}
                 </div>
@@ -353,7 +353,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
 
       {selectedInstance ? (
         <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <p className="text-xs uppercase tracking-wide text-gray-400">Selected package</p>
+          <p className="text-xs uppercase tracking-wide text-gray-400">{t("selectedPackageLabel")}</p>
           <h3 className="text-lg font-semibold text-white">
             {(() => {
               const profileLabel = profileLabelById.get(selectedInstance.id) || null;
@@ -361,7 +361,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
               return profileLabel ? `${planLabel} — ${profileLabel}` : planLabel;
             })()}
           </h3>
-          <p className="text-sm text-gray-300">Active instance: {selectedInstance.id}</p>
+          <p className="text-sm text-gray-300">{t("activeInstance", { id: selectedInstance.id })}</p>
         </section>
       ) : null}
     </div>

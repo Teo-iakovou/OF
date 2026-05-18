@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { X, User, BarChart3, CreditCard, History } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { useUser } from "@/app/hooks/useUser";
@@ -21,12 +22,12 @@ type SettingsModalProps = {
   initialSection?: SettingsSection;
 };
 
-const sections: Array<{ key: SettingsSection; label: string; icon: ComponentType<{ className?: string }> }> = [
-  { key: "account", label: "Account", icon: User },
-  { key: "usage", label: "Usage", icon: BarChart3 },
-  { key: "billing", label: "Plan & Billing", icon: CreditCard },
-  { key: "history", label: "History", icon: History },
-];
+const SECTION_ICONS: Record<SettingsSection, ComponentType<{ className?: string }>> = {
+  account: User,
+  usage: BarChart3,
+  billing: CreditCard,
+  history: History,
+};
 
 const isSettingsSection = (value: unknown): value is SettingsSection =>
   value === "account" || value === "usage" || value === "billing" || value === "history";
@@ -49,15 +50,23 @@ function UsageBar({
   limit,
   remaining,
   isUnlimited = false,
+  unlimitedLabel = "Unlimited",
+  remainingLabel,
+  usedLabel = "used",
 }: {
   label: string;
   used: number | null;
   limit: number | null;
   remaining: number | null;
   isUnlimited?: boolean;
+  unlimitedLabel?: string;
+  remainingLabel?: string;
+  usedLabel?: string;
 }) {
   const pct = isUnlimited ? 0 : toPercent(used, limit);
-  const rightLabel = isUnlimited ? "Unlimited" : `${fmtN(remaining ?? 0)} left`;
+  const rightLabel = isUnlimited
+    ? unlimitedLabel
+    : (remainingLabel ?? `${fmtN(remaining ?? 0)} left`);
   return (
     <div className="rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] p-3">
       <div className="flex items-center justify-between text-sm">
@@ -71,13 +80,14 @@ function UsageBar({
         />
       </div>
       <div className="mt-1 text-[11px] text-[var(--hg-muted)]">
-        {fmtN(used ?? 0)} used{!isUnlimited && limit !== null ? ` / ${fmtN(limit)}` : ""}
+        {fmtN(used ?? 0)} {usedLabel}{!isUnlimited && limit !== null ? ` / ${fmtN(limit)}` : ""}
       </div>
     </div>
   );
 }
 
 export default function SettingsModal({ open, onOpenChange, initialSection = "account" }: SettingsModalProps) {
+  const t = useTranslations("dashboard.settings");
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [section, setSection] = useState<SettingsSection>(
@@ -146,6 +156,13 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
     return () => window.removeEventListener("dashboard:close-settings", onCloseEvent);
   }, [onOpenChange]);
 
+  const sections: Array<{ key: SettingsSection; label: string; icon: ComponentType<{ className?: string }> }> = [
+    { key: "account", label: t("tabAccount"), icon: SECTION_ICONS.account },
+    { key: "usage", label: t("tabUsage"), icon: SECTION_ICONS.usage },
+    { key: "billing", label: t("tabBilling"), icon: SECTION_ICONS.billing },
+    { key: "history", label: t("tabHistory"), icon: SECTION_ICONS.history },
+  ];
+
   if (!open || !mounted) return null;
 
   const activeSection: SettingsSection = isSettingsSection(section) ? section : "account";
@@ -172,7 +189,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
       {/* Backdrop */}
       <button
         type="button"
-        aria-label="Close settings"
+        aria-label={t("closeBackdropAriaLabel")}
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
@@ -186,12 +203,12 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
       >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-[var(--hg-border-2)] px-4 py-3 md:px-6">
-          <h2 className="text-lg font-semibold text-white">Settings</h2>
+          <h2 className="text-lg font-semibold text-white">{t("heading")}</h2>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
             className="rounded-md p-1.5 text-[var(--hg-muted)] hover:text-white"
-            aria-label="Close"
+            aria-label={t("closeBtnAriaLabel")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -255,7 +272,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                 onClick={() => { onOpenChange(false); router.push("/"); }}
                 className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm text-[var(--hg-muted)] transition hover:bg-[var(--hg-surface-2)] hover:text-white"
               >
-                Exit dashboard
+                {t("exitDashboard")}
               </button>
               <button
                 type="button"
@@ -273,7 +290,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                 disabled={loggingOut}
                 className="mt-1 flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-60"
               >
-                {loggingOut ? "Signing out..." : "Sign out"}
+                {loggingOut ? t("signingOut") : t("signOut")}
               </button>
             </div>
           </aside>
@@ -293,7 +310,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                         "Account"}
                     </p>
                     <p className="truncate text-xs text-white/60">{user?.email ?? "—"}</p>
-                    <p className="mt-0.5 text-xs text-white/45">Manage your profile details</p>
+                    <p className="mt-0.5 text-xs text-white/45">{t("manageProfile")}</p>
                   </div>
                 </div>
                 <div className="h-px w-full bg-white/10" />
@@ -301,35 +318,35 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="space-y-1.5">
                       <label htmlFor="settings-first-name" className="text-xs tracking-wide text-white/60">
-                        First name
+                        {t("firstName")}
                       </label>
                       <input
                         id="settings-first-name"
                         type="text"
                         value={firstName}
                         onChange={(event) => setFirstName(event.target.value)}
-                        placeholder="First name"
+                        placeholder={t("firstNamePlaceholder")}
                         className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition placeholder:text-white/30 focus:border-white/20 focus:ring-1 focus:ring-sky-400/30"
                       />
                     </div>
                     <div className="space-y-1.5">
                       <label htmlFor="settings-last-name" className="text-xs tracking-wide text-white/60">
-                        Last name
+                        {t("lastName")}
                       </label>
                       <input
                         id="settings-last-name"
                         type="text"
                         value={lastName}
                         onChange={(event) => setLastName(event.target.value)}
-                        placeholder="Last name"
+                        placeholder={t("lastNamePlaceholder")}
                         className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition placeholder:text-white/30 focus:border-white/20 focus:ring-1 focus:ring-sky-400/30"
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-white/45">This appears in your account and receipts.</p>
+                  <p className="text-xs text-white/45">{t("emailHint")}</p>
                   <div className="space-y-1.5">
                     <label htmlFor="settings-email" className="text-xs tracking-wide text-white/60">
-                      Email
+                      {t("email")}
                     </label>
                     <input
                       id="settings-email"
@@ -369,7 +386,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                         setInitialFirstName(nextFirst);
                         setInitialLastName(nextLast);
                         setSavedAt(Date.now());
-                        toast.success("Saved");
+                        toast.success(t("saved"));
                       } catch (err: unknown) {
                         const requestId =
                           err && typeof err === "object" && "requestId" in err
@@ -381,8 +398,8 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                             : null;
                         const fallbackMessage =
                           status === 404
-                            ? "Profile update is not available in this environment yet."
-                            : "Failed to save profile.";
+                            ? t("failedSaveEnv")
+                            : t("failedSave");
                         setSaveError({
                           message: err instanceof Error ? err.message || fallbackMessage : fallbackMessage,
                           requestId,
@@ -395,7 +412,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                     disabled={!hasNameChanges || saving}
                     className="h-10 rounded-xl bg-[#50C0F0] px-4 text-sm font-semibold text-[#07131d] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {saving ? "Saving..." : "Save changes"}
+                    {saving ? t("saving") : t("saveChanges")}
                   </button>
                   <button
                     type="button"
@@ -408,24 +425,24 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                     disabled={saving || !hasNameChanges}
                     className="h-10 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 text-sm text-[var(--hg-muted)] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Cancel
+                    {t("cancel")}
                   </button>
                 </div>
                 {savedAt ? (
-                  <p className="text-xs text-emerald-300">Saved</p>
+                  <p className="text-xs text-emerald-300">{t("saved")}</p>
                 ) : null}
                 {saveError ? (
                   <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">
                     <p>{saveError.message}</p>
                     {saveSupportId ? (
                       <div className="mt-1 flex items-center gap-2">
-                        <span>Support ID: {saveSupportId}</span>
+                        <span>{t("supportId", { id: saveSupportId })}</span>
                         <button
                           type="button"
                           onClick={() => navigator.clipboard.writeText(saveSupportId)}
                           className="rounded border border-rose-200/40 px-1.5 py-0.5 text-[10px] uppercase tracking-wide hover:border-rose-100"
                         >
-                          Copy
+                          {t("copy")}
                         </button>
                       </div>
                     ) : null}
@@ -437,29 +454,37 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
             {activeSection === "usage" ? (
               <div className="space-y-3">
                 <p className="text-xs text-[var(--hg-muted)]">
-                  AI Tokens track monthly package usage. Context Tokens are the per-conversation
-                  memory window shown inside AI Chat.
+                  {t("usageDesc")}
                 </p>
                 <UsageBar
-                  label="Uploads"
+                  label={t("usageUploads")}
                   used={uploadsUsed}
                   limit={uploadsLimit}
                   remaining={uploadsRemaining}
                   isUnlimited={uploadsUnlimited}
+                  unlimitedLabel={t("usageUnlimited")}
+                  remainingLabel={t("usageRemaining", { n: fmtN(uploadsRemaining ?? 0) })}
+                  usedLabel={t("usageUsed")}
                 />
                 <UsageBar
-                  label="AI Tokens"
+                  label={t("usageAiTokens")}
                   used={chatUsed}
                   limit={chatLimit}
                   remaining={chatRemaining}
                   isUnlimited={chatUnlimited}
+                  unlimitedLabel={t("usageUnlimited")}
+                  remainingLabel={t("usageRemaining", { n: fmtN(chatRemaining ?? 0) })}
+                  usedLabel={t("usageUsed")}
                 />
                 <UsageBar
-                  label="Avatar Videos"
+                  label={t("usageAvatarVideos")}
                   used={videosUsed}
                   limit={videosLimit}
                   remaining={videosRemaining}
                   isUnlimited={videosUnlimited}
+                  unlimitedLabel={t("usageUnlimited")}
+                  remainingLabel={t("usageRemaining", { n: fmtN(videosRemaining ?? 0) })}
+                  usedLabel={t("usageUsed")}
                 />
               </div>
             ) : null}
@@ -482,7 +507,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
               onClick={() => { onOpenChange(false); router.push("/"); }}
               className="flex flex-1 items-center justify-center rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 py-2.5 text-sm text-[var(--hg-muted)] transition hover:text-white"
             >
-              Exit dashboard
+              {t("exitDashboard")}
             </button>
             <button
               type="button"
@@ -500,7 +525,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
               disabled={loggingOut}
               className="flex flex-1 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2.5 text-sm text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-60"
             >
-              {loggingOut ? "Signing out..." : "Sign out"}
+              {loggingOut ? t("signingOut") : t("signOut")}
             </button>
           </div>
         </div>

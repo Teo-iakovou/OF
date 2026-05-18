@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import HistoryTable from "@/app/components/dashboard/history/HistoryTable";
 import { deleteAnalysisResult, getUserResults } from "@/app/utils/api";
 import type { ResultDoc } from "@/app/types/analysis";
@@ -25,6 +26,8 @@ type HistoryPanelProps = {
 };
 
 export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
+  const t = useTranslations("dashboard.history");
+  const locale = useLocale();
   const [history, setHistory] = useState<ResultDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [reportOpen, setReportOpen] = useState(false);
@@ -72,16 +75,16 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
           err && typeof err === "object" && "requestId" in err
             ? (err as { requestId?: string }).requestId
             : null;
-        const message = err instanceof Error ? err.message : "Failed to load history.";
+        const message = err instanceof Error ? err.message : t("errorNeedsPackage");
         if (errCode === "ACTIVE_INSTANCE_REQUIRED") {
-          setErrorMessage("You need an active package to view your history.");
+          setErrorMessage(t("errorNeedsPackage"));
         } else {
           setErrorMessage(message);
           toast.error(message, {
             description: requestId ? `Request ID: ${requestId}` : undefined,
             action: requestId
               ? {
-                  label: "Copy request ID",
+                  label: t("copyRequestId"),
                   onClick: () => navigator.clipboard.writeText(requestId),
                 }
               : undefined,
@@ -107,7 +110,7 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
     } finally {
       setVideosLoading(false);
     }
-  }, []);
+  }, [packageInstanceId]);
 
   useEffect(() => {
     loadHistory(1);
@@ -174,9 +177,9 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
         <header className="shrink-0 px-4 pt-3 md:px-12 md:pt-20 lg:px-20 max-w-6xl mx-auto w-full">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Upload History</h1>
+              <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{t("heading")}</h1>
               <p className="text-sm hg-muted">
-                Review past analyses, refine insights, and keep your strategy sharp.
+                {t("subheading")}
               </p>
             </div>
           </div>
@@ -197,7 +200,7 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
                       : "hg-muted hover:text-white"
                   }`}
                 >
-                  Photo Uploads
+                  {t("tabUploads")}
                 </button>
                 <button
                   type="button"
@@ -208,22 +211,22 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
                       : "hg-muted hover:text-white"
                   }`}
                 >
-                  Avatar Video
+                  {t("tabVideos")}
                 </button>
               </div>
 
               {activeTab === "uploads" ? (
                 !packageInstanceId ? (
                   <div className="mx-auto w-full max-w-2xl rounded-2xl hg-surface p-5">
-                    <h3 className="text-xl font-semibold text-white">Select a package</h3>
+                    <h3 className="text-xl font-semibold text-white">{t("selectPackageHeading")}</h3>
                     <p className="mt-2 text-sm hg-muted">
-                      Choose an active package to view insights for that plan.
+                      {t("selectPackageDesc")}
                     </p>
                     <Link
                       href={PACKAGES_URL}
                       className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#07131d] hover:opacity-90"
                     >
-                      View packages
+                      {t("viewPackages")}
                     </Link>
                   </div>
                 ) : loading ? (
@@ -231,9 +234,9 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
                     <table className="min-w-[420px] w-full text-left">
                       <thead className="border-b border-[var(--hg-border-2)] bg-[var(--hg-surface-2)]">
                         <tr className="text-xs uppercase tracking-wide hg-muted-2">
-                          <th className="px-5 py-3 font-medium">Preview</th>
-                          <th className="px-5 py-3 font-medium">Created</th>
-                          <th className="px-5 py-3 font-medium text-right">Actions</th>
+                          <th className="px-5 py-3 font-medium">{t("tablePreview")}</th>
+                          <th className="px-5 py-3 font-medium">{t("tableCreated")}</th>
+                          <th className="px-5 py-3 font-medium text-right">{t("tableActions")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -257,26 +260,26 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
                   </div>
                 ) : errorMessage ? (
                   <div className="mx-auto w-full max-w-2xl rounded-2xl hg-surface p-5">
-                    <h3 className="text-xl font-semibold text-white">No access</h3>
+                    <h3 className="text-xl font-semibold text-white">{t("noAccessHeading")}</h3>
                     <p className="mt-2 text-sm hg-muted">{errorMessage}</p>
                     <Link
                       href={PACKAGES_URL}
                       className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#07131d] hover:opacity-90"
                     >
-                      View packages
+                      {t("viewPackages")}
                     </Link>
                   </div>
                 ) : history.length === 0 ? (
                   <div className="mx-auto w-full max-w-2xl rounded-2xl hg-surface p-5">
-                    <h3 className="text-xl font-semibold text-white">No insights yet</h3>
+                    <h3 className="text-xl font-semibold text-white">{t("noInsightsHeading")}</h3>
                     <p className="mt-2 text-sm hg-muted">
-                      Upload your first image to generate your first strategy.
+                      {t("noInsightsDesc")}
                     </p>
                     <Link
                       href="/dashboard/upload"
                       className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#07131d] hover:opacity-90"
                     >
-                      Upload content
+                      {t("uploadContent")}
                     </Link>
                   </div>
                 ) : (
@@ -285,13 +288,13 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-semibold text-white">Talking Head history</h3>
+                    <h3 className="text-xl font-semibold text-white">{t("talkingHeadHeading")}</h3>
                     <button
                       type="button"
                       onClick={handleGenerateNew}
                       className="inline-flex rounded-xl bg-[#50C0F0] px-3 py-2 text-xs font-medium text-[#07131d] hover:opacity-90"
                     >
-                      Generate new
+                      {t("generateNew")}
                     </button>
                   </div>
 
@@ -309,13 +312,13 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
                     </div>
                   ) : videos.length === 0 ? (
                     <div className="rounded-2xl hg-surface p-5">
-                      <p className="text-sm hg-muted">Your generated videos will appear here.</p>
+                      <p className="text-sm hg-muted">{t("noVideos")}</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                       {videos.map((item) => {
                         const dateLabel = item.createdAt
-                          ? new Date(item.createdAt).toLocaleDateString(undefined, {
+                          ? new Date(item.createdAt).toLocaleDateString(locale, {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
@@ -350,7 +353,7 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
                                 className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--hg-accent)] px-2.5 py-1.5 text-xs font-semibold text-[#04131d] hover:opacity-90"
                               >
                                 <Play className="h-3 w-3" />
-                                Play
+                                {t("play")}
                               </a>
                             </div>
                           </div>

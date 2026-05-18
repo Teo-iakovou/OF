@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { fetchLatestResultForPackageInstance } from "@/app/utils/api";
 import type { ResultDoc } from "@/app/types/analysis";
+import { useLocale, useTranslations } from "next-intl";
 
 type LastUploadCardProps = {
   packageInstanceId?: string | null;
@@ -12,10 +13,10 @@ type LastUploadCardProps = {
   loading?: boolean;
 };
 
-const summaryFor = (result: ResultDoc) => {
-  const niche = result.niche ? `Niche: ${result.niche}` : null;
+const summaryFor = (result: ResultDoc, nicheLabel: string, platformLabel: string) => {
+  const niche = result.niche ? `${nicheLabel}: ${result.niche}` : null;
   const platform = result.promotion?.recommendedPlatforms?.[0]?.platform;
-  const platformLine = platform ? `Top platform: ${platform}` : null;
+  const platformLine = platform ? `${platformLabel}: ${platform}` : null;
   return [niche, platformLine].filter(Boolean).join(" · ");
 };
 
@@ -56,6 +57,8 @@ const extractImageUrl = (result: ResultDoc | null) => {
 };
 
 export default function LastUploadCard({ packageInstanceId, result, loading }: LastUploadCardProps) {
+  const t = useTranslations("dashboard.home.lastActivity");
+  const locale = useLocale();
   const [internalResult, setInternalResult] = useState<ResultDoc | null>(null);
   const [internalLoading, setInternalLoading] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -114,20 +117,20 @@ export default function LastUploadCard({ packageInstanceId, result, loading }: L
     if (!effectiveResult) {
       return (
         <p className="text-sm hg-muted">
-          No uploads yet. Upload your first image to see insights here.
+          {t("noUploads")}
         </p>
       );
     }
 
     return (
       <>
-        <p className="text-sm hg-muted">Created {createdAt?.toLocaleString()}</p>
-        <p className="mt-2 text-sm text-[var(--hg-text)]">{summaryFor(effectiveResult) || "AI insights ready."}</p>
+        <p className="text-sm hg-muted">{t("createdAt", { date: createdAt?.toLocaleString(locale) ?? "" })}</p>
+        <p className="mt-2 text-sm text-[var(--hg-text)]">{summaryFor(effectiveResult, t("niche"), t("topPlatform")) || t("insightsReady")}</p>
         <Link
           href="/dashboard?settings=1&tab=history"
           className="mt-4 inline-flex text-sm font-medium text-[#50C0F0] hover:text-[#7ed2f5]"
         >
-          View Full Insight →
+          {t("viewFullInsight")}
         </Link>
       </>
     );
@@ -135,8 +138,8 @@ export default function LastUploadCard({ packageInstanceId, result, loading }: L
 
   return (
     <div className="rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 shadow-sm shadow-black/20">
-      <p className="text-xs uppercase tracking-wide hg-muted">Last activity</p>
-      <h3 className="mt-2 text-xl font-semibold text-white">Last upload</h3>
+      <p className="text-xs uppercase tracking-wide hg-muted">{t("sectionLabel")}</p>
+      <h3 className="mt-2 text-xl font-semibold text-white">{t("heading")}</h3>
       <div className="mt-3 flex min-h-24 flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-[var(--hg-border-2)] bg-[var(--hg-surface-2)]">
           {previewUrl ? (
@@ -144,7 +147,7 @@ export default function LastUploadCard({ packageInstanceId, result, loading }: L
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
-                alt="Last upload preview"
+                alt={t("imageAlt")}
                 className={`h-full w-full object-cover transition-opacity duration-300 ${
                   imageLoaded ? "opacity-100" : "opacity-0"
                 }`}
@@ -160,7 +163,7 @@ export default function LastUploadCard({ packageInstanceId, result, loading }: L
           ) : (
             <Image
               src="/echofy-removebg-preview.png"
-              alt="Last upload preview"
+              alt={t("imageAlt")}
               fill
               sizes="96px"
               className="object-contain p-3"

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 type QuickActionsProps = {
   uploadsRemaining?: number | null;
@@ -33,9 +34,10 @@ const ActionButton = ({
     : "bg-[var(--hg-surface-2)] text-[var(--hg-text)] border border-[var(--hg-border)] hover:border-[var(--hg-accent)]/40";
   const disabledStyles = "cursor-not-allowed border border-[var(--hg-border-2)] bg-[var(--hg-surface-2)] text-[var(--hg-muted-2)]";
 
+  const tActions = useTranslations("dashboard.home.quickActions");
   if (disabled) {
     return (
-      <span className={`${base} ${disabledStyles}`} title={tooltip || "Unavailable"}>
+      <span className={`${base} ${disabledStyles}`} title={tooltip || tActions("unavailable")}>
         {label}
       </span>
     );
@@ -57,31 +59,32 @@ const ActionButton = ({
 };
 
 export default function QuickActions({ uploadsRemaining, chatRemaining }: QuickActionsProps) {
+  const t = useTranslations("dashboard.home.quickActions");
   const router = useRouter();
   const uploadDisabled = isExhausted(uploadsRemaining);
   const chatDisabled = isExhausted(chatRemaining);
 
   return (
     <div className="rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 shadow-sm shadow-black/20">
-      <p className="text-xs uppercase tracking-wide hg-muted">Quick actions</p>
-      <h3 className="mt-2 text-xl font-semibold text-white">Jump in</h3>
+      <p className="text-xs uppercase tracking-wide hg-muted">{t("sectionLabel")}</p>
+      <h3 className="mt-2 text-xl font-semibold text-white">{t("heading")}</h3>
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3 [&>*]:w-full">
         <ActionButton
           href="/dashboard/upload"
-          label="Upload Content"
+          label={t("uploadContent")}
           primary
           disabled={uploadDisabled}
-          tooltip="Upload limit reached"
+          tooltip={t("uploadTooltip")}
         />
         <ActionButton
           href="/dashboard/ai-chat"
-          label="AI Chat"
+          label={t("aiChat")}
           disabled={chatDisabled}
-          tooltip="Chat limit reached"
+          tooltip={t("chatTooltip")}
         />
         <ActionButton
-          label="AI Video Avatar"
+          label={t("aiVideoAvatar")}
           onClick={() => {
             if (typeof window !== "undefined") {
               window.dispatchEvent(new Event("dashboard:close-settings"));

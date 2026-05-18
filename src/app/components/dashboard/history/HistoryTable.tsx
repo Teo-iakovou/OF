@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import ConfirmModal from "@/app/components/common/ConfirmModal";
 import type { ResultDoc } from "@/app/types/analysis";
 import { getUserResultImageUrl } from "@/app/utils/api";
@@ -38,6 +39,8 @@ const extractImageKey = (item: ResultDoc) => {
 };
 
 const HistoryTable = ({ history, onDeleteClick, onOpenClick }: Props) => {
+  const t = useTranslations("dashboard.history");
+  const locale = useLocale();
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [failedThumbs, setFailedThumbs] = useState<Record<string, boolean>>({});
@@ -104,7 +107,7 @@ const HistoryTable = ({ history, onDeleteClick, onOpenClick }: Props) => {
         {history.map((item) => {
           const thumbnailUrl = extractThumbnailUrl(item) || resolvedThumbs[item._id] || null;
           const created = item.createdAt
-            ? new Intl.DateTimeFormat(undefined, {
+            ? new Intl.DateTimeFormat(locale, {
                 month: "short",
                 day: "numeric",
                 hour: "2-digit",
@@ -140,7 +143,7 @@ const HistoryTable = ({ history, onDeleteClick, onOpenClick }: Props) => {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-white">Analysis</p>
+                <p className="truncate text-sm text-white">{t("rowLabel")}</p>
                 <p className="text-xs hg-muted">{created}</p>
               </div>
               <button
@@ -150,7 +153,7 @@ const HistoryTable = ({ history, onDeleteClick, onOpenClick }: Props) => {
                 }}
                 className="rounded-lg border border-rose-400/30 hg-surface-soft px-2.5 py-1.5 text-xs font-medium text-rose-200 hover:bg-[var(--hg-surface-2)]"
               >
-                Delete
+                {t("tableDelete")}
               </button>
             </article>
           );
@@ -161,16 +164,16 @@ const HistoryTable = ({ history, onDeleteClick, onOpenClick }: Props) => {
         <table className="min-w-[420px] w-full text-left">
           <thead className="border-b border-[var(--hg-border-2)] bg-[var(--hg-surface-2)]">
             <tr className="text-xs uppercase tracking-wide hg-muted-2">
-              <th className="px-5 py-3 font-medium">Preview</th>
-              <th className="px-5 py-3 font-medium">Created</th>
-              <th className="px-5 py-3 font-medium text-right">Actions</th>
+              <th className="px-5 py-3 font-medium">{t("tablePreview")}</th>
+              <th className="px-5 py-3 font-medium">{t("tableCreated")}</th>
+              <th className="px-5 py-3 font-medium text-right">{t("tableActions")}</th>
             </tr>
           </thead>
           <tbody>
             {history.map((item) => {
               const thumbnailUrl = extractThumbnailUrl(item) || resolvedThumbs[item._id] || null;
               const created = item.createdAt
-                ? new Intl.DateTimeFormat(undefined, {
+                ? new Intl.DateTimeFormat(locale, {
                     month: "short",
                     day: "numeric",
                     hour: "2-digit",
@@ -219,7 +222,7 @@ const HistoryTable = ({ history, onDeleteClick, onOpenClick }: Props) => {
                         }}
                         className="rounded-lg border border-rose-400/30 hg-surface-soft px-2.5 py-1.5 text-xs font-medium text-rose-200 hover:bg-[var(--hg-surface-2)]"
                       >
-                        Delete
+                        {t("tableDelete")}
                       </button>
                     </div>
                   </td>
@@ -232,8 +235,8 @@ const HistoryTable = ({ history, onDeleteClick, onOpenClick }: Props) => {
 
       <ConfirmModal
         isOpen={modalOpen}
-        title="Delete Analysis"
-        message="Are you sure you want to delete this analysis? This action cannot be undone."
+        title={t("confirmDeleteTitle")}
+        message={t("confirmDeleteMessage")}
         onCancel={() => setModalOpen(false)}
         onConfirm={confirmDelete}
       />

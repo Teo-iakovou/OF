@@ -113,7 +113,7 @@ export default function UploadTalkingHead() {
     } finally {
       setHistoryLoading(false);
     }
-  }, []);
+  }, [packageInstanceId]);
 
   useEffect(() => {
     const status = searchParams.get("status");

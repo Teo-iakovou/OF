@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 type DashboardOnboardingProps = {
   isNewUser: boolean;
@@ -56,6 +57,7 @@ export default function DashboardOnboarding({
   chatRemaining,
   videoRemaining,
 }: DashboardOnboardingProps) {
+  const t = useTranslations("dashboard.home.onboarding");
   const storageKey = `dashboard_onboarding_dismissed:${packageInstanceId || "unknown"}`;
   const [dismissed, setDismissed] = useState(false);
 
@@ -71,29 +73,30 @@ export default function DashboardOnboarding({
     () => [
       {
         key: "upload",
-        label: "Upload your first image",
+        label: t("stepUpload"),
         href: "/dashboard/upload",
         disabled: isExhausted(uploadsRemaining),
       },
       {
         key: "history",
-        label: "Review your AI strategy",
+        label: t("stepHistory"),
         href: "/dashboard/history",
         disabled: false,
       },
       {
         key: "chat",
-        label: "Try AI Chat",
+        label: t("stepChat"),
         href: "/dashboard/ai-chat",
         disabled: isExhausted(chatRemaining),
       },
       {
         key: "video",
-        label: "Generate a video",
+        label: t("stepVideo"),
         href: "/dashboard/talking-head",
         disabled: isExhausted(videoRemaining),
       },
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [uploadsRemaining, chatRemaining, videoRemaining]
   );
 
@@ -112,14 +115,14 @@ export default function DashboardOnboarding({
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500">Getting started</p>
-          <h3 className="mt-2 text-xl font-semibold text-gray-900">Start with the basics</h3>
+          <p className="text-xs uppercase tracking-wide text-gray-500">{t("sectionLabel")}</p>
+          <h3 className="mt-2 text-xl font-semibold text-gray-900">{t("heading")}</h3>
         </div>
         <button
           type="button"
           onClick={onDismiss}
           className="rounded-full border border-gray-200 px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
-          aria-label="Dismiss onboarding"
+          aria-label={t("dismissAriaLabel")}
         >
           X
         </button>
@@ -135,12 +138,12 @@ export default function DashboardOnboarding({
               <span className="font-medium">{step.label}</span>
               {recommended === step.key ? (
                 <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-700">
-                  Recommended
+                  {t("recommended")}
                 </span>
               ) : null}
             </div>
             <ActionLink href={step.href} disabled={step.disabled}>
-              {step.disabled ? "Quota exhausted" : "Go to step →"}
+              {step.disabled ? t("quotaExhausted") : t("goToStep")}
             </ActionLink>
           </div>
         ))}

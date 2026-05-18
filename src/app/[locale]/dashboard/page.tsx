@@ -16,15 +16,17 @@ import { PACKAGES_URL } from "@/app/utils/urls";
 import { useOverviewModel } from "@/app/dashboard/useOverviewModel";
 import { useRouter } from "@/i18n/navigation";
 import NoPlanDashboard from "@/app/components/dashboard/NoPlanDashboard";
+import { useTranslations } from "next-intl";
 
 function OverviewSkeleton() {
+  const t = useTranslations("dashboard.home");
   return (
     <div className="min-h-screen text-white">
       <header className="mx-auto w-full max-w-6xl px-4 pt-3 md:px-8 md:pt-16">
         <div className="flex flex-col gap-3">
-          <p className="text-xs uppercase tracking-[0.14em] hg-muted-2">Overview</p>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-sm hg-muted">See what you can do now and jump into your next action fast.</p>
+          <p className="text-xs uppercase tracking-[0.14em] hg-muted-2">{t("sectionOverview")}</p>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{t("heading")}</h1>
+          <p className="text-sm hg-muted">{t("subheading")}</p>
         </div>
       </header>
       <main className="pb-16">
@@ -154,6 +156,7 @@ export default function DashboardPage() {
     setSwitcherOpen(true);
   };
 
+  const t = useTranslations("dashboard.home");
   const showSkeleton = !loading && coreLoading && !ready;
   const showGetStarted =
     !loading && ready && !coreError && (isMissingActiveInstance || !hasActiveInstance);
@@ -170,10 +173,10 @@ export default function DashboardPage() {
     <div className="min-h-screen text-white">
       <header className="mx-auto w-full max-w-6xl px-4 pt-3 md:px-8 md:pt-16">
         <div className="flex flex-col gap-3">
-          <p className="text-xs uppercase tracking-[0.14em] hg-muted-2">Overview</p>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-xs uppercase tracking-[0.14em] hg-muted-2">{t("sectionOverview")}</p>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{t("heading")}</h1>
           <p className="text-sm hg-muted">
-            See what you can do now and jump into your next action fast.
+            {t("subheading")}
           </p>
         </div>
       </header>
@@ -182,14 +185,14 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-6xl space-y-6 px-4 pt-8 md:space-y-8 md:px-8">
           {coreError ? (
             <section className="rounded-xl border border-rose-500/35 bg-rose-500/10 p-4 text-sm text-rose-200">
-              <p>Could not load dashboard overview.</p>
+              <p>{t("loadError")}</p>
               <p className="mt-1 opacity-90">{coreError}</p>
               <button
                 type="button"
                 onClick={() => void refresh(true)}
                 className="mt-3 inline-flex h-9 items-center rounded-lg border border-rose-300/40 px-3 text-xs font-semibold text-rose-100 hover:border-rose-200/60"
               >
-                Retry
+                {t("retry")}
               </button>
             </section>
           ) : null}

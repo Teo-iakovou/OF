@@ -8,71 +8,58 @@ import { startCheckout } from "@/app/utils/api";
 import { useRouter } from "@/i18n/navigation";
 import { useUser } from "@/app/hooks/useUser";
 import { buildLoginHref } from "@/app/utils/authRedirect";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 type PackagesModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-const PLANS = [
-  {
-    id: "lite",
-    name: "Lite",
-    price: "$99",
-    bestFor: "Getting started and trying AI analysis",
-    includes: [
-      "AI image analysis with platform strategy for Instagram, TikTok, and Twitter",
-      "Caption and hashtag suggestions",
-      "History and reports in your dashboard",
-      "One-time profile face enrollment protection",
-    ],
-    highlights: ["Uploads included", "Fast results", "Basic email support"],
-    cta: "Select Lite",
-    badge: null,
-    featured: false,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "$189",
-    bestFor: "Consistent creators posting weekly",
-    includes: [
-      "Everything in Lite",
-      "Higher quotas for uploads and AI usage",
-      "Advanced platform-specific strategy output",
-      "Priority processing and better support",
-    ],
-    highlights: ["Most popular", "Deeper recommendations", "Faster pipeline"],
-    cta: "Upgrade to Pro",
-    badge: "Most popular",
-    featured: true,
-  },
-  {
-    id: "ultimate",
-    name: "Ultimate",
-    price: "$399",
-    bestFor: "Power users and agency teams",
-    includes: [
-      "Everything in Pro",
-      "Maximum quotas for scale",
-      "Talking Head video credits included",
-      "Highest priority processing and premium support",
-    ],
-    highlights: ["Best value for teams", "Maximum quotas", "Priority support"],
-    cta: "Upgrade to Ultimate",
-    badge: "Best value",
-    featured: false,
-  },
-];
 
 export default function PackagesModal({ open, onOpenChange }: PackagesModalProps) {
+  const t = useTranslations("dashboard.packagesModal");
   const router = useRouter();
   const pathname = usePathname();
   const locale = useLocale();
   const { user, loading: userLoading } = useUser({ required: false });
   const [mounted, setMounted] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const PLANS = [
+    {
+      id: "lite",
+      name: "Lite",
+      price: "$99",
+      bestFor: t("liteBestFor"),
+      includes: t.raw("liteIncludes") as string[],
+      highlights: t.raw("liteHighlights") as string[],
+      cta: t("liteCta"),
+      badge: t("liteBadge") || null,
+      featured: false,
+    },
+    {
+      id: "pro",
+      name: "Pro",
+      price: "$189",
+      bestFor: t("proBestFor"),
+      includes: t.raw("proIncludes") as string[],
+      highlights: t.raw("proHighlights") as string[],
+      cta: t("proCta"),
+      badge: t("proBadge") || null,
+      featured: true,
+    },
+    {
+      id: "ultimate",
+      name: "Ultimate",
+      price: "$399",
+      bestFor: t("ultimateBestFor"),
+      includes: t.raw("ultimateIncludes") as string[],
+      highlights: t.raw("ultimateHighlights") as string[],
+      cta: t("ultimateCta"),
+      badge: t("ultimateBadge") || null,
+      featured: false,
+    },
+  ];
 
   useEffect(() => {
     setMounted(true);
@@ -84,7 +71,7 @@ export default function PackagesModal({ open, onOpenChange }: PackagesModalProps
     <div className="fixed inset-0 z-[120]">
       <button
         type="button"
-        aria-label="Close packages"
+        aria-label={t("closeBackdropAriaLabel")}
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
@@ -98,14 +85,14 @@ export default function PackagesModal({ open, onOpenChange }: PackagesModalProps
       >
         <div className="flex items-center justify-between border-b border-[var(--hg-border-2)] px-4 py-3 md:px-6">
           <div>
-            <h2 className="text-lg font-semibold text-white">Plans that fit your scale</h2>
-            <p className="text-xs text-[var(--hg-muted)]">Choose a plan and continue to checkout.</p>
+            <h2 className="text-lg font-semibold text-white">{t("heading")}</h2>
+            <p className="text-xs text-[var(--hg-muted)]">{t("subheading")}</p>
           </div>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
             className="rounded-md p-1.5 text-[var(--hg-muted)] hover:text-white"
-            aria-label="Close"
+            aria-label={t("closeBtnAriaLabel")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -141,12 +128,12 @@ export default function PackagesModal({ open, onOpenChange }: PackagesModalProps
                   ) : null}
 
                   <div className="mt-5">
-                    <p className="text-xs font-medium uppercase tracking-[0.13em] text-[var(--hg-muted)]">Best for</p>
+                    <p className="text-xs font-medium uppercase tracking-[0.13em] text-[var(--hg-muted)]">{t("bestForLabel")}</p>
                     <p className="mt-1.5 text-sm text-white/90">{plan.bestFor}</p>
                   </div>
 
                   <div className="mt-5">
-                    <p className="text-xs font-medium uppercase tracking-[0.13em] text-[var(--hg-muted)]">Includes</p>
+                    <p className="text-xs font-medium uppercase tracking-[0.13em] text-[var(--hg-muted)]">{t("includesLabel")}</p>
                     <ul className="mt-2.5 space-y-2 text-sm text-[var(--hg-muted)]">
                       {plan.includes.map((feature) => (
                         <li key={`${plan.id}-${feature}`} className="flex items-start gap-2.5">
@@ -158,7 +145,7 @@ export default function PackagesModal({ open, onOpenChange }: PackagesModalProps
                   </div>
 
                   <div className="mt-5">
-                    <p className="text-xs font-medium uppercase tracking-[0.13em] text-[var(--hg-muted)]">Key highlights</p>
+                    <p className="text-xs font-medium uppercase tracking-[0.13em] text-[var(--hg-muted)]">{t("highlightsLabel")}</p>
                     <ul className="mt-2.5 space-y-2 text-sm text-white/90">
                       {plan.highlights.map((highlight, index) => (
                         <li key={`${plan.id}-highlight-${highlight}`} className="flex items-center gap-2.5">
@@ -192,7 +179,7 @@ export default function PackagesModal({ open, onOpenChange }: PackagesModalProps
                     }}
                     className="mt-auto w-full rounded-xl bg-[#50C0F0] px-4 py-2.5 text-sm font-semibold text-[#07131d] shadow-[0_10px_20px_rgba(80,192,240,0.22)] transition duration-200 ease-out hover:opacity-90 disabled:opacity-60"
                   >
-                    {loading ? "Redirecting..." : plan.cta}
+                    {loading ? t("redirecting") : plan.cta}
                   </button>
                 </article>
               );

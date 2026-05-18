@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 
 type ActivePackageCardProps = {
   planKey?: string | null;
@@ -28,6 +29,8 @@ export default function ActivePackageCard({
   onOpenSwitcher,
   profileLabel,
 }: ActivePackageCardProps) {
+  const t = useTranslations("dashboard.home.activePackage");
+  const locale = useLocale();
   const [profileName, setProfileName] = useState("");
   const created =
     createdAt instanceof Date
@@ -73,7 +76,7 @@ export default function ActivePackageCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-wide hg-muted">Active package</p>
+          <p className="text-xs uppercase tracking-wide hg-muted">{t("sectionLabel")}</p>
           <h3 className="mt-2 text-xl font-semibold text-white">{planLabel(planKey)}</h3>
           {displayProfile ? (
             <p className="mt-1 text-sm hg-muted">{displayProfile}</p>
@@ -81,7 +84,7 @@ export default function ActivePackageCard({
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-200">
-            {status === "active" ? "Active" : status || "Active"}
+            {status === "active" ? t("active") : status || t("active")}
           </span>
           <button
             type="button"
@@ -91,20 +94,20 @@ export default function ActivePackageCard({
             }}
             className="inline-flex h-8 items-center rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 text-xs font-semibold text-[var(--hg-text)] hover:border-[var(--hg-accent)]/40 hover:text-white"
           >
-            Switch profile
+            {t("switchProfile")}
           </button>
         </div>
       </div>
 
       <div className="mt-5 space-y-2 text-sm hg-muted">
         <div>
-          <p className="text-xs uppercase tracking-wide hg-muted">Package instance ID</p>
+          <p className="text-xs uppercase tracking-wide hg-muted">{t("instanceId")}</p>
           <p className="mt-1 text-[var(--hg-text)]">{packageInstanceId || "—"}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide hg-muted">Created</p>
+          <p className="text-xs uppercase tracking-wide hg-muted">{t("created")}</p>
           <p className="mt-1 text-[var(--hg-text)]">
-            {created ? created.toLocaleString() : "—"}
+            {created ? created.toLocaleString(locale) : "—"}
           </p>
         </div>
       </div>

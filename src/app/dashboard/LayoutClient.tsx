@@ -15,6 +15,7 @@ import PackagesModal from "@/app/components/dashboard/sidebar/PackagesModal";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import DashboardTopBar from "@/app/components/dashboard/navigation/DashboardTopBar";
 import MobileBottomBar from "@/app/components/dashboard/MobileBottomBar";
+import LocaleSwitcher from "@/app/components/common/LocaleSwitcher";
 import { DASHBOARD_LAYOUT } from "@/app/dashboard/dashboardLayout.constants";
 import { SESSION_EXPIRED_EVENT } from "@/app/utils/sessionExpiry";
 type User = { id: string; email: string; plan?: string | null } | null;
@@ -191,6 +192,11 @@ export default function LayoutClient({
           )}
 
           {showFloating ? <FloatingChatWidget /> : null}
+
+          {/* Desktop locale switcher — top-right, desktop only */}
+          <div className="hidden md:block fixed top-4 right-4 z-40">
+            <LocaleSwitcher variant="compact" />
+          </div>
 
           <DashboardTopBar
             onOpenSettings={openSettings}

@@ -4,6 +4,7 @@ const express = require("express");
 const { generateLipSyncVideo } = require("../services/heygen/heygenService");
 const PackageInstance = require("../models/packageInstance");
 const HeygenVideo = require("../models/heygenVideo");
+const User = require("../models/user");
 
 const router = express.Router();
 
@@ -162,7 +163,15 @@ router.get("/history", verifyInternalSecret, async (req, res) => {
   }
 
   try {
-    const items = await HeygenVideo.find({ userId })
+    // Resolve active PackageInstance — same pattern as quota enforcement.
+    // The userId is trusted here because this endpoint is gated by verifyInternalSecret.
+    const user = await User.findById(userId).select("activePackageInstanceId");
+    if (!user || !user.activePackageInstanceId) {
+      console.warn("[heygen] /history no active instance for userId", { userId });
+      return res.json({ items: [] });
+    }
+
+    const items = await HeygenVideo.find({ userId, packageInstanceId: user.activePackageInstanceId })
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean();

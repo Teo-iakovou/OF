@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
-import { createAddonCheckoutSession } from "@/app/utils/api";
+import { createAddonCheckoutSession, type AddonType } from "@/app/utils/api";
 
 type ModalType = "uploads" | "ai" | "videos";
 
@@ -24,7 +24,7 @@ interface AddonPriceResponse {
 }
 
 // Maps API addon id → createAddonCheckoutSession params
-const CHECKOUT_MAP: Record<string, { addonType: string; addonPack: string }> = {
+const CHECKOUT_MAP: Record<string, { addonType: AddonType; addonPack: string }> = {
   upload_5:  { addonType: "uploads",         addonPack: "pack_5"    },
   upload_20: { addonType: "uploads",         addonPack: "pack_20"   },
   ai_100k:   { addonType: "chat",            addonPack: "pack_100k" },

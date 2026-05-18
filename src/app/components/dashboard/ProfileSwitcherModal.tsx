@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { PackageInstanceSummary } from "@/app/utils/api";
+import { useLocale, useTranslations } from "next-intl";
 
 type ProfileSwitcherModalProps = {
   open: boolean;
@@ -60,6 +61,8 @@ export default function ProfileSwitcherModal({
   onClose,
   onSelect,
 }: ProfileSwitcherModalProps) {
+  const t = useTranslations("dashboard.home.switcher");
+  const locale = useLocale();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
@@ -102,7 +105,7 @@ export default function ProfileSwitcherModal({
         type="button"
         onClick={onClose}
         className="absolute inset-0 bg-black/30 backdrop-blur-md"
-        aria-label="Close profile switcher"
+        aria-label={t("closeAriaLabel")}
       />
       <div
         className="relative w-full max-w-[560px] max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-xl"
@@ -110,28 +113,28 @@ export default function ProfileSwitcherModal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Switch profile</h2>
-            <p className="mt-1 text-sm text-gray-500">Choose which profile is active.</p>
+            <h2 className="text-lg font-semibold text-gray-900">{t("heading")}</h2>
+            <p className="mt-1 text-sm text-gray-500">{t("description")}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="rounded-full border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:border-gray-300"
           >
-            Close
+            {t("close")}
           </button>
         </div>
         <div className="max-h-[calc(80vh-140px)] overflow-y-auto px-6 py-4">
           {loading ? (
-            <p className="text-sm text-gray-500">Loading profiles…</p>
+            <p className="text-sm text-gray-500">{t("loading")}</p>
           ) : instances.length === 0 ? (
             <div className="space-y-3">
-              <p className="text-sm text-gray-600">No active package instances found.</p>
+              <p className="text-sm text-gray-600">{t("noInstances")}</p>
               <Link
                 href="/#packages"
                 className="inline-flex items-center rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700 hover:border-gray-300"
               >
-                Go to packages
+                {t("goToPackages")}
               </Link>
             </div>
           ) : (
@@ -139,13 +142,13 @@ export default function ProfileSwitcherModal({
               {instances.map((instance, index) => {
                 const isActive = instance.id === activeInstanceId;
                 const createdAt = instance.createdAt
-                  ? new Date(instance.createdAt).toLocaleDateString()
+                  ? new Date(instance.createdAt).toLocaleDateString(locale)
                   : "—";
                 const profileLabel = `Profile ${String.fromCharCode(65 + index)}`;
                 const customName = profileNames[instance.id] || "";
                 const displayName = customName || profileLabel;
                 const showEditor = editingId === instance.id;
-                const statusLabel = isActive ? "Active" : "Inactive";
+                const statusLabel = isActive ? t("statusActive") : t("statusInactive");
                 return (
                   <div
                     key={instance.id}
@@ -162,8 +165,8 @@ export default function ProfileSwitcherModal({
                         <div className="text-xs text-gray-500">
                           {formatPlanLabel(instance.planKey || null)} · {profileLabel}
                         </div>
-                        <div className="text-xs text-gray-500">Created {createdAt}</div>
-                        <div className="text-xs text-gray-500">ID {shortId(instance.id)}</div>
+                        <div className="text-xs text-gray-500">{t("createdAt", { date: createdAt })}</div>
+                        <div className="text-xs text-gray-500">{t("idPrefix", { id: shortId(instance.id) })}</div>
                         {showEditor ? (
                           <input
                             value={draftName}
@@ -187,7 +190,7 @@ export default function ProfileSwitcherModal({
                               setEditingId(null);
                             }}
                             className="mt-2 w-full rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700"
-                            placeholder="Rename profile"
+                            placeholder={t("renamePlaceholder")}
                             autoFocus
                           />
                         ) : (
@@ -199,7 +202,7 @@ export default function ProfileSwitcherModal({
                             }}
                             className="mt-2 inline-flex items-center rounded-full border border-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-600 hover:border-gray-300"
                           >
-                            Rename
+                            {t("rename")}
                           </button>
                         )}
                       </div>
@@ -219,7 +222,7 @@ export default function ProfileSwitcherModal({
                           onClick={() => onSelect(instance.id)}
                           className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700 hover:border-gray-300 disabled:opacity-60"
                         >
-                          {isActive ? "Active" : "Set active"}
+                          {isActive ? t("statusActive") : t("setActive")}
                         </button>
                       </div>
                     </div>
