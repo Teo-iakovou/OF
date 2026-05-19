@@ -7,8 +7,7 @@ const WebhookEvent = require("../models/webhookEvent");
 const mongoose = require("mongoose");
 const { ADDON_PRICES, getAddonPack } = require("../config/addons");
 const { getAllAddonPrices } = require("../services/stripeAddonService");
-const { getSadTalkerPlanLimit } = require("./userController");
-const { planLimit } = require("../middleware/chatLimits");
+const { getQuotasForPlan } = require("../config/planQuotas");
 const { sendErr } = require("../utils/sendErr");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -21,7 +20,6 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
 // ALLOWED_ORIGINS=http://localhost:3000,https://yourapp.com
 
 const PACKAGES = { lite: 500, pro: 1500, ultimate: 3000 }; // cents
-const UPLOAD_LIMITS = { lite: 5, pro: 20, ultimate: 100 };
 
 const ALLOWED_ADDON_TYPES = new Set(["uploads", "chat", "sadtalkerVideos"]);
 const SUPPORTED_LOCALES = new Set(["en", "el", "es", "it"]);
@@ -509,9 +507,7 @@ const handleStripeWebhook = async (req, res) => {
         await user.save();
         return res.json({ received: true });
       }
-      const uploadLimit = UPLOAD_LIMITS[packageId] || 0;
-      const sadtalkerLimit = getSadTalkerPlanLimit(packageId);
-      const tokensLimit = planLimit(packageId);
+      const { uploads: uploadLimit, tokensLimit, videos: sadtalkerLimit } = getQuotasForPlan(packageId);
       const instance = await PackageInstance.create({
         userId: user._id,
         planKey: packageId,
@@ -704,9 +700,7 @@ const verifyCheckoutSession = async (req, res) => {
               });
             } catch {}
           } else {
-            const uploadLimit = UPLOAD_LIMITS[packageId] || 0;
-            const sadtalkerLimit = getSadTalkerPlanLimit(packageId);
-            const tokensLimit = planLimit(packageId);
+            const { uploads: uploadLimit, tokensLimit, videos: sadtalkerLimit } = getQuotasForPlan(packageId);
             const instance = await PackageInstance.create({
               userId: user._id,
               planKey: packageId,

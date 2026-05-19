@@ -1,6 +1,7 @@
 const PackageInstance = require("../models/packageInstance");
 const { sendErr } = require("../utils/sendErr");
 const { sendQuotaError } = require("../utils/quotaError");
+const { getQuotasForPlan } = require("../config/planQuotas");
 
 const TOKENS_PER_LEGACY_CHAT_UNIT = 500;
 
@@ -64,9 +65,11 @@ async function ensureCycle(instance) {
 }
 
 function planLimit(plan) {
-  if (plan === "ultimate") return 500000; // ~600 messages × ~800 tokens
-  if (plan === "pro")      return 100000; // ~120 messages × ~800 tokens
-  return 10000;                           // ~12 messages × ~800 tokens (lite)
+  try {
+    return getQuotasForPlan(plan).tokensLimit;
+  } catch {
+    return 10000; // lite default for unknown/null plans
+  }
 }
 
 async function checkChatQuota(req, res, next) {

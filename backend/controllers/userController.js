@@ -6,6 +6,7 @@ const PackageInstance = require("../models/packageInstance");
 const mongoose = require("mongoose");
 const { sendQuotaError } = require("../utils/quotaError");
 const { planLimit } = require("../middleware/chatLimits");
+const { getQuotasForPlan } = require("../config/planQuotas");
 const { sendErr } = require("../utils/sendErr");
 const { signUrl, objectExists } = require("../utils/s3");
 const TOKENS_PER_LEGACY_CHAT_UNIT = 500;
@@ -413,23 +414,13 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-const PACKAGE_LIMITS = {
-  lite: 10,
-  pro: 50,
-  ultimate: 9999,
-};
-
-// Per-plan talking-head / SadTalker video limits.
-// 0 = unlimited for that plan (used for "ultimate").
-const SADTALKER_PLAN_LIMITS = {
-  lite: Number(process.env.SADTALKER_LITE_LIMIT || 10),
-  pro: Number(process.env.SADTALKER_PRO_LIMIT || 50),
-  ultimate: 0,
-};
-
 function getSadTalkerPlanLimit(plan) {
   if (!plan) return 0;
-  return SADTALKER_PLAN_LIMITS[plan] ?? 0;
+  try {
+    return getQuotasForPlan(plan).videos;
+  } catch {
+    return 0;
+  }
 }
 
 const purchasePackage = async (req, res) => {
