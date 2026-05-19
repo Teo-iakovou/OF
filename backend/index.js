@@ -55,11 +55,14 @@ const debugRoutes = require("./routes/debug");
 const personaRoutes = require("./routes/persona");
 const recommendationRoutes = require("./routes/recommendations");
 const heygenRoutes = require("./routes/heygenRoutes");
+const promoRoutes = require("./routes/promo");
+const adminPromoRoutes = require("./routes/adminPromo");
 const webhookController = require("./controllers/checkoutController");
 const PackageInstance = require("./models/packageInstance");
 const { requestIdMiddleware } = require("./middleware/requestId");
 const { authMiddleware } = require("./middleware/auth");
 const { requireAuth } = require("./middleware/requireAuth");
+const { requireAdmin } = require("./middleware/requireAdmin");
 const { ensureRekognitionCollection } = require("./utils/rekognition");
 const { requestLogger } = require("./middleware/requestLogger");
 
@@ -139,6 +142,8 @@ app.use("/api/billing", requireAuth, billingRoutes);
 app.use("/api/persona", requireAuth, personaRoutes);
 app.use("/api/recommendations", requireAuth, recommendationRoutes);
 app.use("/api/heygen", heygenRoutes);
+app.use("/api/promo", requireAuth, promoRoutes);
+app.use("/api/admin/promo", requireAuth, requireAdmin, adminPromoRoutes);
 
 const PORT = process.env.PORT || 5001;
 

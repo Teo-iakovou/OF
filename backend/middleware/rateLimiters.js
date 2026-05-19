@@ -98,6 +98,14 @@ const verifySessionLimiter = makeIpLimiter({
   message: "Too many requests, please try again later",
 });
 
+// 5 redemption attempts per 15 min per IP — anti brute-force for promo codes
+const promoRedeemLimiter = makeIpLimiter({
+  routeName: "promo-redeem",
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many attempts, please try again in 15 minutes",
+});
+
 module.exports = {
   authLimiter,
   passwordResetLimiter,
@@ -105,4 +113,5 @@ module.exports = {
   videoGenerationLimiter,
   uploadLimiter,
   verifySessionLimiter,
+  promoRedeemLimiter,
 };
