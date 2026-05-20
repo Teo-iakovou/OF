@@ -2,6 +2,7 @@
 
 import { useUser } from "@/app/hooks/useUser";
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import { formatRemaining } from "@/app/utils/quotaDisplay";
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function PlanStatusPill({ className }: Props) {
+  const t = useTranslations("dashboard.planStatusPill");
   const { user, loading: userLoading } = useUser({ required: false });
   const {
     data: planData,
@@ -26,7 +28,7 @@ export default function PlanStatusPill({ className }: Props) {
           className,
         )}
       >
-        Checking plan…
+        {t("checking")}
       </div>
     );
   }
@@ -53,7 +55,7 @@ export default function PlanStatusPill({ className }: Props) {
           className,
         )}
       >
-        No active plan · 0 uploads
+        {t("noActivePlan")}
       </div>
     );
   }
@@ -67,7 +69,9 @@ export default function PlanStatusPill({ className }: Props) {
           className,
         )}
       >
-        {planName ? `${planName.toUpperCase()} · No uploads left` : "No uploads left"}
+        {planName
+          ? t("planNoUploadsLeft", { planName: planName.toUpperCase() })
+          : t("noUploadsLeft")}
       </div>
     );
   }
@@ -81,10 +85,10 @@ export default function PlanStatusPill({ className }: Props) {
         className,
       )}
     >
-      {planName ? `${planName.toUpperCase()} plan` : "Active plan"}
+      {planName ? t("namedPlan", { planName: planName.toUpperCase() }) : t("activePlan")}
       <span className="text-white/80">•</span>
       <span className="text-white">{uploadsRemainingLabel}</span>
-      <span className="text-white/70">uploads left</span>
+      <span className="text-white/70">{t("uploadsLeftSuffix")}</span>
     </div>
   );
 }

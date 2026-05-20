@@ -561,7 +561,36 @@
         "Crea un plan de publicación semanal con prioridades por plataforma para Instagram y TikTok.",
         "Convierte un upload en un plan de reutilización: reel, story, carrusel y script corto.",
         "Crea un calendario de contenido para los próximos 14 días con temas, hooks y dirección de CTA."
-      ]
+      ],
+      "floating": {
+        "fabAriaLabel": "AI Coach",
+        "defaultTitle": "AI Coach",
+        "historyButton": "Historial",
+        "closeAriaLabel": "Cerrar"
+      },
+      "historySidebar": {
+        "title": "Historial de AI Chat",
+        "newButton": "+ Nuevo",
+        "noConversations": "Aún no hay conversaciones.",
+        "untitled": "Sin título",
+        "continued": "continuado",
+        "summarized": "resumido"
+      },
+      "contextPopover": {
+        "buttonLabel": "Contexto usado · {count}",
+        "uploadsReferencedBySage": "Uploads referenciados por Sage",
+        "uploadFallback": "Upload {id}",
+        "today": "hoy",
+        "daysAgo": "{count, plural, one {hace # día} other {hace # días}}"
+      },
+      "upgradeBanner": {
+        "heading": "⚡ Has usado todos tus tokens de AI Chat este mes",
+        "body": "Actualiza a Pro para 3× más tokens, respuestas prioritarias y contexto completo del historial"
+      },
+      "creditsChip": {
+        "title": "Créditos mensuales de chat",
+        "label": "Chat: {used}/{limit}"
+      }
     },
     "sidebar": {
       "collapse": "Contraer barra lateral",
@@ -815,6 +844,38 @@
       "liteHighlights": ["Cargas incluidas", "Resultados rápidos", "Soporte básico por email"],
       "proHighlights": ["Más popular", "Recomendaciones más profundas", "Pipeline más rápido"],
       "ultimateHighlights": ["Mejor valor para equipos", "Cuotas máximas", "Soporte prioritario"]
+    },
+    "faceEnroll": {
+      "heading": "Se requiere registro facial",
+      "body": "Sube una foto clara con un solo rostro para desbloquear todas las funciones de este paquete.",
+      "uploadButton": "Subir foto del rostro",
+      "copyRequestId": "Copiar ID de solicitud",
+      "errors": {
+        "alreadyEnrolled": "Ya hay un rostro registrado para este paquete.",
+        "multipleFaces": "Sube una foto con exactamente un rostro.",
+        "noFaceDetected": "No se detectó ningún rostro. Sube una foto clara con un solo rostro.",
+        "generic": "El registro falló. Inténtalo de nuevo.",
+        "network": "Error de red."
+      }
+    },
+    "mobileBottomBar": {
+      "upload": "Subir",
+      "aiVideo": "AI Video",
+      "more": "Más",
+      "navAriaLabel": "Navegación móvil",
+      "sheetHistory": "Historial",
+      "sheetBilling": "Facturación",
+      "sheetSettings": "Ajustes",
+      "sheetGetCredits": "Obtener créditos"
+    },
+    "planStatusPill": {
+      "checking": "Verificando plan…",
+      "noActivePlan": "Sin plan activo · 0 uploads",
+      "noUploadsLeft": "Sin uploads restantes",
+      "planNoUploadsLeft": "{planName} · Sin uploads restantes",
+      "activePlan": "Plan activo",
+      "namedPlan": "Plan {planName}",
+      "uploadsLeftSuffix": "uploads restantes"
     }
   },
   "checkout": {

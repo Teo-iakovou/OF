@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { getUserResultById } from "@/app/utils/api";
 import type { ResultDoc } from "@/app/types/analysis";
 
@@ -16,12 +17,6 @@ function moodDotClass(warmth?: "warm" | "neutral" | "cool") {
   if (warmth === "warm") return "bg-amber-400";
   if (warmth === "cool") return "bg-blue-400";
   return "bg-gray-500";
-}
-
-function daysAgoLabel(daysAgo?: number) {
-  if (daysAgo === undefined) return "";
-  if (daysAgo === 0) return "today";
-  return `${daysAgo} day${daysAgo === 1 ? "" : "s"} ago`;
 }
 
 function toRichItem(r: ResultDoc): RichItem {
@@ -44,6 +39,7 @@ function toRichItem(r: ResultDoc): RichItem {
 }
 
 export function ContextUsedPopover({ ids }: { ids: string[] }) {
+  const t = useTranslations("dashboard.aiChat.contextPopover");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<(RichItem | null)[]>([]);
@@ -51,6 +47,12 @@ export function ContextUsedPopover({ ids }: { ids: string[] }) {
 
   const count = ids?.length ?? 0;
   if (!count) return null;
+
+  function daysAgoLabel(daysAgo?: number): string {
+    if (daysAgo === undefined) return "";
+    if (daysAgo === 0) return t("today");
+    return t("daysAgo", { count: daysAgo });
+  }
 
   async function handleOpen() {
     const next = !open;
@@ -85,13 +87,13 @@ export function ContextUsedPopover({ ids }: { ids: string[] }) {
         onClick={handleOpen}
         className="text-[11px] px-2 py-0.5 rounded border border-gray-700/60 bg-[#1a1f2b] text-gray-500 hover:text-gray-400 hover:border-gray-600 transition"
       >
-        Context used · {count}
+        {t("buttonLabel", { count })}
       </button>
 
       {open && (
         <div className="absolute z-50 bottom-full mb-2 left-0 w-80 rounded-xl border border-gray-700/60 bg-[#12151e] shadow-xl p-3">
           <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">
-            Uploads referenced by Sage
+            {t("uploadsReferencedBySage")}
           </div>
 
           {loading ? (
@@ -112,7 +114,7 @@ export function ContextUsedPopover({ ids }: { ids: string[] }) {
                     key={ids[i]}
                     className="text-[11px] text-gray-600 italic px-2.5 py-2 rounded-lg border border-gray-700/30 bg-[#1a1f2b]"
                   >
-                    Upload {ids[i].slice(-6)}
+                    {t("uploadFallback", { id: ids[i].slice(-6) })}
                   </li>
                 ) : (
                   <li

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchConversations, type ConversationSummary } from "@/app/utils/api";
 import { BookOpen } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { dbg } from "@/app/utils/debug";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 
@@ -31,6 +32,7 @@ export default function CoachChatHistory({
   className,
   maxHeight = 420,
 }: Props) {
+  const t = useTranslations("dashboard.aiChat.historySidebar");
   const [convos, setConvos] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -78,14 +80,14 @@ export default function CoachChatHistory({
         <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-[#232B36] bg-[#121A24]">
           <span className="font-semibold text-gray-200 text-sm inline-flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-cyan-400" />
-            AI Chat History
+            {t("title")}
           </span>
           {!!onNew && (
             <button
               onClick={onNew}
               className="px-2 py-1 text-xs rounded text-white bg-cyan-600 hover:bg-cyan-700 transition"
             >
-              + New
+              {t("newButton")}
             </button>
           )}
         </div>
@@ -100,7 +102,7 @@ export default function CoachChatHistory({
             <Skeleton className="h-10 w-3/4" />
           </div>
         ) : convos.length === 0 ? (
-          <div className="text-xs text-gray-400">No conversations yet.</div>
+          <div className="text-xs text-gray-400">{t("noConversations")}</div>
         ) : (
           convos.map((c) => {
             const active = selectedId === c._id;
@@ -117,15 +119,15 @@ export default function CoachChatHistory({
               >
                 <div className="flex items-center gap-2">
                   <BookOpen className={`w-4 h-4 ${active ? "text-cyan-400" : "text-gray-400"}`} />
-                  <span className="font-medium truncate">{c.title || "Untitled"}</span>
+                  <span className="font-medium truncate">{c.title || t("untitled")}</span>
                   {c.continuedFromConversationId ? (
                     <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
-                      continued
+                      {t("continued")}
                     </span>
                   ) : null}
                   {c.continuedToConversationId ? (
                     <span className="rounded-full border border-gray-400/30 bg-gray-400/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gray-300">
-                      summarized
+                      {t("summarized")}
                     </span>
                   ) : null}
                 </div>

@@ -561,7 +561,36 @@
         "Build a weekly posting plan with platform-specific priorities for Instagram and TikTok.",
         "Turn one upload into a repurposing plan: reel, story, carousel, and short script.",
         "Create a content calendar for the next 14 days with themes, hooks, and CTA direction."
-      ]
+      ],
+      "floating": {
+        "fabAriaLabel": "AI Coach",
+        "defaultTitle": "AI Coach",
+        "historyButton": "History",
+        "closeAriaLabel": "Close"
+      },
+      "historySidebar": {
+        "title": "AI Chat History",
+        "newButton": "+ New",
+        "noConversations": "No conversations yet.",
+        "untitled": "Untitled",
+        "continued": "continued",
+        "summarized": "summarized"
+      },
+      "contextPopover": {
+        "buttonLabel": "Context used · {count}",
+        "uploadsReferencedBySage": "Uploads referenced by Sage",
+        "uploadFallback": "Upload {id}",
+        "today": "today",
+        "daysAgo": "{count, plural, one {# day ago} other {# days ago}}"
+      },
+      "upgradeBanner": {
+        "heading": "⚡ You've used all your AI Chat tokens this month",
+        "body": "Upgrade to Pro for 3× more tokens, priority responses, and full upload history context"
+      },
+      "creditsChip": {
+        "title": "Monthly chat credits",
+        "label": "Chat: {used}/{limit}"
+      }
     },
     "sidebar": {
       "collapse": "Collapse sidebar",
@@ -815,6 +844,38 @@
       "liteHighlights": ["Uploads included", "Fast results", "Basic email support"],
       "proHighlights": ["Most popular", "Deeper recommendations", "Faster pipeline"],
       "ultimateHighlights": ["Best value for teams", "Maximum quotas", "Priority support"]
+    },
+    "faceEnroll": {
+      "heading": "Face enrollment required",
+      "body": "Upload a clear, single-face photo to unlock all features for this package.",
+      "uploadButton": "Upload face photo",
+      "copyRequestId": "Copy request ID",
+      "errors": {
+        "alreadyEnrolled": "Face already enrolled for this package.",
+        "multipleFaces": "Please upload a photo with exactly one face.",
+        "noFaceDetected": "No face detected. Please upload a clear single-face photo.",
+        "generic": "Enrollment failed. Please try again.",
+        "network": "Network error."
+      }
+    },
+    "mobileBottomBar": {
+      "upload": "Upload",
+      "aiVideo": "AI Video",
+      "more": "More",
+      "navAriaLabel": "Mobile navigation",
+      "sheetHistory": "History",
+      "sheetBilling": "Billing",
+      "sheetSettings": "Settings",
+      "sheetGetCredits": "Get Credits"
+    },
+    "planStatusPill": {
+      "checking": "Checking plan…",
+      "noActivePlan": "No active plan · 0 uploads",
+      "noUploadsLeft": "No uploads left",
+      "planNoUploadsLeft": "{planName} · No uploads left",
+      "activePlan": "Active plan",
+      "namedPlan": "{planName} plan",
+      "uploadsLeftSuffix": "uploads left"
     }
   },
   "checkout": {

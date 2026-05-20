@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 type FaceEnrollModalProps = {
   open: boolean;
@@ -16,18 +17,13 @@ type ErrorMeta = {
   requestId?: string | null;
 };
 
-const mapErrorToUserMessage = (meta: ErrorMeta) => {
+const mapErrorToKey = (meta: ErrorMeta): string => {
   const code = meta.code || "";
-  if (code === "FACE_ALREADY_ENROLLED") {
-    return "Face already enrolled for this package.";
-  }
-  if (code === "MULTIPLE_FACES_NOT_ALLOWED") {
-    return "Please upload a photo with exactly one face.";
-  }
-  if (code === "FACE_REQUIRED_FOR_ENROLLMENT") {
-    return "No face detected. Please upload a clear single-face photo.";
-  }
-  return meta.message || "Enrollment failed. Please try again.";
+  if (code === "FACE_ALREADY_ENROLLED") return "errors.alreadyEnrolled";
+  if (code === "MULTIPLE_FACES_NOT_ALLOWED") return "errors.multipleFaces";
+  if (code === "FACE_REQUIRED_FOR_ENROLLMENT") return "errors.noFaceDetected";
+  if (code === "NETWORK_ERROR") return "errors.network";
+  return "errors.generic";
 };
 
 export default function FaceEnrollModal({
@@ -36,6 +32,7 @@ export default function FaceEnrollModal({
   onError,
   loading,
 }: FaceEnrollModalProps) {
+  const t = useTranslations("dashboard.faceEnroll");
   const inputRef = useRef<HTMLInputElement>(null);
   const [localLoading, setLocalLoading] = useState(false);
   const [errorMeta, setErrorMeta] = useState<ErrorMeta | null>(null);
@@ -93,7 +90,7 @@ export default function FaceEnrollModal({
       const faceId = typeof payload.faceId === "string" ? payload.faceId : null;
       onSuccess({ requestId, faceId });
     } catch (err) {
-      setErrorMeta({ message: err instanceof Error ? err.message : "Network error." });
+      setErrorMeta({ code: "NETWORK_ERROR", message: err instanceof Error ? err.message : null });
       onError?.(err);
     } finally {
       if (typeof loading !== "boolean") setLocalLoading(false);
@@ -105,9 +102,9 @@ export default function FaceEnrollModal({
     <div className="fixed inset-0 z-[70] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div className="relative z-[71] w-full max-w-md mx-4 rounded-2xl border border-white/10 bg-[#0b1222] p-6 shadow-2xl text-white">
-        <h2 className="text-xl font-semibold">Face enrollment required</h2>
+        <h2 className="text-xl font-semibold">{t("heading")}</h2>
         <p className="mt-2 text-sm text-gray-300">
-          Upload a clear, single-face photo to unlock all features for this package.
+          {t("body")}
         </p>
 
         <div className="mt-5 space-y-3">
@@ -118,7 +115,7 @@ export default function FaceEnrollModal({
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white hover:bg-cyan-700 disabled:opacity-60"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Upload face photo
+            {t("uploadButton")}
           </button>
           <input
             ref={inputRef}
@@ -134,14 +131,14 @@ export default function FaceEnrollModal({
 
         {errorMeta ? (
           <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
-            <p>{mapErrorToUserMessage(errorMeta)}</p>
+            <p>{t(mapErrorToKey(errorMeta))}</p>
             {errorMeta.requestId ? (
               <button
                 type="button"
                 onClick={() => navigator.clipboard.writeText(errorMeta.requestId || "")}
                 className="mt-2 text-xs text-rose-200 underline underline-offset-2"
               >
-                Copy request ID
+                {t("copyRequestId")}
               </button>
             ) : null}
           </div>

@@ -561,7 +561,36 @@
         "Φτιάξε εβδομαδιαίο πλάνο ανάρτησης με προτεραιότητες ανά πλατφόρμα για Instagram και TikTok.",
         "Μετέτρεψε ένα upload σε πλάνο επαναχρησιμοποίησης: reel, story, carousel και σύντομο script.",
         "Δημιούργησε ημερολόγιο περιεχομένου για τις επόμενες 14 ημέρες με θέματα, hooks και κατεύθυνση CTA."
-      ]
+      ],
+      "floating": {
+        "fabAriaLabel": "AI Coach",
+        "defaultTitle": "AI Coach",
+        "historyButton": "Ιστορικό",
+        "closeAriaLabel": "Κλείσιμο"
+      },
+      "historySidebar": {
+        "title": "Ιστορικό AI Chat",
+        "newButton": "+ Νέο",
+        "noConversations": "Δεν υπάρχουν συνομιλίες ακόμα.",
+        "untitled": "Χωρίς τίτλο",
+        "continued": "συνέχεια",
+        "summarized": "περίληψη"
+      },
+      "contextPopover": {
+        "buttonLabel": "Χρησιμοποιημένο πλαίσιο · {count}",
+        "uploadsReferencedBySage": "Uploads που αναφέρθηκαν από τον Sage",
+        "uploadFallback": "Upload {id}",
+        "today": "σήμερα",
+        "daysAgo": "{count, plural, one {# ημέρα πριν} other {# ημέρες πριν}}"
+      },
+      "upgradeBanner": {
+        "heading": "⚡ Χρησιμοποιήσατε όλα τα tokens AI Chat για αυτόν τον μήνα",
+        "body": "Αναβαθμίστε σε Pro για 3× περισσότερα tokens, προτεραιότητα απαντήσεων και πλήρες πλαίσιο ιστορικού"
+      },
+      "creditsChip": {
+        "title": "Μηνιαία credits συνομιλίας",
+        "label": "Chat: {used}/{limit}"
+      }
     },
     "sidebar": {
       "collapse": "Σύμπτυξη πλευρικής μπάρας",
@@ -815,6 +844,38 @@
       "liteHighlights": ["Uploads συμπεριλαμβάνονται", "Γρήγορα αποτελέσματα", "Βασική υποστήριξη email"],
       "proHighlights": ["Πιο δημοφιλές", "Βαθύτερες συστάσεις", "Ταχύτερη επεξεργασία"],
       "ultimateHighlights": ["Καλύτερη αξία για ομάδες", "Μέγιστα όρια", "Υποστήριξη προτεραιότητας"]
+    },
+    "faceEnroll": {
+      "heading": "Απαιτείται καταχώρηση προσώπου",
+      "body": "Ανέβασε μια καθαρή φωτογραφία με ένα μόνο πρόσωπο για να ξεκλειδώσεις όλες τις λειτουργίες αυτού του πακέτου.",
+      "uploadButton": "Ανέβασε φωτογραφία προσώπου",
+      "copyRequestId": "Αντιγραφή request ID",
+      "errors": {
+        "alreadyEnrolled": "Έχει ήδη καταχωρηθεί πρόσωπο για αυτό το πακέτο.",
+        "multipleFaces": "Ανέβασε μια φωτογραφία με ακριβώς ένα πρόσωπο.",
+        "noFaceDetected": "Δεν εντοπίστηκε πρόσωπο. Ανέβασε μια καθαρή φωτογραφία με ένα μόνο πρόσωπο.",
+        "generic": "Η καταχώρηση απέτυχε. Δοκίμασε ξανά.",
+        "network": "Σφάλμα δικτύου."
+      }
+    },
+    "mobileBottomBar": {
+      "upload": "Ανέβασμα",
+      "aiVideo": "AI Video",
+      "more": "Περισσότερα",
+      "navAriaLabel": "Πλοήγηση κινητού",
+      "sheetHistory": "Ιστορικό",
+      "sheetBilling": "Χρεώσεις",
+      "sheetSettings": "Ρυθμίσεις",
+      "sheetGetCredits": "Απόκτησε credits"
+    },
+    "planStatusPill": {
+      "checking": "Έλεγχος πλάνου…",
+      "noActivePlan": "Χωρίς ενεργό πλάνο · 0 uploads",
+      "noUploadsLeft": "Δεν έμειναν uploads",
+      "planNoUploadsLeft": "{planName} · Δεν έμειναν uploads",
+      "activePlan": "Ενεργό πλάνο",
+      "namedPlan": "Πλάνο {planName}",
+      "uploadsLeftSuffix": "uploads διαθέσιμα"
     }
   },
   "checkout": {

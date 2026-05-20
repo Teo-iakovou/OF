@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
 
@@ -12,14 +13,17 @@ export default function PaywallGuard({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const router = useRouter();
 
+  const searchParams = useSearchParams();
+
   const isLockedRoute = pathname?.startsWith(REQUIRES_PACKAGE) ?? false;
+  const isPostPurchase = searchParams?.get("status") === "success";
 
   useEffect(() => {
     if (loading) return;
-    if (!hasActiveInstance && isLockedRoute) {
+    if (!hasActiveInstance && isLockedRoute && !isPostPurchase) {
       router.replace("/account/plans");
     }
-  }, [loading, hasActiveInstance, isLockedRoute, router]);
+  }, [loading, hasActiveInstance, isLockedRoute, isPostPurchase, router]);
 
   // While plan is loading on a locked route, show a skeleton to prevent flash
   if (loading && isLockedRoute) {
@@ -29,7 +33,7 @@ export default function PaywallGuard({ children }: { children: React.ReactNode }
   }
 
   // Redirect is in flight — render nothing to avoid showing locked content
-  if (!loading && !hasActiveInstance && isLockedRoute) {
+  if (!loading && !hasActiveInstance && isLockedRoute && !isPostPurchase) {
     return null;
   }
 

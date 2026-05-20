@@ -3,13 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { Home, UploadCloud, Video, LayoutGrid, Clock, CreditCard, Settings, Gem } from "lucide-react";
-
-const NAV_ITEMS = [
-  { key: "overview", label: "Overview", icon: Home,        href: "/dashboard",              exact: true  },
-  { key: "upload",   label: "Upload",   icon: UploadCloud, href: "/dashboard/upload",       exact: false },
-  { key: "avatar",   label: "AI Video", icon: Video,       href: "/dashboard/talking-head", exact: false },
-];
 
 const MORE_ROUTES = ["/dashboard/history", "/dashboard/billing"];
 
@@ -19,9 +14,17 @@ type Props = {
 };
 
 export default function MobileBottomBar({ onOpenSettings, onOpenPackages }: Props) {
+  const tNav = useTranslations("dashboardNav");
+  const tMobile = useTranslations("dashboard.mobileBottomBar");
   const pathname = usePathname();
   const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  const NAV_ITEMS = [
+    { key: "overview", label: tNav("overview"),      icon: Home,        href: "/dashboard",              exact: true  },
+    { key: "upload",   label: tMobile("upload"),     icon: UploadCloud, href: "/dashboard/upload",       exact: false },
+    { key: "avatar",   label: tMobile("aiVideo"),    icon: Video,       href: "/dashboard/talking-head", exact: false },
+  ];
 
   const isActive = (href: string, exact: boolean) => {
     if (!pathname) return false;
@@ -66,7 +69,7 @@ export default function MobileBottomBar({ onOpenSettings, onOpenPackages }: Prop
               }`}
             >
               <Clock className="w-5 h-5" />
-              <span>History</span>
+              <span>{tMobile("sheetHistory")}</span>
             </button>
 
             {/* Billing */}
@@ -80,7 +83,7 @@ export default function MobileBottomBar({ onOpenSettings, onOpenPackages }: Prop
               }`}
             >
               <CreditCard className="w-5 h-5" />
-              <span>Billing</span>
+              <span>{tMobile("sheetBilling")}</span>
             </button>
 
             {/* Settings */}
@@ -90,7 +93,7 @@ export default function MobileBottomBar({ onOpenSettings, onOpenPackages }: Prop
               className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[var(--hg-surface-2)] py-4 text-sm font-medium text-[var(--hg-muted)] transition hover:text-white"
             >
               <Settings className="w-5 h-5" />
-              <span>Settings</span>
+              <span>{tMobile("sheetSettings")}</span>
             </button>
 
             {/* Packages */}
@@ -100,7 +103,7 @@ export default function MobileBottomBar({ onOpenSettings, onOpenPackages }: Prop
               className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[var(--hg-surface-2)] py-4 text-sm font-medium text-[var(--hg-muted)] transition hover:text-white"
             >
               <Gem className="w-5 h-5" />
-              <span>Get Credits</span>
+              <span>{tMobile("sheetGetCredits")}</span>
             </button>
 
           </div>
@@ -110,7 +113,7 @@ export default function MobileBottomBar({ onOpenSettings, onOpenPackages }: Prop
       {/* Bottom nav bar */}
       <nav
         className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-[var(--hg-surface)] border-t border-[var(--hg-border)] items-center justify-around px-2 pb-[env(safe-area-inset-bottom)]"
-        aria-label="Mobile navigation"
+        aria-label={tMobile("navAriaLabel")}
       >
         {NAV_ITEMS.map(({ key, label, icon: Icon, href, exact }) => {
           const active = isActive(href, exact);
@@ -141,7 +144,7 @@ export default function MobileBottomBar({ onOpenSettings, onOpenPackages }: Prop
           }`}
         >
           <LayoutGrid className="w-5 h-5" />
-          <span className="text-[10px] font-medium leading-none">More</span>
+          <span className="text-[10px] font-medium leading-none">{tMobile("more")}</span>
         </button>
       </nav>
     </>

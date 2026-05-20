@@ -1,12 +1,14 @@
-import React from "react";
+"use client";
+import { useTranslations } from "next-intl";
 
 export function CreditsChip({ used, limit }: { used: number; limit: number }) {
+  const t = useTranslations("dashboard.aiChat.creditsChip");
   return (
     <span
       className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700"
-      title="Monthly chat credits"
+      title={t("title")}
     >
-      Chat: {used}/{limit}
+      {t("label", { used, limit })}
     </span>
   );
 }

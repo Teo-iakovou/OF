@@ -561,7 +561,36 @@
         "Crea un piano di pubblicazione settimanale con priorità per piattaforma per Instagram e TikTok.",
         "Trasforma un upload in un piano di riutilizzo: reel, story, carosello e script breve.",
         "Crea un calendario di contenuti per i prossimi 14 giorni con temi, hook e direzione CTA."
-      ]
+      ],
+      "floating": {
+        "fabAriaLabel": "AI Coach",
+        "defaultTitle": "AI Coach",
+        "historyButton": "Cronologia",
+        "closeAriaLabel": "Chiudi"
+      },
+      "historySidebar": {
+        "title": "Cronologia AI Chat",
+        "newButton": "+ Nuovo",
+        "noConversations": "Nessuna conversazione ancora.",
+        "untitled": "Senza titolo",
+        "continued": "continuato",
+        "summarized": "riepilogato"
+      },
+      "contextPopover": {
+        "buttonLabel": "Contesto usato · {count}",
+        "uploadsReferencedBySage": "Upload referenziati da Sage",
+        "uploadFallback": "Upload {id}",
+        "today": "oggi",
+        "daysAgo": "{count, plural, one {# giorno fa} other {# giorni fa}}"
+      },
+      "upgradeBanner": {
+        "heading": "⚡ Hai usato tutti i token AI Chat di questo mese",
+        "body": "Passa a Pro per 3× più token, risposte prioritarie e contesto completo della cronologia"
+      },
+      "creditsChip": {
+        "title": "Crediti mensili di chat",
+        "label": "Chat: {used}/{limit}"
+      }
     },
     "sidebar": {
       "collapse": "Comprimi barra laterale",
@@ -815,6 +844,38 @@
       "liteHighlights": ["Upload inclusi", "Risultati rapidi", "Supporto email di base"],
       "proHighlights": ["Più popolare", "Raccomandazioni più approfondite", "Pipeline più veloce"],
       "ultimateHighlights": ["Miglior valore per team", "Quote massime", "Supporto prioritario"]
+    },
+    "faceEnroll": {
+      "heading": "Registrazione del volto richiesta",
+      "body": "Carica una foto chiara con un solo volto per sbloccare tutte le funzionalità di questo pacchetto.",
+      "uploadButton": "Carica foto del volto",
+      "copyRequestId": "Copia ID richiesta",
+      "errors": {
+        "alreadyEnrolled": "Volto già registrato per questo pacchetto.",
+        "multipleFaces": "Carica una foto con esattamente un volto.",
+        "noFaceDetected": "Nessun volto rilevato. Carica una foto chiara con un solo volto.",
+        "generic": "Registrazione non riuscita. Riprova.",
+        "network": "Errore di rete."
+      }
+    },
+    "mobileBottomBar": {
+      "upload": "Carica",
+      "aiVideo": "AI Video",
+      "more": "Altro",
+      "navAriaLabel": "Navigazione mobile",
+      "sheetHistory": "Cronologia",
+      "sheetBilling": "Fatturazione",
+      "sheetSettings": "Impostazioni",
+      "sheetGetCredits": "Ottieni crediti"
+    },
+    "planStatusPill": {
+      "checking": "Verifica del piano…",
+      "noActivePlan": "Nessun piano attivo · 0 uploads",
+      "noUploadsLeft": "Nessun upload rimasto",
+      "planNoUploadsLeft": "{planName} · Nessun upload rimasto",
+      "activePlan": "Piano attivo",
+      "namedPlan": "Piano {planName}",
+      "uploadsLeftSuffix": "uploads rimasti"
     }
   },
   "checkout": {

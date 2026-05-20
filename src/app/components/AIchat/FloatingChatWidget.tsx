@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle, X } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { useFloatingChat } from "@/app/components/AIchat/FloatingChatContext";
 import {
   createEmptyConversation,
@@ -43,6 +44,7 @@ function useIsMobile() {
 }
 
 export default function FloatingChatWidget() {
+  const t = useTranslations("dashboard.aiChat.floating");
   const isClient = useIsClient();
   const isMobile = useIsMobile();
   const {
@@ -294,7 +296,7 @@ export default function FloatingChatWidget() {
       {!isOpen ? (
         <button
           ref={fabRef}
-          aria-label="AI Coach"
+          aria-label={t("fabAriaLabel")}
           onPointerDown={isMobile ? undefined : onFabPointerDown}
           onClick={() => {
             // ignore click when pointer interaction was a drag/drop (desktop only)
@@ -367,7 +369,7 @@ export default function FloatingChatWidget() {
               {/* Header with History dropdown */}
               <div className="relative px-4 py-2 border-b border-[#232B36] bg-[#121A24] text-gray-200 flex items-center justify-between">
                 <span className="text-sm font-medium truncate max-w-[60%]">
-                  {conversationTitle || "AI Coach"}
+                  {conversationTitle || t("defaultTitle")}
                 </span>
 
                 <div className="flex items-center gap-2">
@@ -375,7 +377,7 @@ export default function FloatingChatWidget() {
                     onClick={() => setHistoryOpen((v) => !v)}
                     className="px-2 py-1 text-xs rounded text-white bg-gray-700 hover:bg-gray-600 transition"
                   >
-                    History
+                    {t("historyButton")}
                   </button>
                   <button
                     onClick={() => {
@@ -383,7 +385,7 @@ export default function FloatingChatWidget() {
                       setHistoryOpen(false);
                     }}
                     className="p-1 rounded-md hover:bg-[#1f2732]"
-                    aria-label="Close"
+                    aria-label={t("closeAriaLabel")}
                   >
                     <X className="h-4 w-4" />
                   </button>
