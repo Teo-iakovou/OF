@@ -216,75 +216,76 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
               </div>
 
               {activeTab === "uploads" ? (
-                !packageInstanceId ? (
-                  <div className="mx-auto w-full max-w-2xl rounded-2xl hg-surface p-5">
-                    <h3 className="text-xl font-semibold text-white">{t("selectPackageHeading")}</h3>
-                    <p className="mt-2 text-sm hg-muted">
-                      {t("selectPackageDesc")}
-                    </p>
-                    <Link
-                      href={PACKAGES_URL}
-                      className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#07131d] hover:opacity-90"
-                    >
-                      {t("viewPackages")}
-                    </Link>
-                  </div>
-                ) : loading ? (
-                  <div className="overflow-x-auto rounded-2xl hg-surface">
-                    <table className="min-w-[420px] w-full text-left">
-                      <thead className="border-b border-[var(--hg-border-2)] bg-[var(--hg-surface-2)]">
-                        <tr className="text-xs uppercase tracking-wide hg-muted-2">
-                          <th className="px-5 py-3 font-medium">{t("tablePreview")}</th>
-                          <th className="px-5 py-3 font-medium">{t("tableCreated")}</th>
-                          <th className="px-5 py-3 font-medium text-right">{t("tableActions")}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.from({ length: 5 }).map((_, idx) => (
-                          <tr key={`history-skeleton-${idx}`} className="border-b border-[var(--hg-border-2)]">
-                            <td className="px-5 py-3">
-                              <Skeleton className="h-7 w-11 rounded-md bg-[rgba(255,255,255,0.08)]" />
-                            </td>
-                            <td className="px-5 py-3">
-                              <Skeleton className="h-4 w-28 bg-[rgba(255,255,255,0.08)]" />
-                            </td>
-                            <td className="px-5 py-3 text-right">
-                              <div className="ml-auto flex justify-end">
-                                <Skeleton className="h-7 w-14 rounded-md bg-[rgba(255,255,255,0.08)]" />
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : errorMessage ? (
-                  <div className="mx-auto w-full max-w-2xl rounded-2xl hg-surface p-5">
-                    <h3 className="text-xl font-semibold text-white">{t("noAccessHeading")}</h3>
-                    <p className="mt-2 text-sm hg-muted">{errorMessage}</p>
-                    <Link
-                      href={PACKAGES_URL}
-                      className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#07131d] hover:opacity-90"
-                    >
-                      {t("viewPackages")}
-                    </Link>
-                  </div>
-                ) : history.length === 0 ? (
-                  <div className="mx-auto w-full max-w-2xl rounded-2xl hg-surface p-5">
-                    <h3 className="text-xl font-semibold text-white">{t("noInsightsHeading")}</h3>
-                    <p className="mt-2 text-sm hg-muted">
-                      {t("noInsightsDesc")}
-                    </p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-semibold text-white">{t("uploadsHeading")}</h3>
                     <Link
                       href="/dashboard/upload"
-                      className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#07131d] hover:opacity-90"
+                      className="inline-flex rounded-xl bg-[#50C0F0] px-3 py-2 text-xs font-medium text-[#07131d] hover:opacity-90"
                     >
-                      {t("uploadContent")}
+                      {t("uploadNew")}
                     </Link>
                   </div>
-                ) : (
-                  <HistoryTable history={history} onDeleteClick={handleDelete} onOpenClick={handleOpen} />
-                )
+
+                  {!packageInstanceId ? (
+                    <div className="rounded-2xl hg-surface p-5">
+                      <h3 className="text-base font-semibold text-white">{t("selectPackageHeading")}</h3>
+                      <p className="mt-2 text-sm hg-muted">{t("selectPackageDesc")}</p>
+                      <Link
+                        href={PACKAGES_URL}
+                        className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#07131d] hover:opacity-90"
+                      >
+                        {t("viewPackages")}
+                      </Link>
+                    </div>
+                  ) : loading ? (
+                    <div className="hidden md:block overflow-x-auto rounded-2xl hg-surface">
+                      <table className="min-w-[420px] w-full text-left">
+                        <thead className="border-b border-[var(--hg-border-2)] bg-[var(--hg-surface-2)]">
+                          <tr className="text-xs uppercase tracking-wide hg-muted-2">
+                            <th className="px-5 py-3 font-medium">{t("tablePreview")}</th>
+                            <th className="px-5 py-3 font-medium">{t("tableCreated")}</th>
+                            <th className="px-5 py-3 font-medium text-right">{t("tableActions")}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Array.from({ length: 5 }).map((_, idx) => (
+                            <tr key={`history-skeleton-${idx}`} className="border-b border-[var(--hg-border-2)]">
+                              <td className="px-5 py-3">
+                                <Skeleton className="h-7 w-11 rounded-md bg-[rgba(255,255,255,0.08)]" />
+                              </td>
+                              <td className="px-5 py-3">
+                                <Skeleton className="h-4 w-28 bg-[rgba(255,255,255,0.08)]" />
+                              </td>
+                              <td className="px-5 py-3 text-right">
+                                <div className="ml-auto flex justify-end">
+                                  <Skeleton className="h-7 w-14 rounded-md bg-[rgba(255,255,255,0.08)]" />
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : errorMessage ? (
+                    <div className="rounded-2xl hg-surface p-5">
+                      <h3 className="text-base font-semibold text-white">{t("noAccessHeading")}</h3>
+                      <p className="mt-2 text-sm hg-muted">{errorMessage}</p>
+                      <Link
+                        href={PACKAGES_URL}
+                        className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#07131d] hover:opacity-90"
+                      >
+                        {t("viewPackages")}
+                      </Link>
+                    </div>
+                  ) : history.length === 0 ? (
+                    <div className="rounded-2xl hg-surface p-5">
+                      <p className="text-sm hg-muted">{t("noUploadsBody")}</p>
+                    </div>
+                  ) : (
+                    <HistoryTable history={history} onDeleteClick={handleDelete} onOpenClick={handleOpen} />
+                  )}
+                </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">

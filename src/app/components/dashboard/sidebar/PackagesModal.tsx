@@ -79,7 +79,7 @@ export default function PackagesModal({ open, onOpenChange }: PackagesModalProps
         className="absolute left-1/2 top-1/2 z-[130] overflow-hidden rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] shadow-2xl"
         style={{
           width: "min(980px, calc(100vw - 32px))",
-          height: "min(720px, calc(100vh - 32px))",
+          height: "min(720px, calc(100dvh - 32px))",
           transform: "translate(-50%, -50%)",
         }}
       >

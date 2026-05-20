@@ -262,7 +262,7 @@ export default function UploadTalkingHead() {
   if (!hasActiveInstance) return null;
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-8">
       <OutOfCreditsModal
         type="videos"
         open={showCreditsModal}
@@ -488,7 +488,7 @@ export default function UploadTalkingHead() {
         </div>
 
         {historyLoading && recentItems.length === 0 ? (
-          <div className="mt-3 flex gap-3 overflow-x-auto pb-2 pr-4 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
+          <div className="mt-3 flex gap-3 overflow-x-auto pb-2 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
             {Array.from({ length: 3 }).map((_, idx) => (
               <div
                 key={`recent-video-skeleton-${idx}`}
@@ -501,6 +501,7 @@ export default function UploadTalkingHead() {
                 </div>
               </div>
             ))}
+            <div className="w-4 shrink-0" aria-hidden />
           </div>
         ) : null}
 
@@ -524,7 +525,7 @@ export default function UploadTalkingHead() {
         ) : null}
 
         {recentItems.length > 0 ? (
-          <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 pr-4 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
+          <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
             {recentItems.map((item) => {
               const createdAt = item.createdAt
                 ? new Intl.DateTimeFormat(undefined, {
@@ -577,6 +578,7 @@ export default function UploadTalkingHead() {
                 </div>
               );
             })}
+            <div className="w-4 shrink-0" aria-hidden />
           </div>
         ) : null}
       </section>}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import CreationCard from "@/app/components/dashboard/upload/CreationCard";
 import { useRecentCreations } from "@/app/hooks/useRecentCreations";
 
@@ -16,6 +17,7 @@ export default function RecentCreations({
   onOpenCreation,
   refreshToken,
 }: RecentCreationsProps) {
+  const t = useTranslations("dashboard.recentCreations");
   const { items, loading, refresh } = useRecentCreations({
     packageInstanceId: packageInstanceId || null,
   });
@@ -29,19 +31,19 @@ export default function RecentCreations({
     <section className="w-full pb-8 pt-1 md:pt-2">
       <div className="flex items-baseline justify-between border-b border-[var(--hg-border-2)] pb-4">
         <div className="space-y-1">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">Generated Results</p>
-          <h2 className="text-2xl font-semibold tracking-tight text-white/95 md:text-3xl">Recents</h2>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">{t("eyebrow")}</p>
+          <h2 className="text-2xl font-semibold tracking-tight text-white/95 md:text-3xl">{t("heading")}</h2>
         </div>
         <Link
           href="/dashboard/history"
           className="text-sm font-medium tracking-tight text-[var(--hg-muted)] transition-colors hover:text-[#50C0F0] md:text-base"
         >
-          See all ›
+          {t("seeAllLink")}
         </Link>
       </div>
 
       {loading ? (
-        <div className="mt-3 flex gap-3 overflow-x-auto pb-2 pr-4 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
+        <div className="mt-3 flex gap-3 overflow-x-auto pb-2 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
           {Array.from({ length: 3 }).map((_, idx) => (
             <div
               key={`recent-skeleton-${idx}`}
@@ -54,14 +56,15 @@ export default function RecentCreations({
               </div>
             </div>
           ))}
+          <div className="w-4 shrink-0" aria-hidden />
         </div>
       ) : items.length === 0 ? (
         <div className="mt-4 rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5">
           <h3 className="text-base font-semibold text-white">
-            Create your first strategy
+            {t("emptyHeading")}
           </h3>
           <p className="mt-1 text-sm hg-muted">
-            Upload an image to generate a report.
+            {t("emptyBody")}
           </p>
           <button
             type="button"
@@ -73,11 +76,11 @@ export default function RecentCreations({
             }}
             className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-2 text-sm font-semibold text-[#04131d] hover:opacity-90"
           >
-            Upload content
+            {t("emptyButton")}
           </button>
         </div>
       ) : (
-        <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 pr-4 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
+        <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
           {items.map((item) => {
             const finalThumbnailProp = item.thumbnailUrl;
             return (
@@ -95,6 +98,7 @@ export default function RecentCreations({
               </div>
             );
           })}
+          <div className="w-4 shrink-0" aria-hidden />
         </div>
       )}
 
@@ -105,7 +109,7 @@ export default function RecentCreations({
         aria-hidden
         tabIndex={-1}
       >
-        Refresh
+        {t("refreshAriaLabel")}
       </button>
     </section>
   );

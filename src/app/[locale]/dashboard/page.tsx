@@ -29,7 +29,7 @@ function OverviewSkeleton() {
           <p className="text-sm hg-muted">{t("subheading")}</p>
         </div>
       </header>
-      <main className="pb-16">
+      <main>
         <div className="mx-auto max-w-6xl space-y-6 px-4 pt-8 md:space-y-8 md:px-8">
           <section className="h-28 animate-pulse rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)]" />
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -181,7 +181,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="pb-16">
+      <main>
         <div className="mx-auto max-w-6xl space-y-6 px-4 pt-8 md:space-y-8 md:px-8">
           {coreError ? (
             <section className="rounded-xl border border-rose-500/35 bg-rose-500/10 p-4 text-sm text-rose-200">

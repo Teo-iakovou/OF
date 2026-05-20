@@ -98,7 +98,7 @@ export default function AuthPageShell({ mode, redirectTo, intent }: AuthPageShel
           </div>
         </div>
 
-        <div className="flex min-h-[calc(100vh-120px)] items-center justify-center">
+        <div className="flex min-h-[calc(100dvh-120px)] items-center justify-center">
           <div className="w-full max-w-md rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)] md:p-7">
             <div className="mb-5 space-y-2 text-center">
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--hg-muted)]">

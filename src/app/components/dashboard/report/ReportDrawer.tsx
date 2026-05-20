@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronRight, ChevronUp, Link2, X } from "lucide-react";
 import { toast } from "sonner";
 import type { ResultDoc } from "@/app/types/analysis";
@@ -33,6 +34,7 @@ export default function ReportDrawer({
   resultId,
   initialData,
 }: ReportDrawerProps) {
+  const t = useTranslations("dashboard.reportDrawer");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ResultDoc | null>(initialData || null);
   const [error, setError] = useState<string | null>(null);
@@ -149,7 +151,9 @@ export default function ReportDrawer({
         .format(new Date(result.createdAt))
         .replace(",", " •")
     : "—";
-  const creationType = topPlatform?.platform ? `${topPlatform.platform} strategy` : "Photo strategy";
+  const creationType = topPlatform?.platform
+    ? t("strategySubheadingTemplate", { platform: topPlatform.platform })
+    : t("photoStrategyFallback");
 
   const sectionClass = (visible: boolean) =>
     prefersReducedMotion
@@ -192,14 +196,14 @@ export default function ReportDrawer({
     await copyText(url);
     setCopyLinkStatus("copied");
     window.setTimeout(() => setCopyLinkStatus("idle"), 2000);
-    toast("Copied link");
+    toast(t("toasts.linkCopied"));
   };
 
   return (
     <div className="fixed inset-0 z-[85]">
       <button
         type="button"
-        aria-label="Close report drawer"
+        aria-label={t("closeButtonLabel")}
         className="absolute inset-0 bg-black/45 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
@@ -207,9 +211,11 @@ export default function ReportDrawer({
       <aside className="absolute right-0 top-0 h-full w-full max-w-3xl overflow-y-auto border-l border-white/10 bg-[var(--hg-surface)] p-5 shadow-2xl md:p-6">
         <div className="flex items-start justify-between gap-4 border-b border-[var(--hg-border)] pb-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)]">AI Analysis Report</p>
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)]">{t("reportEyebrow")}</p>
             <h2 className="mt-1 text-xl font-semibold text-[var(--hg-text)] md:text-2xl">
-              {topPlatform?.platform ? `${topPlatform.platform} Strategy` : "Promotion Plan"}
+              {topPlatform?.platform
+                ? t("strategyHeadingTemplate", { platform: topPlatform.platform })
+                : t("promotionPlanFallback")}
             </h2>
             <p className="mt-1 text-xs text-[var(--hg-muted)]">
               {createdAtLabel} • {creationType}
@@ -224,7 +230,7 @@ export default function ReportDrawer({
               disabled={!resultId}
             >
               <Link2 className="h-3.5 w-3.5" />
-              {copyLinkStatus === "copied" ? "Copied" : "Copy link"}
+              {copyLinkStatus === "copied" ? t("copiedLabel") : t("copyLinkButton")}
             </button>
             <button
               type="button"
@@ -252,23 +258,23 @@ export default function ReportDrawer({
             <section className={`rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/75 p-4 ${sectionClass(stage >= 1)}`}>
               <div className="grid gap-4 md:grid-cols-[1fr_220px] md:items-start">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">Summary</p>
-                  <h3 className="mt-1 text-base font-semibold text-white">AI analyzed your image and generated a strategy</h3>
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">{t("summaryEyebrow")}</p>
+                  <h3 className="mt-1 text-base font-semibold text-white">{t("summaryTitle")}</h3>
                   <p className="mt-1 text-sm text-[var(--hg-muted)]">
                     {recommendedPlatforms.length > 0
-                      ? `${recommendedPlatforms.length} platform recommendation${recommendedPlatforms.length === 1 ? "" : "s"} with captions, hashtags, and posting windows.`
-                      : "No platform recommendations were returned for this image yet."}
+                      ? t("recommendationCount", { count: recommendedPlatforms.length })
+                      : t("noRecommendationsMessage")}
                   </p>
                 </div>
                 <div className="overflow-hidden rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)]">
                   {!previewUrl || previewFailed ? (
                     <div className="flex h-32 items-center justify-center text-xs text-[var(--hg-muted-2)] md:h-36">
-                      No image preview
+                      {t("noImagePreview")}
                     </div>
                   ) : (
                     <img
                       src={previewUrl}
-                      alt="Uploaded content"
+                      alt={t("uploadedImageAlt")}
                       className="h-32 w-full object-cover md:h-36"
                       onError={() => setPreviewFailed(true)}
                     />
@@ -278,18 +284,18 @@ export default function ReportDrawer({
             </section>
 
             <section className={`rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/75 p-4 ${sectionClass(stage >= 2)}`}>
-              <h3 className="text-sm font-semibold text-white">Platform Recommendations</h3>
-              <p className="mt-1 text-xs text-[var(--hg-muted)]">Best channels, captions, hashtags, and posting hints.</p>
+              <h3 className="text-sm font-semibold text-white">{t("platformRecsHeading")}</h3>
+              <p className="mt-1 text-xs text-[var(--hg-muted)]">{t("platformRecsSubtitle")}</p>
 
               {recommendedPlatforms.length === 0 ? (
                 <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-4">
-                  <p className="text-sm text-[var(--hg-muted)]">No promotion plan available yet.</p>
+                  <p className="text-sm text-[var(--hg-muted)]">{t("noPlanMessage")}</p>
                   <button
                     type="button"
                     className="mt-3 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white hover:border-[var(--hg-accent)] hover:text-[var(--hg-accent)]"
                     onClick={() => setReloadToken((prev) => prev + 1)}
                   >
-                    Retry
+                    {t("retryButton")}
                   </button>
                 </div>
               ) : (
@@ -351,11 +357,11 @@ export default function ReportDrawer({
                         .then(() => {
                           setFeedbackSaved((prev) => ({ ...prev, [key]: true }));
                           setFeedbackOpen((prev) => ({ ...prev, [key]: false }));
-                          toast.success("Feedback saved");
+                          toast.success(t("toasts.feedbackSaved"));
                         })
                         .catch((err: unknown) => {
                           const message =
-                            err instanceof Error ? err.message : "Failed to save feedback";
+                            err instanceof Error ? err.message : t("toasts.feedbackError");
                           const reqId =
                             typeof (err as { requestId?: unknown })?.requestId === "string"
                               ? ((err as { requestId?: string }).requestId as string)
@@ -422,10 +428,10 @@ export default function ReportDrawer({
                               className="mt-2 inline-flex rounded-md border border-[var(--hg-border)] px-2 py-1 text-xs text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                               onClick={() => {
                                 void copyText(platform.caption || "");
-                                toast("Caption copied");
+                                toast(t("toasts.captionCopied"));
                               }}
                             >
-                              Copy caption
+                              {t("copyCaptionButton")}
                             </button>
                           </div>
                         ) : null}
@@ -453,10 +459,10 @@ export default function ReportDrawer({
                               className="text-xs text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                               onClick={() => {
                                 void copyText(hashtagsText);
-                                toast("Hashtags copied");
+                                toast(t("toasts.hashtagsCopied"));
                               }}
                             >
-                              Copy hashtags
+                              {t("copyHashtagsButton")}
                             </button>
                           ) : null}
 
@@ -478,7 +484,7 @@ export default function ReportDrawer({
 
                         {ctaText ? (
                           <p className="mt-3 text-xs text-[var(--hg-muted)]">
-                            <span className="font-medium text-white">CTA:</span> {ctaText}
+                            <span className="font-medium text-white">{t("ctaLabel")}</span> {ctaText}
                           </p>
                         ) : null}
 
@@ -492,7 +498,7 @@ export default function ReportDrawer({
 
                         {policyWhy ? (
                           <p className="mt-2 text-xs text-[var(--hg-muted)]">
-                            <span className="font-medium text-white">Why:</span> {policyWhy}
+                            <span className="font-medium text-white">{t("whyLabel")}</span> {policyWhy}
                           </p>
                         ) : null}
 
@@ -516,23 +522,22 @@ export default function ReportDrawer({
                                 }`}
                               />
                             ) : null}
-                            {isSaved ? "Saved ✓" : "Mark as posted"}
+                            {isSaved ? t("savedIndicator") : t("markAsPostedButton")}
                           </button>
 
                           {isFeedbackOpen ? (
                             <div className="mt-2 rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/65 p-2.5">
                               <div className="mb-2">
                                 <p className="text-xs font-medium text-white">
-                                  Help the AI learn from this post
+                                  {t("feedbackHeading")}
                                 </p>
                                 <p className="mt-1 text-xs text-[var(--hg-muted)]">
-                                  Enter how this post performed (optional). This improves future
-                                  recommendations for this profile.
+                                  {t("feedbackDescription")}
                                 </p>
                               </div>
                               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                 <label className="text-xs text-[var(--hg-muted)]">
-                                  Impressions
+                                  {t("impressionsLabel")}
                                   <div className="relative mt-1">
                                     <input
                                       type="text"
@@ -554,7 +559,7 @@ export default function ReportDrawer({
                                         type="button"
                                       className="rounded p-0.5 text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                                         onClick={() => bumpMetric("impressions", 1)}
-                                        aria-label="Increase impressions"
+                                        aria-label={t("increaseImpressionsLabel")}
                                       >
                                         <ChevronUp className="h-3 w-3" />
                                       </button>
@@ -562,18 +567,18 @@ export default function ReportDrawer({
                                         type="button"
                                       className="rounded p-0.5 text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                                         onClick={() => bumpMetric("impressions", -1)}
-                                        aria-label="Decrease impressions"
+                                        aria-label={t("decreaseImpressionsLabel")}
                                       >
                                         <ChevronDown className="h-3 w-3" />
                                       </button>
                                     </div>
                                   </div>
                                   <p className="mt-1 text-[11px] text-[var(--hg-muted)]">
-                                    Total views of this post.
+                                    {t("impressionsHint")}
                                   </p>
                                 </label>
                                 <label className="text-xs text-[var(--hg-muted)]">
-                                  Engagements
+                                  {t("engagementsLabel")}
                                   <div className="relative mt-1">
                                     <input
                                       type="text"
@@ -595,7 +600,7 @@ export default function ReportDrawer({
                                         type="button"
                                       className="rounded p-0.5 text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                                         onClick={() => bumpMetric("engagements", 1)}
-                                        aria-label="Increase engagements"
+                                        aria-label={t("increaseEngagementsLabel")}
                                       >
                                         <ChevronUp className="h-3 w-3" />
                                       </button>
@@ -603,14 +608,14 @@ export default function ReportDrawer({
                                         type="button"
                                       className="rounded p-0.5 text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
                                         onClick={() => bumpMetric("engagements", -1)}
-                                        aria-label="Decrease engagements"
+                                        aria-label={t("decreaseEngagementsLabel")}
                                       >
                                         <ChevronDown className="h-3 w-3" />
                                       </button>
                                     </div>
                                   </div>
                                   <p className="mt-1 text-[11px] text-[var(--hg-muted)]">
-                                    Likes + comments + shares.
+                                    {t("engagementsHint")}
                                   </p>
                                 </label>
                               </div>
@@ -628,7 +633,7 @@ export default function ReportDrawer({
                                   disabled={isSubmitting || !result?._id || isSaved}
                                   onClick={() => submitFeedback(false)}
                                 >
-                                  {isSubmitting ? "Saving..." : "Just mark as posted"}
+                                  {isSubmitting ? t("savingLabel") : t("justMarkButton")}
                                 </button>
                                 <button
                                   type="button"
@@ -636,7 +641,7 @@ export default function ReportDrawer({
                                   disabled={isSubmitting || !result?._id || isSaved}
                                   onClick={() => submitFeedback(true)}
                                 >
-                                  {isSubmitting ? "Saving..." : "Save"}
+                                  {isSubmitting ? t("savingLabel") : t("saveButton")}
                                 </button>
                               </div>
                             </div>
@@ -651,7 +656,7 @@ export default function ReportDrawer({
 
             {Array.isArray(result?.promotion?.riskFlags) && result.promotion.riskFlags.length > 0 ? (
               <section className={`rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/75 p-4 ${sectionClass(stage >= 3)}`}>
-                <h3 className="text-sm font-semibold text-white">Posting Safety Tips</h3>
+                <h3 className="text-sm font-semibold text-white">{t("safetyTipsHeading")}</h3>
                 <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-[var(--hg-muted)]">
                   {result.promotion.riskFlags.map((tip, idx) => (
                     <li key={`risk-${idx}`}>{tip}</li>

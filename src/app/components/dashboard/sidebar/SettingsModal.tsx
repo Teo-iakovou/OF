@@ -199,7 +199,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
         className="fixed inset-0 z-[130] flex flex-col overflow-hidden bg-[var(--hg-surface)] shadow-2xl
           md:absolute md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2
           md:rounded-2xl md:border md:border-[var(--hg-border)]
-          md:w-[min(1100px,calc(100vw-32px))] md:h-[min(720px,calc(100vh-32px))]"
+          md:w-[min(1100px,calc(100vw-32px))] md:h-[min(720px,calc(100dvh-32px))]"
       >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-[var(--hg-border-2)] px-4 py-3 md:px-6">

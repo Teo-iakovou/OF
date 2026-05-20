@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import FileUpload from "@/app/components/uploads/FileUpload";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import SelectActiveInstance from "@/app/components/dashboard/SelectActiveInstance";
@@ -19,6 +20,7 @@ import ReportDrawer from "@/app/components/dashboard/report/ReportDrawer";
 import { useReportDrawer } from "@/app/components/dashboard/upload/useReportDrawer";
 
 export default function UploadPage() {
+  const t = useTranslations("dashboard.uploadPage");
   const [refreshToken, setRefreshToken] = useState(0);
   const {
     openDrawer,
@@ -80,12 +82,12 @@ export default function UploadPage() {
         <div className="relative w-full px-4 pb-20 pt-1 md:pt-10">
           <div className="mx-auto w-full max-w-[980px] space-y-7 md:space-y-9">
             <section className="mx-auto max-w-2xl text-center">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)] md:text-xs">AI Content Studio</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)] md:text-xs">{t("eyebrow")}</p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-                Create your next strategy
+                {t("heading")}
               </h1>
               <p className="mt-2 text-sm text-[var(--hg-muted)] md:text-base">
-                Upload one image and get platform-ready content ideas in seconds.
+                {t("subtitle")}
               </p>
             </section>
             {planLoading ? (
@@ -110,15 +112,15 @@ export default function UploadPage() {
                 id="upload-card"
                 className="mx-auto w-full max-w-xl rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5"
               >
-                <h2 className="text-xl font-semibold text-white">Upload content</h2>
+                <h2 className="text-xl font-semibold text-white">{t("noAccessHeading")}</h2>
                 <div className="mt-3 rounded-xl hg-surface-soft px-3 py-2 text-sm hg-muted">
-                  You don&apos;t have a package yet. Please purchase a plan to start uploading.
+                  {t("noAccessBody")}
                 </div>
                 <Link
                   href={PACKAGES_URL}
                   className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#04131d] hover:opacity-90"
                 >
-                  View plans →
+                  {t("noAccessCta")}
                 </Link>
               </Reveal>
             ) : (uploadsLeft ?? 0) <= 0 ? (
@@ -127,9 +129,9 @@ export default function UploadPage() {
                 id="upload-card"
                 className="mx-auto w-full max-w-xl rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5"
               >
-                <h2 className="text-xl font-semibold text-white">Upload content</h2>
+                <h2 className="text-xl font-semibold text-white">{t("noUploadsHeading")}</h2>
                 <div className="mt-3 rounded-xl hg-surface-soft px-3 py-2 text-sm hg-muted">
-                  You&apos;ve used all your uploads. Upgrade your plan to continue.
+                  {t("noUploadsBody")}
                 </div>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <button
@@ -137,13 +139,13 @@ export default function UploadPage() {
                     onClick={() => setShowCreditsModal(true)}
                     className="inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#04131d] hover:opacity-90"
                   >
-                    Buy credits
+                    {t("buyCreditsButton")}
                   </button>
                   <Link
                     href={PACKAGES_URL}
                     className="inline-flex rounded-xl border border-[var(--hg-border)] px-4 py-3 text-sm font-medium text-white hover:border-[#50C0F0] hover:text-[#50C0F0]"
                   >
-                    Manage billing →
+                    {t("manageBillingLink")}
                   </Link>
                 </div>
               </Reveal>
@@ -152,9 +154,9 @@ export default function UploadPage() {
                 <div id="upload-panel" className="mx-auto w-full max-w-xl">
                   <div id="upload-stage">
                     <UploadStage
-                      title="Create"
-                      subtitle="Upload an image to generate recommendations."
-                      statusLabel="Ready to upload"
+                      title={t("uploadStageTitle")}
+                      subtitle={t("uploadStageSubtitle")}
+                      statusLabel={t("uploadStageStatusLabel")}
                       showHeader={false}
                     >
                       <div className="flex items-center justify-between rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/55 px-3.5 py-2.5">
