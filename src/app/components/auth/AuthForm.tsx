@@ -6,8 +6,8 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { fetchJson } from "@/app/utils/fetcher";
 import { clearUserCache, notifyAuthChange } from "@/app/hooks/useUser";
-import { inferPackageIdFromPath } from "@/app/utils/authRedirect";
 import { checkUserPackage } from "@/app/utils/api";
+import { decidePostAuthRedirect } from "@/app/utils/postAuthRedirect";
 
 const loginEndpoint = "/api/auth/login";
 const registerEndpoint = "/api/auth/register";
@@ -100,25 +100,23 @@ export default function AuthForm({
       try {
         clearUserCache();
       } catch {}
-      router.refresh();
       notifyAuthChange();
 
       onSuccess?.();
-      const target = redirectTo || (mode === "signup" ? "/account/plans" : "/dashboard");
+
+      // Compute destination BEFORE triggering any server re-render, so no SSR redirect
+      // can race with the client navigation.
       const packageState = await checkUserPackage({ force: true }).catch(() => null);
       const hasActiveAccess = Boolean(packageState?.hasAccess && packageState?.packageInstanceId);
-      if (hasActiveAccess) {
-        router.replace("/dashboard");
-        return;
-      }
-      if (intent === "checkout") {
-        const packageId = inferPackageIdFromPath(target);
-        if (packageId) {
-          router.push(`/checkout?packageId=${encodeURIComponent(packageId)}`);
-          return;
-        }
-      }
-      router.push(target);
+      const destination = decidePostAuthRedirect({
+        next: redirectTo ?? null,
+        intent: intent ?? null,
+        hasActivePackage: hasActiveAccess,
+      });
+
+      // Navigate first, then refresh (refresh applies to destination, not login page)
+      router.push(destination);
+      router.refresh();
     } catch (err: any) {
       setError(err?.message || t(mode === "signup" ? "errors.signUpFailed" : "errors.signInFailed"));
     } finally {

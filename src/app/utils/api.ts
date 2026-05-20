@@ -360,6 +360,37 @@ export async function verifySession(sessionId: string) {
   );
 }
 
+export type PromoRedeemResponse = {
+  applied: boolean;
+  packageId: string;
+  planKey: string;
+  activePackageInstanceId: string;
+  requestId?: string | null;
+};
+
+export async function redeemPromoCode(code: string): Promise<PromoRedeemResponse> {
+  const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === "true";
+  const url = USE_BFF ? "/api/promo/redeem" : `${BASE_URL}/api/promo/redeem`;
+  const res = await fetch(url, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+  const parsed = await readJsonOrText(res);
+  if (!parsed.ok) {
+    const data = parsed.data as { error?: string };
+    const err = new Error(data?.error || "PROMO_REDEEM_FAILED") as Error & {
+      code?: string;
+      status?: number;
+    };
+    err.code = typeof data?.error === "string" ? data.error : "PROMO_REDEEM_FAILED";
+    err.status = parsed.status;
+    throw err;
+  }
+  return parsed.data as PromoRedeemResponse;
+}
+
 export type PurchaseResponse = { message: string };
 
 export async function purchasePackage(packageId: string) {

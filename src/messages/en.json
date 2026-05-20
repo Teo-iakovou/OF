@@ -463,6 +463,20 @@
     "errorLoading": "Could not load options.",
     "retry": "Try again"
   },
+  "promo": {
+    "inputLabel": "Have a promo code?",
+    "inputPlaceholder": "Enter code",
+    "applyButton": "Apply",
+    "applyingButton": "Applying…",
+    "PROMO_CODE_REQUIRED": "Please enter a promo code.",
+    "PROMO_CODE_INVALID": "This promo code is not valid.",
+    "PROMO_CODE_INACTIVE": "This promo code is no longer active.",
+    "PROMO_CODE_EXPIRED": "This promo code has expired.",
+    "PROMO_CODE_ALREADY_USED_BY_YOU": "You've already used this promo code.",
+    "PROMO_CODE_EXHAUSTED": "This promo code has reached its usage limit.",
+    "PROMO_REDEEM_FAILED": "Something went wrong applying the code. Please try again.",
+    "errorGeneric": "Something went wrong. Please try again."
+  },
   "dashboard": {
     "aiChat": {
       "emptyState": "Start your conversation...",
@@ -802,5 +816,21 @@
       "proHighlights": ["Most popular", "Deeper recommendations", "Faster pipeline"],
       "ultimateHighlights": ["Best value for teams", "Maximum quotas", "Priority support"]
     }
+  },
+  "checkout": {
+    "heading": "Complete your order",
+    "subheading": "You're one step away from getting started.",
+    "orderSummary": "Order summary",
+    "oneTimePayment": "One-time payment · no subscription · no renewal",
+    "payWithStripe": "Pay with Stripe",
+    "processing": "Processing…",
+    "orDivider": "or",
+    "secureNote": "Secure checkout via Stripe · One-time payment",
+    "includes": "Includes",
+    "highlights": "Highlights",
+    "noPackageSelected": "No package selected.",
+    "invalidPackage": "Invalid package.",
+    "loadingUser": "Loading…",
+    "backToPlans": "Browse plans"
   }
 }

@@ -30,7 +30,7 @@ function stripLocalePrefix(pathname: string): string {
 
 const previewHrefs = ["#preview-ai-strategy", "#preview-creator-workflow", "#preview-avatar-content"] as const;
 
-export default function LandingNavbar() {
+export default function LandingNavbar({ hideLinks = false }: { hideLinks?: boolean }) {
   const t = useTranslations("navbar");
   const tLanding = useTranslations("landing");
   const [open, setOpen] = useState(false);
@@ -131,42 +131,44 @@ export default function LandingNavbar() {
             <Image src="/echofy-removebg-preview.png" alt="Echofy" width={34} height={34} className="rounded-full" />
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
-            {links.map((link) => (
-              <a
-                key={link.href}
-                href={sectionHref(link.href)}
-                className="nav-link-underline text-sm text-[var(--hg-muted)] transition hover:text-[var(--hg-text)]"
-              >
-                {link.label}
-              </a>
-            ))}
-            <div className="relative" data-preview-dropdown>
-              <button
-                type="button"
-                onClick={() => setPreviewOpen((v) => !v)}
-                className="inline-flex items-center gap-1 text-sm text-[var(--hg-muted)] transition hover:text-[var(--hg-text)]"
-              >
-                {t("livePreview")}
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${previewOpen ? "rotate-180" : ""}`} />
-              </button>
-              {previewOpen && (
-                <div className="absolute left-1/2 top-8 z-30 w-72 -translate-x-1/2 rounded-2xl border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface)_95%,transparent)] p-2 shadow-xl shadow-black/30 backdrop-blur-md">
-                  {previewLinks.map((item) => (
-                    <a
-                      key={item.href}
-                      href={sectionHref(item.href)}
-                      onClick={() => setPreviewOpen(false)}
-                      className="flex flex-col gap-0.5 rounded-xl px-4 py-3 transition hover:bg-[var(--hg-surface-2)]"
-                    >
-                      <span className="text-sm font-medium text-white">{item.label}</span>
-                      <span className="text-xs text-[var(--hg-muted)]">{item.sub}</span>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          </nav>
+          {!hideLinks && (
+            <nav className="hidden items-center gap-8 md:flex">
+              {links.map((link) => (
+                <a
+                  key={link.href}
+                  href={sectionHref(link.href)}
+                  className="nav-link-underline text-sm text-[var(--hg-muted)] transition hover:text-[var(--hg-text)]"
+                >
+                  {link.label}
+                </a>
+              ))}
+              <div className="relative" data-preview-dropdown>
+                <button
+                  type="button"
+                  onClick={() => setPreviewOpen((v) => !v)}
+                  className="inline-flex items-center gap-1 text-sm text-[var(--hg-muted)] transition hover:text-[var(--hg-text)]"
+                >
+                  {t("livePreview")}
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${previewOpen ? "rotate-180" : ""}`} />
+                </button>
+                {previewOpen && (
+                  <div className="absolute left-1/2 top-8 z-30 w-72 -translate-x-1/2 rounded-2xl border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface)_95%,transparent)] p-2 shadow-xl shadow-black/30 backdrop-blur-md">
+                    {previewLinks.map((item) => (
+                      <a
+                        key={item.href}
+                        href={sectionHref(item.href)}
+                        onClick={() => setPreviewOpen(false)}
+                        className="flex flex-col gap-0.5 rounded-xl px-4 py-3 transition hover:bg-[var(--hg-surface-2)]"
+                      >
+                        <span className="text-sm font-medium text-white">{item.label}</span>
+                        <span className="text-xs text-[var(--hg-muted)]">{item.sub}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </nav>
+          )}
 
           <div className="hidden items-center gap-2 md:flex">
             <button
@@ -234,7 +236,7 @@ export default function LandingNavbar() {
       {open ? (
         <div className="fixed left-4 right-4 top-[76px] z-50 md:hidden">
           <div className="flex flex-col gap-1 rounded-2xl border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface)_90%,transparent)] px-4 py-3 shadow-lg shadow-black/20 backdrop-blur-md">
-            {links.map((link) => (
+            {!hideLinks && links.map((link) => (
               <a
                 key={link.href}
                 href={sectionHref(link.href)}
@@ -244,30 +246,32 @@ export default function LandingNavbar() {
                 {link.label}
               </a>
             ))}
-            <div className="rounded-lg">
-              <button
-                type="button"
-                onClick={() => setPreviewOpen((v) => !v)}
-                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-[var(--hg-muted)] hover:bg-[var(--hg-surface-2)] hover:text-[var(--hg-text)]"
-              >
-                {t("livePreview")}
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${previewOpen ? "rotate-180" : ""}`} />
-              </button>
-              {previewOpen && (
-                <div className="mt-1 flex flex-col gap-1 pl-3">
-                  {previewLinks.map((item) => (
-                    <a
-                      key={item.href}
-                      href={sectionHref(item.href)}
-                      onClick={() => { setPreviewOpen(false); setOpen(false); }}
-                      className="rounded-lg px-3 py-2 text-sm text-[var(--hg-muted)] hover:bg-[var(--hg-surface-2)] hover:text-[var(--hg-text)]"
-                    >
-                      {item.label}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
+            {!hideLinks && (
+              <div className="rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setPreviewOpen((v) => !v)}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-[var(--hg-muted)] hover:bg-[var(--hg-surface-2)] hover:text-[var(--hg-text)]"
+                >
+                  {t("livePreview")}
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${previewOpen ? "rotate-180" : ""}`} />
+                </button>
+                {previewOpen && (
+                  <div className="mt-1 flex flex-col gap-1 pl-3">
+                    {previewLinks.map((item) => (
+                      <a
+                        key={item.href}
+                        href={sectionHref(item.href)}
+                        onClick={() => { setPreviewOpen(false); setOpen(false); }}
+                        className="rounded-lg px-3 py-2 text-sm text-[var(--hg-muted)] hover:bg-[var(--hg-surface-2)] hover:text-[var(--hg-text)]"
+                      >
+                        {item.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="mt-2 flex items-center gap-2">
               <button
                 type="button"

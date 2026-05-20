@@ -463,6 +463,20 @@
     "errorLoading": "No se pudieron cargar las opciones.",
     "retry": "Reintentar"
   },
+  "promo": {
+    "inputLabel": "¿Tienes un código promocional?",
+    "inputPlaceholder": "Introduce el código",
+    "applyButton": "Aplicar",
+    "applyingButton": "Aplicando…",
+    "PROMO_CODE_REQUIRED": "Por favor, introduce un código promocional.",
+    "PROMO_CODE_INVALID": "Este código promocional no es válido.",
+    "PROMO_CODE_INACTIVE": "Este código promocional ya no está activo.",
+    "PROMO_CODE_EXPIRED": "Este código promocional ha caducado.",
+    "PROMO_CODE_ALREADY_USED_BY_YOU": "Ya has usado este código promocional.",
+    "PROMO_CODE_EXHAUSTED": "Este código promocional ha alcanzado su límite de uso.",
+    "PROMO_REDEEM_FAILED": "Algo salió mal al aplicar el código. Por favor, inténtalo de nuevo.",
+    "errorGeneric": "Algo salió mal. Por favor, inténtalo de nuevo."
+  },
   "dashboard": {
     "aiChat": {
       "emptyState": "Inicia tu conversación...",
@@ -802,5 +816,21 @@
       "proHighlights": ["Más popular", "Recomendaciones más profundas", "Pipeline más rápido"],
       "ultimateHighlights": ["Mejor valor para equipos", "Cuotas máximas", "Soporte prioritario"]
     }
+  },
+  "checkout": {
+    "heading": "Completa tu pedido",
+    "subheading": "Estás a un paso de empezar.",
+    "orderSummary": "Resumen del pedido",
+    "oneTimePayment": "Pago único · sin suscripción · sin renovación",
+    "payWithStripe": "Pagar con Stripe",
+    "processing": "Procesando…",
+    "orDivider": "o",
+    "secureNote": "Pago seguro vía Stripe · Pago único",
+    "includes": "Incluye",
+    "highlights": "Destacados",
+    "noPackageSelected": "Ningún paquete seleccionado.",
+    "invalidPackage": "Paquete no válido.",
+    "loadingUser": "Cargando…",
+    "backToPlans": "Ver planes"
   }
 }

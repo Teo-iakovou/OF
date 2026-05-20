@@ -2,6 +2,7 @@ import { redirect } from "@/i18n/navigation";
 import SignupPageContent from "@/app/signup/SignupPageContent";
 import { serverFetchJson, serverGetUser } from "@/app/utils/serverFetch";
 import { sanitizeRedirect } from "@/app/utils/sanitizeRedirect";
+import { decidePostAuthRedirect } from "@/app/utils/postAuthRedirect";
 
 export default async function SignupPage({
   searchParams,
@@ -22,10 +23,8 @@ export default async function SignupPage({
     const pkg = await serverFetchJson("/api/user/check-package", { method: "GET" });
     const packageData = pkg.data as { hasAccess?: boolean; packageInstanceId?: string } | null;
     const hasActiveAccess = Boolean(packageData?.hasAccess && packageData?.packageInstanceId);
-    if (hasActiveAccess) {
-      redirect({ href: "/dashboard", locale });
-    }
-    redirect({ href: redirectTo || "/dashboard", locale });
+    const destination = decidePostAuthRedirect({ next: redirectTo ?? null, intent: intent ?? null, hasActivePackage: hasActiveAccess });
+    redirect({ href: destination, locale });
   }
   return <SignupPageContent redirectTo={redirectTo} intent={intent} />;
 }

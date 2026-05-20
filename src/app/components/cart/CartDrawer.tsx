@@ -2,16 +2,17 @@
 
 import { packages } from "@/app/components/packages/Packages";
 import Image from "next/image";
-import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useState, useEffect, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ArrowRight, Minus, Plus, Trash2, X } from "lucide-react";
 import { useCart } from "./CartContext";
 import { useUser } from "@/app/hooks/useUser";
 import { buildLoginHref } from "@/app/utils/authRedirect";
 import {
   startCheckout,
+  redeemPromoCode,
   subscribeCheckoutInFlight,
   getCheckoutInFlightSnapshot,
   getCheckoutInFlightServerSnapshot,
@@ -23,25 +24,33 @@ interface CartDrawerProps {
   onCheckout?: () => void;
 }
 
+const KNOWN_PROMO_ERRORS = new Set([
+  "PROMO_CODE_REQUIRED",
+  "PROMO_CODE_INVALID",
+  "PROMO_CODE_INACTIVE",
+  "PROMO_CODE_EXPIRED",
+  "PROMO_CODE_ALREADY_USED_BY_YOU",
+  "PROMO_CODE_EXHAUSTED",
+  "PROMO_REDEEM_FAILED",
+]);
+
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const locale = useLocale();
   const { cartItems, removeFromCart, changeQty } = useCart();
   const { user, loading: userLoading } = useUser({ required: false });
+  const tPromo = useTranslations("promo");
   const [isMounted, setIsMounted] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoApplying, setPromoApplying] = useState(false);
   const checkoutInFlight = useSyncExternalStore(
     subscribeCheckoutInFlight,
     getCheckoutInFlightSnapshot,
     getCheckoutInFlightServerSnapshot
   );
-  const currentPath = useMemo(() => {
-    const query = searchParams.toString();
-    return query ? `${pathname}?${query}` : pathname;
-  }, [pathname, searchParams]);
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -51,6 +60,14 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     return () => {
       document.body.style.overflow = "auto";
     };
+  }, [isOpen]);
+
+  // Clear promo state when drawer closes
+  useEffect(() => {
+    if (!isOpen) {
+      setPromoCode("");
+      setPromoError(null);
+    }
   }, [isOpen]);
 
   if (!isMounted) return null;
@@ -67,15 +84,49 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const handleStripePayment = async () => {
     if (!cartItems.length || isCheckingOut || checkoutInFlight || userLoading) return;
     if (!user) {
-      router.push(buildLoginHref(pathname, currentPath, "checkout"));
+      onClose();
+      const pkgId = cartItems[0]?.id;
+      const nextUrl = pkgId ? `/checkout?packageId=${encodeURIComponent(pkgId)}` : "/account/plans";
+      router.push(buildLoginHref(pathname, nextUrl, "checkout"));
       return;
     }
+    onClose();
     setIsCheckingOut(true);
     try {
       await startCheckout(cartItems[0].id, null, locale);
     } catch (error) {
       console.error("Stripe checkout error:", error);
       setIsCheckingOut(false);
+    }
+  };
+
+  const handleApplyPromo = async () => {
+    const trimmed = promoCode.trim();
+    if (!trimmed) {
+      setPromoError(tPromo("PROMO_CODE_REQUIRED"));
+      return;
+    }
+    if (!user) {
+      onClose();
+      const pkgId = cartItems[0]?.id;
+      const nextUrl = pkgId ? `/checkout?packageId=${encodeURIComponent(pkgId)}` : "/account/plans";
+      router.push(buildLoginHref(pathname, nextUrl, "checkout"));
+      return;
+    }
+    setPromoApplying(true);
+    setPromoError(null);
+    try {
+      await redeemPromoCode(trimmed);
+      // Success: navigate to dashboard — the dashboard's ?status=success useEffect
+      // handles clearCart, clearApiCaches, refresh, and URL cleanup.
+      onClose();
+      router.push("/dashboard?status=success");
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      const errorKey = code && KNOWN_PROMO_ERRORS.has(code) ? code : "errorGeneric";
+      setPromoError(tPromo(errorKey));
+    } finally {
+      setPromoApplying(false);
     }
   };
 
@@ -209,6 +260,38 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
         {/* Footer */}
         <div className="border-t border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface)_70%,transparent)] px-5 py-5 backdrop-blur-md">
+          {/* Promo code section */}
+          <div className="mb-4">
+            <p className="mb-2 text-xs font-medium text-[var(--hg-muted)]">
+              {tPromo("inputLabel")}
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => {
+                  setPromoCode(e.target.value.toUpperCase());
+                  setPromoError(null);
+                }}
+                onKeyDown={(e) => { if (e.key === "Enter") void handleApplyPromo(); }}
+                placeholder={tPromo("inputPlaceholder")}
+                disabled={promoApplying}
+                className="flex-1 min-w-0 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 py-2 text-sm text-white placeholder:text-[var(--hg-muted)] focus:border-[var(--hg-accent)]/60 focus:outline-none disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={() => void handleApplyPromo()}
+                disabled={promoApplying || !promoCode.trim()}
+                className="shrink-0 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-2 text-sm font-medium text-[var(--hg-text)] transition hover:border-[var(--hg-accent)]/40 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {promoApplying ? tPromo("applyingButton") : tPromo("applyButton")}
+              </button>
+            </div>
+            {promoError && (
+              <p className="mt-1.5 text-xs text-red-400">{promoError}</p>
+            )}
+          </div>
+
           {cartItems.length > 0 && (
             <div className="mb-4 flex items-center justify-between rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-3">
               <span className="text-sm text-[var(--hg-muted)]">Subtotal</span>
@@ -218,7 +301,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           <button
             type="button"
             disabled={cartItems.length === 0 || busy}
-            onClick={handleStripePayment}
+            onClick={() => void handleStripePayment()}
             className="group flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--hg-accent)] text-sm font-semibold text-[#07131d] shadow-[0_10px_26px_rgba(80,192,240,0.28)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? (

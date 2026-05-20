@@ -33,6 +33,7 @@ function AppShellInner({ children }: AppShellProps) {
     /^\/(lite|pro|ultimate)$/.test(pathWithoutLocale) ||
     pathWithoutLocale === "/login" ||
     pathWithoutLocale === "/signup" ||
+    pathWithoutLocale === "/checkout" ||
     pathWithoutLocale === "/privacy" ||
     pathWithoutLocale === "/terms" ||
     pathWithoutLocale === "/cookies";

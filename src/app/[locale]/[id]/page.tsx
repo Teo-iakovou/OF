@@ -248,10 +248,6 @@ export default function PackageDetailPage() {
 
   const handleAddToCart = () => {
     if (!selectedPackage) return;
-    if (!user) {
-      router.push(buildLoginHref(pathname, currentPath, "checkout"));
-      return;
-    }
     addToCart(selectedPackage.id);
     setCartOpen(true);
   };
