@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, memo, Fragment } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import {
   coachChat,
   fetchConversation,
@@ -119,6 +119,7 @@ function CoachChat({
   layout?: "page" | "panel";
 }) {
   const t = useTranslations("dashboard.aiChat");
+  const locale = useLocale();
 
   const catLabels: Record<PromptCategory, string> = {
     "Strategy": t("catStrategy"),
@@ -376,6 +377,7 @@ function tokenizeWordsWithSpaces(s: string) {
         latestContentInfo: contextContentInfo ?? latestContentInfo,
         conversationId: conversation?._id,
         title: conversation?.title || "AI Coach Chat",
+        locale,
       });
 
       switch (res.status) {
@@ -401,6 +403,18 @@ function tokenizeWordsWithSpaces(s: string) {
           const data = res.data as CoachChatContextLimitData;
           setIsContextLimited(true);
           setContextInfo({ used: data.tokensUsed, limit: data.tokensLimit });
+          setIsSending(false);
+          setConversation(previousConversation || null);
+          return;
+        }
+
+        case 400: {
+          const data = res.data as CoachChatGenericError;
+          setError(
+            data.error === "CONTENT_BLOCKED"
+              ? t("moderationBlocked")
+              : data.message || data.error || t("errorChatFailed")
+          );
           setIsSending(false);
           setConversation(previousConversation || null);
           return;
@@ -764,7 +778,7 @@ function tokenizeWordsWithSpaces(s: string) {
             )}
           </div>
 
-          {!isStreaming && idx === lastAssistantIdx ? <AssistantFooter meta={msg.meta} /> : null}
+          {!isStreaming && idx === lastAssistantIdx ? <AssistantFooter meta={msg.meta} onPick={(text) => handlePromptPick(text, { send: true })} /> : null}
 
         </div>
       )}
@@ -971,7 +985,7 @@ function tokenizeWordsWithSpaces(s: string) {
 
           <textarea
             ref={textareaRef}
-            className="flex-1 bg-transparent text-gray-100 placeholder-gray-500 focus:outline-none resize-none text-base leading-[1.5] pt-[0.65rem] pb-[0.65rem] overflow-hidden"
+            className="flex-1 min-w-0 bg-transparent text-gray-100 placeholder-gray-500 focus:outline-none resize-none text-base leading-[1.5] pt-[0.65rem] pb-[0.65rem] overflow-hidden"
             placeholder={
               isContextLimited
                 ? t("placeholderContextLimited")
@@ -989,7 +1003,7 @@ function tokenizeWordsWithSpaces(s: string) {
           />
 
           {/* Context Tokens chip (always visible in input bar) */}
-          <span className="relative group inline-flex items-center gap-1 text-[11px] text-gray-500 shrink-0 cursor-default select-none">
+          <span className="relative group hidden sm:inline-flex items-center gap-1 text-[11px] text-gray-500 shrink-0 cursor-default select-none">
               <FileText className="w-3 h-3" />
               {hasInputBarTokenData
                 ? `${fmtTokens(inputBarTokensUsed)}/${fmtTokens(inputBarTokensLimit)}`

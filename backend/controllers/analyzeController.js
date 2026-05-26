@@ -13,14 +13,15 @@ const RecommendationPerformance = require("../models/recommendationPerformance")
 
 const { analyzeImageBufferWithGoogleVision } = require("../utils/analyzeImageWithGoogleVision");
 const { buildPromotionBlueprint } = require("../utils/buildPromotionBlueprint");
-const { generateCaptionWithOpenAI } = require("../utils/generateCaptionWithOpenAI");
-const { isNearDuplicate } = require("../utils/textDiversity");
+const { generateCaptionsWithOpenAI } = require("../utils/generateCaptionWithOpenAI");
 const { sendQuotaError } = require("../utils/quotaError");
 const { sendErr } = require("../utils/sendErr");
 const { verifyFaceMatches } = require("../utils/rekognition");
 const { putObject, buildPublicUrl } = require("../utils/s3");
-const { getPolicies } = require("../policies/loader");
 const { normalizePlatformName, performanceKey } = require("../utils/recommendationKeys");
+const { resolveLanguageName } = require("../utils/locale");
+const { calculateOpenAICost, calculateGoogleVisionCost } = require("../utils/cost");
+const ApiUsage = require("../models/apiUsage");
 // --- helpers ---
 const log = (requestId, stage, extra = {}) =>
   console.log(JSON.stringify({ requestId, stage, ...extra }));
@@ -158,39 +159,13 @@ async function fetchRecommendationPerformance(userId, packageInstanceId) {
   return performanceData;
 }
 
-function selectCaptionStyleCandidates(pool = [], preferredId = null, limit = 3) {
-  if (!Array.isArray(pool) || pool.length === 0) return [];
-  const uniq = [];
-  const seen = new Set();
-  const preferred = pool.find((s) => s?.id && s.id === preferredId) || null;
-  if (preferred && !seen.has(preferred.id)) {
-    uniq.push(preferred);
-    seen.add(preferred.id);
-  }
-  for (const style of pool) {
-    if (!style?.id || seen.has(style.id)) continue;
-    uniq.push(style);
-    seen.add(style.id);
-    if (uniq.length >= limit) break;
-  }
-  return uniq.slice(0, limit);
-}
-
-function findSourcePolicy(sources, platformName) {
-  const list = Array.isArray(sources?.platforms) ? sources.platforms : [];
-  const normalized = String(platformName || "").toLowerCase();
-  return (
-    list.find((s) => String(s.platform || "").toLowerCase() === normalized) ||
-    list.find((s) => normalized === "twitter" && String(s.platform || "").toLowerCase().includes("twitter")) ||
-    null
-  );
-}
 
 const analyzeReqSchema = z.object({
   email: z.string().email(),
   goal: z.enum(["subs", "ppv", "customs"]).optional(),
   linkBase: z.string().url().optional(),
   timezone: z.string().optional(),
+  locale: z.string().optional(),
   captions: z.string().optional(), // from query (?captions=false)
 });
 
@@ -216,11 +191,13 @@ const analyzeImage = async (req, res) => {
     goal: req.body?.goal,
     linkBase: req.body?.linkBase,
     timezone: req.body?.timezone,
+    locale: req.body?.locale,
     captions: captionsParam || undefined,
   });
   if (!parsed.success) {
     return respondErr(400, "Invalid input.", parsed.error?.flatten?.());
   }
+  const languageName = resolveLanguageName(req.body?.locale);
 
   if (!file || !email) return respondErr(400, "Image and email are required.");
   if (typeof file.size === "number" && file.size > 7 * 1024 * 1024) {
@@ -483,6 +460,18 @@ const analyzeImage = async (req, res) => {
       packageInstanceId: selectedInstance?._id?.toString?.() || null,
       activeInstanceId: selectedInstance?._id?.toString?.() || null,
     });
+    ApiUsage.create({
+      userId: user._id,
+      email: user.email,
+      packageInstanceId: selectedInstance?._id || null,
+      provider: "google_vision",
+      endpoint: "vision",
+      model: "google-vision",
+      costUsd: calculateGoogleVisionCost(1),
+      requestId: requestId || null,
+      success: true,
+      latencyMs: Date.now() - tVision0,
+    }).catch(() => {});
     const detectedFaceCount =
       typeof visionData?.faceCount === "number"
         ? visionData.faceCount
@@ -772,102 +761,43 @@ const analyzeImage = async (req, res) => {
           .flatMap((r) => (r.promotion?.recommendedPlatforms || []).map((x) => x.caption).filter(Boolean))
           .map(normalizeCaptionText)
           .filter(Boolean);
-        const recentCapHashes = new Set(
-          recentCaps.map((caption) => textHash(caption)).filter(Boolean)
-        );
-        for (const hash of recentRecommendationHistory.captionTextHashes || []) {
-          if (hash) recentCapHashes.add(hash);
-        }
 
-        const { recommendationPools, sources } = getPolicies();
         const withCaptions = await Promise.all(
           promotion.recommendedPlatforms.map(async (rec) => {
             try {
-              const stylePool =
-                recommendationPools?.captionStyles?.[rec.platform] ||
-                recommendationPools?.captionStyles?.default ||
-                [];
-              const styleCandidates = selectCaptionStyleCandidates(
-                stylePool,
-                rec?.selectedIds?.captionStyleId || null,
-                3
-              );
-
               const dynamicForPlatform = {
                 platform: rec.platform,
                 bestPostTime: (rec.bestTimesLocal && rec.bestTimesLocal[0]) || "18:00",
                 tip: (promotion.ctaVariants && promotion.ctaVariants[0]) || "",
                 hashtags: rec.hashtags || [],
               };
-              const sourcePolicy = findSourcePolicy(sources, rec.platform);
-              const sourceBannedPhrases = Array.isArray(sourcePolicy?.bannedPhrases)
-                ? sourcePolicy.bannedPhrases
-                : [];
 
-              let bestCaption = "";
-              let bestStyleId = rec?.selectedIds?.captionStyleId || null;
-              let bestScore = Number.POSITIVE_INFINITY;
+              const { variants } = await generateCaptionsWithOpenAI(visionData, dynamicForPlatform, {
+                requestId,
+                avoidPhrases: recentCaps.slice(0, 10),
+                languageName,
+                niche: promotion.niche || null,
+                recentCaptions: recentCaps.slice(0, 5),
+                userId: user._id,
+                packageInstanceId: selectedInstance?._id || null,
+                email: user.email,
+              });
 
-              for (const style of styleCandidates) {
-                const avoidPhrases = [
-                  ...recentCaps.slice(0, 14),
-                  ...sourceBannedPhrases,
-                  ...(Array.isArray(style?.avoidTerms) ? style.avoidTerms : []),
-                ];
-                const candidate = await generateCaptionWithOpenAI(visionData, dynamicForPlatform, {
-                  requestId,
-                  styleDirective: style?.promptAddon || "",
-                  avoidPhrases,
-                });
-                const normalizedCandidate = normalizeCaptionText(candidate);
-                if (!normalizedCandidate) continue;
-
-                let duplicateHits = 0;
-                for (const prior of recentCaps) {
-                  if (isNearDuplicate(normalizedCandidate, prior)) duplicateHits += 1;
-                }
-                const hash = textHash(normalizedCandidate);
-                if (hash && recentCapHashes.has(hash)) duplicateHits += 2;
-
-                const score = duplicateHits * 1000 + normalizedCandidate.length;
-                if (score < bestScore) {
-                  bestScore = score;
-                  bestCaption = candidate;
-                  bestStyleId = style?.id || bestStyleId;
-                }
-              }
-
-              if (!bestCaption) {
-                const avoidPhrases = [
-                  ...recentCaps.slice(0, 14),
-                  ...sourceBannedPhrases,
-                ];
-                bestCaption = await generateCaptionWithOpenAI(visionData, dynamicForPlatform, {
-                  requestId,
-                  styleDirective: "Use a different structure and hook than previous posts.",
-                  avoidPhrases,
-                });
-              }
-
-              const normalizedBestCaption = normalizeCaptionText(bestCaption);
-              const bestCaptionHash = textHash(normalizedBestCaption);
-              if (bestCaptionHash) {
-                recentCapHashes.add(bestCaptionHash);
+              const primaryCaption = variants[0]?.text || rec.caption || "";
+              const primaryHash = textHash(normalizeCaptionText(primaryCaption));
+              if (primaryHash) {
                 selectedCaptionHistoryEntries.push({
                   kind: "caption",
                   platform: rec.platform,
-                  variantId: bestStyleId || "caption_style_fallback",
-                  textHash: bestCaptionHash,
+                  variantId: "caption_variants",
+                  textHash: primaryHash,
                 });
               }
 
               return {
                 ...rec,
-                caption: bestCaption || rec.caption || "",
-                selectedIds: {
-                  ...(rec.selectedIds || {}),
-                  captionStyleId: bestStyleId || rec?.selectedIds?.captionStyleId || null,
-                },
+                captions: variants,
+                caption: primaryCaption,
               };
             } catch (e) {
               log(requestId, "caption_error", { platform: rec.platform, message: e?.message });
@@ -1208,4 +1138,210 @@ const updateAnalysisResult = async (req, res) => {
   }
 };
 
-module.exports = { analyzeImage, fetchAnalysisHistory, getAnalysisById, deleteAnalysisResult, updateAnalysisResult };
+const regenerateAnalysisResult = async (req, res) => {
+  const rid =
+    req.requestId ||
+    `regen-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const t0 = Date.now();
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return sendErr(req, res, 400, "Invalid id");
+  }
+  if (!req.user?.id) return sendErr(req, res, 401, "Unauthorized");
+
+  let user;
+  let instance;
+  let quotaReserved = false;
+  let reservedInstanceId = null;
+
+  const releaseQuota = async () => {
+    if (!quotaReserved || !reservedInstanceId) return;
+    try {
+      await PackageInstance.updateOne(
+        { _id: reservedInstanceId },
+        { $inc: { uploadsUsed: -1 } }
+      );
+      quotaReserved = false;
+      reservedInstanceId = null;
+    } catch (relErr) {
+      log(rid, "regen_quota_release_error", { message: relErr?.message });
+    }
+  };
+
+  try {
+    user = await User.findById(req.user.id);
+    if (!user) return sendErr(req, res, 403, "User not found.");
+
+    const existing = await Result.findOne({ _id: id, ...buildResultScope(user) });
+    if (!existing) {
+      log(rid, "regen_not_found", { id });
+      return sendErr(req, res, 404, "Result not found");
+    }
+
+    instance = await resolveActivePackageInstance(user);
+    if (!instance) {
+      return sendErr(req, res, 409, "No active package instance.", {
+        errorCode: "ACTIVE_INSTANCE_REQUIRED",
+      });
+    }
+
+    // Reserve quota (same atomic pattern as analyzeImage)
+    if (!user.isAdmin) {
+      const reserved = await PackageInstance.findOneAndUpdate(
+        {
+          _id: instance._id,
+          userId: user._id,
+          $expr: {
+            $or: [
+              { $eq: ["$uploadLimit", 0] },
+              {
+                $lt: [
+                  "$uploadsUsed",
+                  { $add: ["$uploadLimit", { $ifNull: ["$addons.uploads", 0] }] },
+                ],
+              },
+            ],
+          },
+        },
+        { $inc: { uploadsUsed: 1 } },
+        { new: true }
+      );
+      if (!reserved) {
+        return sendQuotaError(res, 403, {
+          message: "Upload limit reached.",
+          feature: "regenerate",
+          plan: instance.planKey || null,
+          remaining: 0,
+          limit: typeof instance.uploadLimit === "number" ? instance.uploadLimit : null,
+          requestId: rid,
+        });
+      }
+      quotaReserved = true;
+      reservedInstanceId = reserved._id;
+      instance = reserved;
+    }
+
+    let success = false;
+    try {
+      // Reuse stored Vision data from meta.vision — skip Google Vision entirely
+      const visionData = existing.meta?.vision || {};
+      const languageName = resolveLanguageName(req.body?.locale || "en");
+      const ctx = {
+        goal: req.body?.goal || existing.meta?.goal || "subs",
+        timezone:
+          existing.meta?.timezone ||
+          (typeof user.timezone === "string" && user.timezone ? user.timezone : "UTC"),
+        linkBase: req.body?.linkBase || existing.meta?.linkBase,
+        imageHash: existing.imageHash,
+      };
+
+      log(rid, "regen_start", { id, niche: existing.niche, hasFace: existing.hasFace });
+
+      const explorationRate = Number.isFinite(Number(process.env.RECO_EXPLORATION_RATE))
+        ? Math.max(0, Math.min(1, Number(process.env.RECO_EXPLORATION_RATE)))
+        : 0.25;
+      const minFeedbackPosts = Number.isFinite(Number(process.env.RECO_MIN_FEEDBACK_POSTS))
+        ? Math.max(1, Number(process.env.RECO_MIN_FEEDBACK_POSTS))
+        : 10;
+
+      let recentHistory = { variantIdsByKey: {}, countsByKey: {}, captionTextHashes: [] };
+      let performanceData = {};
+      try {
+        const [h, p] = await Promise.all([
+          fetchRecentRecommendationHistory(user._id, instance._id, 120),
+          fetchRecommendationPerformance(user._id, instance._id),
+        ]);
+        recentHistory = h;
+        performanceData = p;
+      } catch (histErr) {
+        log(rid, "regen_history_fetch_failed", { message: histErr?.message });
+      }
+
+      const out = buildPromotionBlueprint(visionData, ctx, {
+        recentHistory,
+        performanceData,
+        variantSelection: { explorationRate, minFeedbackPosts },
+      });
+      const promotion = out.promotion;
+
+      // Fetch recent captions for tone-history (exclude this result)
+      const recentResults = await Result.find({
+        ...buildResultScope(user),
+        packageInstanceId: instance._id,
+        _id: { $ne: existing._id },
+      })
+        .sort({ createdAt: -1 })
+        .limit(60);
+
+      const recentCaps = recentResults
+        .flatMap((r) =>
+          (r.promotion?.recommendedPlatforms || []).map((x) => x.caption).filter(Boolean)
+        )
+        .map(normalizeCaptionText)
+        .filter(Boolean);
+
+      const withCaptions = await Promise.all(
+        promotion.recommendedPlatforms.map(async (rec) => {
+          try {
+            const dynamicForPlatform = {
+              platform: rec.platform,
+              bestPostTime: (rec.bestTimesLocal && rec.bestTimesLocal[0]) || "18:00",
+              tip: (promotion.ctaVariants && promotion.ctaVariants[0]) || "",
+              hashtags: rec.hashtags || [],
+            };
+            const { variants } = await generateCaptionsWithOpenAI(
+              visionData,
+              dynamicForPlatform,
+              {
+                requestId: rid,
+                avoidPhrases: recentCaps.slice(0, 10),
+                languageName,
+                niche: promotion.niche || null,
+                recentCaptions: recentCaps.slice(0, 5),
+                userId: user._id,
+                packageInstanceId: instance._id,
+                email: user.email,
+              }
+            );
+            return {
+              ...rec,
+              captions: variants,
+              caption: variants[0]?.text || rec.caption || "",
+            };
+          } catch (capErr) {
+            log(rid, "regen_caption_error", { platform: rec.platform, message: capErr?.message });
+            return rec;
+          }
+        })
+      );
+
+      promotion.recommendedPlatforms = withCaptions;
+      existing.promotion = promotion;
+      existing.captionsGenerated = true;
+      await existing.save();
+
+      success = true;
+      log(rid, "regen_done", { id, latencyMs: Date.now() - t0, platforms: withCaptions.length });
+
+      return res.json(existing);
+    } catch (innerErr) {
+      log(rid, "regen_inner_error", { message: innerErr?.message });
+      throw innerErr;
+    } finally {
+      if (!success) await releaseQuota();
+    }
+  } catch (err) {
+    log(rid, "regen_error", { message: err?.message });
+    return sendErr(req, res, 500, "Failed to regenerate analysis.");
+  }
+};
+
+module.exports = {
+  analyzeImage,
+  fetchAnalysisHistory,
+  getAnalysisById,
+  deleteAnalysisResult,
+  updateAnalysisResult,
+  regenerateAnalysisResult,
+};

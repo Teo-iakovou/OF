@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 type UploadStageProps = {
   title?: string;
   subtitle?: string;
@@ -15,11 +17,12 @@ export default function UploadStage({
   showHeader = true,
   children,
 }: UploadStageProps) {
+  const t = useTranslations("dashboard.uploadPage");
   return (
     <div className="w-full">
       {showHeader ? (
         <header className="mb-4 space-y-2">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)]">AI Workspace</p>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)]">{t("aiWorkspaceEyebrow")}</p>
           <h1 className="text-2xl font-semibold tracking-tight text-white">{title}</h1>
           <p className="text-sm text-[var(--hg-muted)]">{subtitle}</p>
           <p className="text-xs uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">{statusLabel}</p>

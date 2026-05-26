@@ -39,10 +39,22 @@ export interface ColorMood {
   warmth: "warm" | "neutral" | "cool";
 }
 
+export interface CaptionVariant {
+  angle: string;   // "hook" | "aspirational" | "cta" | "default" | string
+  text: string;
+}
+
+export interface HashtagPackMeta {
+  id: string | null;
+  tier: "reach" | "niche" | "balanced" | "trending" | string;
+  reasoning: string;
+}
+
 export interface RecommendedPlatform {
   platform: "Instagram" | "TikTok" | "Twitter" | "Reddit" | "Telegram" | string;
   preview: Record<string, unknown>;
-  caption?: string;                 // may be empty when captions=false fast-path
+  caption?: string;                 // backward compat: equals captions[0].text (or empty when captions=false)
+  captions?: CaptionVariant[];      // full 3-variant array from new pipeline; absent on legacy docs
   hashtags: string[];
   link: { url: string; placement: string };
   bestTimesLocal?: string[];        // ["18:00-21:00", ...]
@@ -56,6 +68,7 @@ export interface RecommendedPlatform {
     captionStyleId?: string | null;
     ctaId?: string | null;
   };
+  hashtagPack?: HashtagPackMeta | null;
 }
 
 export interface Promotion {

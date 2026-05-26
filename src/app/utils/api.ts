@@ -279,6 +279,20 @@ export async function deleteAnalysisResult(id: string) {
   return ensureOk<{ message: string }>(parsed, "Delete analysis result");
 }
 
+export async function regenerateAnalysisById(
+  id: string,
+  opts?: { locale?: string }
+): Promise<ResultDoc> {
+  const res = await fetch(`/api/analyze/${id}/regenerate`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ locale: opts?.locale ?? "en" }),
+  });
+  const parsed = await readJsonOrText(res);
+  return ensureOk<ResultDoc>(parsed, "Regenerate analysis");
+}
+
 // -------------------------------
 /** Stripe (unchanged) */
 let checkoutInFlightPromise: Promise<void> | null = null;
@@ -863,11 +877,13 @@ export async function coachChat({
   latestContentInfo,
   conversationId,
   title,
+  locale,
 }: {
   question: string;
   latestContentInfo?: string;
   conversationId?: string;
   title?: string;
+  locale?: string;
 }): Promise<CoachChatResult> {
   try {
     const res = await fetch(`${BASE_URL}/api/coach-chat`, {
@@ -879,6 +895,7 @@ export async function coachChat({
         latestContentInfo,
         conversationId,
         title,
+        locale,
       }),
     });
 
@@ -1019,6 +1036,35 @@ export async function sendFeedback(message: string): Promise<{ success: boolean 
   return parsed.data as { success: boolean };
 }
 
+export async function submitOutputFeedback(
+  type: "upload_report" | "video",
+  referenceId: string,
+  vote: "up" | "down"
+): Promise<{ ok: boolean; vote: "up" | "down" }> {
+  const r = await fetchJson(`${BASE_URL}/api/output-feedback`, {
+    method: "POST",
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, referenceId, vote }),
+  });
+  if (!r.ok) {
+    const data = r.data as { error?: string; message?: string };
+    throw new Error(data?.error || data?.message || "Failed to submit feedback");
+  }
+  return r.data as { ok: boolean; vote: "up" | "down" };
+}
+
+export async function getOutputFeedback(
+  type: "upload_report" | "video",
+  referenceId: string
+): Promise<"up" | "down" | null> {
+  const url = `${BASE_URL}/api/output-feedback?type=${encodeURIComponent(type)}&referenceId=${encodeURIComponent(referenceId)}`;
+  const r = await fetchJson(url, { method: "GET", cache: "no-store" });
+  if (!r.ok) return null;
+  const data = r.data as { vote: "up" | "down" | null };
+  return data.vote;
+}
+
 // -------------------------------
 /** Analyze (upload + get/update) */
 export type AnalyzeResponse = {
@@ -1050,16 +1096,18 @@ export function analyzeImageMultipart(opts: {
   packageInstanceId?: string | null;
   goal?: "subs" | "ppv" | "customs";
   linkBase?: string;
+  locale?: string;
   onProgress?: (pct: number) => void;
   signal?: AbortSignal;
 }): Promise<AnalyzeResponse> {
-  const { file, packageInstanceId, goal, linkBase, onProgress, signal } = opts;
+  const { file, packageInstanceId, goal, linkBase, locale, onProgress, signal } = opts;
 
   const form = new FormData();
   form.append("image", file);
   if (goal) form.append("goal", goal);
   if (linkBase) form.append("linkBase", linkBase);
   if (packageInstanceId) form.append("packageInstanceId", packageInstanceId);
+  if (locale) form.append("locale", locale);
 
   // Include browser timezone so backend returns local windows
   try {

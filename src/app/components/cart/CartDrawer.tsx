@@ -41,6 +41,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { cartItems, removeFromCart, changeQty } = useCart();
   const { user, loading: userLoading } = useUser({ required: false });
   const tPromo = useTranslations("promo");
+  const t = useTranslations("cart");
   const [isMounted, setIsMounted] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [promoCode, setPromoCode] = useState("");
@@ -155,18 +156,18 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               <Image src="/echofy-removebg-preview.png" alt="Echofy" width={28} height={28} className="rounded-full" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-white">Your cart</h2>
+              <h2 className="text-base font-semibold text-white">{t("title")}</h2>
               <p className="text-xs text-[var(--hg-muted)]">
                 {itemCount === 0
-                  ? "No items"
-                  : `${itemCount} ${itemCount === 1 ? "item" : "items"}`}
+                  ? t("noItems")
+                  : t("itemCount", { count: itemCount })}
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close cart"
+            aria-label={t("closeLabel")}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--hg-border)] bg-[var(--hg-surface-2)] text-[var(--hg-muted)] transition hover:border-[var(--hg-accent)]/40 hover:text-[var(--hg-text)]"
           >
             <X className="h-4 w-4" />
@@ -181,8 +182,8 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 <Image src="/echofy-removebg-preview.png" alt="Echofy" width={44} height={44} className="rounded-full opacity-40" />
               </div>
               <div>
-                <p className="text-sm font-medium text-[var(--hg-text)]">Your cart is empty</p>
-                <p className="mt-1 text-xs text-[var(--hg-muted)]">Add a plan to get started</p>
+                <p className="text-sm font-medium text-[var(--hg-text)]">{t("empty")}</p>
+                <p className="mt-1 text-xs text-[var(--hg-muted)]">{t("emptyHint")}</p>
               </div>
             </div>
           ) : (
@@ -215,7 +216,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       </div>
                       <button
                         type="button"
-                        aria-label="Remove item"
+                        aria-label={t("removeItem")}
                         onClick={() => removeFromCart(item.id)}
                         className="shrink-0 rounded-lg p-1 text-[var(--hg-muted)] opacity-0 transition group-hover:opacity-100 hover:text-red-400"
                       >
@@ -294,7 +295,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
           {cartItems.length > 0 && (
             <div className="mb-4 flex items-center justify-between rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-3">
-              <span className="text-sm text-[var(--hg-muted)]">Subtotal</span>
+              <span className="text-sm text-[var(--hg-muted)]">{t("subtotal")}</span>
               <span className="text-lg font-bold text-white">${subtotal}</span>
             </div>
           )}
@@ -305,11 +306,11 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             className="group flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--hg-accent)] text-sm font-semibold text-[#07131d] shadow-[0_10px_26px_rgba(80,192,240,0.28)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? (
-              <span>Processing…</span>
+              <span>{t("processing")}</span>
             ) : (
               <>
                 <span>
-                  {cartItems.length === 0 ? "Cart is empty" : `Checkout · $${subtotal}`}
+                  {cartItems.length === 0 ? t("cartEmpty") : t("checkout", { price: `$${subtotal}` })}
                 </span>
                 {cartItems.length > 0 && (
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -318,7 +319,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             )}
           </button>
           <p className="mt-3 text-center text-[11px] text-[var(--hg-muted)]">
-            Secure checkout via Stripe · One-time payment
+            {t("secureCheckout")}
           </p>
         </div>
       </div>

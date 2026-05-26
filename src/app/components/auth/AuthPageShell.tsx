@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, Globe, Mail } from "lucide-react";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import AuthForm from "@/app/components/auth/AuthForm";
@@ -64,9 +65,19 @@ export default function AuthPageShell({ mode, redirectTo, intent }: AuthPageShel
   const toggleHref = mode === "login" ? `/signup${query}` : `/login${query}`;
 
   return (
-    <div className="min-h-screen bg-[var(--hg-bg)] text-[var(--hg-text)]">
+    <div className="relative min-h-screen bg-[var(--hg-bg)] text-[var(--hg-text)]">
       <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-6 md:px-8">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+            <Image
+              src="/echofy-removebg-preview.png"
+              alt="echo-fy"
+              width={32}
+              height={32}
+              className="h-8 w-auto"
+            />
+            <span className="text-sm font-semibold tracking-wide text-[var(--hg-text)]">echofy</span>
+          </Link>
           <div className="relative">
             <button
               type="button"

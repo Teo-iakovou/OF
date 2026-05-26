@@ -68,7 +68,7 @@ function planLimit(plan) {
   try {
     return getQuotasForPlan(plan).tokensLimit;
   } catch {
-    return 10000; // lite default for unknown/null plans
+    return 50000; // lite default for unknown/null plans
   }
 }
 

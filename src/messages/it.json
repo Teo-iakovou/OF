@@ -79,6 +79,19 @@
         "strategies": "Strategie generate",
         "rating": "Valutazione creatore",
         "cadence": "Cadenza settimanale più rapida"
+      },
+      "workflowStages": {
+        "photo": "Foto del volto",
+        "audio": "Audio vocale",
+        "processing": "Generazione...",
+        "ready": "Video pronto"
+      },
+      "workflowPreview": {
+        "formTitle": "Avatar Video AI",
+        "generateButton": "Genera",
+        "resultTitle": "Il tuo video è pronto",
+        "downloadButton": "Scarica",
+        "openButton": "Apri"
       }
     },
     "brands": {
@@ -477,6 +490,20 @@
     "PROMO_REDEEM_FAILED": "Si è verificato un errore durante l'applicazione del codice. Riprova.",
     "errorGeneric": "Qualcosa è andato storto. Riprova."
   },
+  "cart": {
+    "title": "Il tuo carrello",
+    "closeLabel": "Chiudi carrello",
+    "noItems": "Nessun articolo",
+    "itemCount": "{count, plural, one {# articolo} other {# articoli}}",
+    "empty": "Il tuo carrello è vuoto",
+    "emptyHint": "Aggiungi un piano per iniziare",
+    "removeItem": "Rimuovi articolo",
+    "subtotal": "Subtotale",
+    "processing": "Elaborazione…",
+    "cartEmpty": "Il carrello è vuoto",
+    "checkout": "Checkout · {price}",
+    "secureCheckout": "Pagamento sicuro tramite Stripe · Pagamento unico"
+  },
   "dashboard": {
     "aiChat": {
       "emptyState": "Inizia la tua conversazione...",
@@ -527,6 +554,7 @@
       "errorRateLimit": "Stai inviando messaggi troppo velocemente. Riprova tra poco.",
       "errorChatFailed": "Chat non riuscita. Riprova.",
       "errorSendFailed": "Si è verificato un errore durante l'invio del messaggio. Riprova.",
+      "moderationBlocked": "Il tuo messaggio non può essere elaborato. Riformulalo e riprova.",
       "exportHeader": "RIEPILOGO STRATEGIA CONTENUTI",
       "exportFooter": "--- Fine del Riepilogo ---",
       "exportGeneratedBy": "Generato da Sage · echo-fy.com",
@@ -596,6 +624,7 @@
       "collapse": "Comprimi barra laterale",
       "expand": "Espandi barra laterale",
       "packages": "Pacchetti",
+      "lockedTooltip": "Richiede piano attivo",
       "profile": "Profilo",
       "menu": {
         "myAccount": "Il mio account",
@@ -646,18 +675,6 @@
         "switchProfile": "Cambia profilo",
         "instanceId": "ID istanza pacchetto",
         "created": "Creato"
-      },
-      "onboarding": {
-        "sectionLabel": "Per iniziare",
-        "heading": "Inizia dalle basi",
-        "dismissAriaLabel": "Chiudi guida introduttiva",
-        "stepUpload": "Carica la tua prima immagine",
-        "stepHistory": "Rivedi la tua strategia AI",
-        "stepChat": "Prova AI Chat",
-        "stepVideo": "Genera un video",
-        "recommended": "Consigliato",
-        "quotaExhausted": "Quota esaurita",
-        "goToStep": "Vai al passo →"
       },
       "quota": {
         "sectionLabel": "Utilizzo quota",
@@ -769,7 +786,10 @@
       "addonLabel5Videos": "5 video",
       "addonLabel15Videos": "15 video",
       "addonLabel30Videos": "30 video",
-      "addonBadgeBestValue": "Miglior valore"
+      "addonBadgeBestValue": "Miglior valore",
+      "statusActive": "Attivo",
+      "profileLabel": "Profilo {letter}",
+      "remaining": "rimanente"
     },
     "settings": {
       "heading": "Impostazioni",
@@ -890,7 +910,18 @@
       "manageBillingLink": "Gestisci fatturazione →",
       "uploadStageTitle": "Crea",
       "uploadStageSubtitle": "Carica un'immagine per generare raccomandazioni.",
-      "uploadStageStatusLabel": "Pronto per il caricamento"
+      "uploadStageStatusLabel": "Pronto per il caricamento",
+      "aiWorkspaceEyebrow": "AI Workspace",
+      "tour": {
+        "step1": { "title": "Benvenuto nei Caricamenti", "body": "Qui carichi contenuti per l'analisi con IA." },
+        "step2": { "title": "La tua quota", "body": "Ogni caricamento utilizza un credito. Ricarica quando vuoi dalla sezione Fatturazione." },
+        "step3": { "title": "Trascina o sfoglia", "body": "Trascina un file qui o clicca per scegliere dal tuo dispositivo." },
+        "step4": { "title": "Caricamenti recenti", "body": "I caricamenti precedenti e i relativi report appaiono qui." },
+        "next": "Avanti",
+        "gotIt": "Capito",
+        "skip": "Salta tour",
+        "stepCount": "{current} di {total}"
+      }
     },
     "recentCreations": {
       "eyebrow": "Risultati generati",
@@ -921,7 +952,18 @@
       "noPlanMessage": "Nessun piano di promozione ancora disponibile.",
       "retryButton": "Riprova",
       "copyCaptionButton": "Copia caption",
+      "captionAngleHook": "Hook",
+      "captionAngleAspirational": "Aspirazionale",
+      "captionAngleCta": "Call to action",
+      "captionAngleDefault": "Didascalia",
       "copyHashtagsButton": "Copia hashtag",
+      "showMoreHashtags": "+{count} altri",
+      "showLessHashtags": "Mostra meno",
+      "hashtagCopied": "Copiato",
+      "hashtagTierReach": "Portata",
+      "hashtagTierNiche": "Nicchia",
+      "hashtagTierBalanced": "Bilanciato",
+      "hashtagTierTrending": "Trend",
       "ctaLabel": "CTA:",
       "whyLabel": "Perché:",
       "markAsPostedButton": "Segna come pubblicato",
@@ -940,12 +982,233 @@
       "savingLabel": "Salvataggio...",
       "saveButton": "Salva",
       "safetyTipsHeading": "Suggerimenti di pubblicazione sicura",
+      "regenerateButton": "Rigenera",
+      "regenerating": "Rigenerazione...",
+      "regenerateTooltip": "Genera nuove didascalie e hashtag — usa 1 upload",
+      "regenerateConfirm": "Verranno generate nuove didascalie e hashtag. Usa 1 upload dalla tua quota. Continuare?",
       "toasts": {
         "linkCopied": "Link copiato",
         "feedbackSaved": "Feedback salvato",
         "feedbackError": "Errore nel salvare il feedback",
         "captionCopied": "Caption copiato",
-        "hashtagsCopied": "Hashtag copiati"
+        "hashtagsCopied": "Hashtag copiati",
+        "regenerateSuccess": "Nuove didascalie e hashtag generati",
+        "regenerateQuotaExhausted": "Quota upload esaurita. Esegui l'upgrade o attendi il reset.",
+        "regenerateError": "Impossibile rigenerare. Riprova."
+      }
+    },
+    "talkingHeadPage": {
+      "heading": "AI Video Avatar",
+      "subtitle": "Carica una foto del volto + audio vocale e genereremo un video parlante.",
+      "uploadQuotaLabel": "Quota di caricamento",
+      "tour": {
+        "step1": { "title": "AI Video Avatar", "body": "Genera video con testa parlante da una foto e un file audio." },
+        "step2": { "title": "Carica il tuo ritratto", "body": "Una foto frontale e nitida dà i migliori risultati." },
+        "step3": { "title": "Aggiungi audio vocale", "body": "Carica un mp3 o wav con la voce desiderata." },
+        "step4": { "title": "Genera", "body": "Clicca qui quando entrambi i file sono pronti. La generazione richiede circa un minuto." },
+        "step5": { "title": "Generazioni precedenti", "body": "I tuoi video precedenti appaiono qui, pronti per il download o la condivisione." },
+        "next": "Avanti",
+        "gotIt": "Capito",
+        "skip": "Salta tour",
+        "stepCount": "{current} di {total}"
+      }
+    },
+    "talkingHeadDrawer": {
+      "closeDrawerLabel": "Chiudi pannello",
+      "closeButtonLabel": "Chiudi",
+      "justNowLabel": "Proprio ora",
+      "downloadButton": "Scarica",
+      "openButton": "Apri",
+      "generatingMessage": "Il tuo video è in fase di generazione.",
+      "stageLabel": "Fase: {stage}",
+      "stageProcessingFallback": "elaborazione",
+      "progressLabel": "Progresso: {progress}%",
+      "failureMessage": "Generazione video fallita. Riprova.",
+      "supportIdLabel": "ID supporto: {id}",
+      "copyButton": "Copia"
+    },
+    "accountPage": {
+      "heading": "Account",
+      "subtitle": "Gestisci il tuo profilo e sicurezza.",
+      "profileEyebrow": "Profilo",
+      "profileHeading": "Profilo",
+      "emailLabel": "Email:",
+      "notSignedIn": "Non hai effettuato l'accesso.",
+      "securityEyebrow": "Sicurezza",
+      "securityHeading": "Sicurezza",
+      "logoutWarning": "La disconnessione ti riporterà alla schermata di accesso.",
+      "logOutButton": "Disconnetti",
+      "noSecurityActions": "Nessuna azione di sicurezza disponibile.",
+      "planEyebrow": "Piano",
+      "planHeading": "Stato del piano",
+      "currentPlanLabel": "Piano attuale:",
+      "uploadsRemainingLabel": "Upload rimanenti:",
+      "expiresLabel": "Scade:",
+      "manageBillingLink": "Gestisci fatturazione →",
+      "noPlanFound": "Nessun piano attivo trovato."
+    },
+    "billingPage": {
+      "heading": "Piano e fatturazione",
+      "subtitle": "Gestisci add-on e profili dei pacchetti.",
+      "successMessage": "Acquisto add-on completato. Le tue quote sono in aggiornamento.",
+      "cancelMessage": "Acquisto add-on annullato.",
+      "appliedLabel": "Applicato ✓",
+      "pendingLabel": "In sospeso (aggiornamento)",
+      "verifyErrorLabel": "Impossibile verificare l'add-on ancora. Per favore aggiorna.",
+      "paymentPendingMessage": "Pagamento ricevuto, l'add-on è ancora in elaborazione.",
+      "refreshButton": "Aggiorna",
+      "contactSupportLink": "Contatta il supporto"
+    },
+    "profileSwitcher": {
+      "profileLabel": "Profilo {letter}",
+      "loadErrorMessage": "Caricamento pacchetti non riuscito",
+      "heading": "Seleziona un pacchetto attivo",
+      "subtitle": "Scegli quale istanza di pacchetto usare per quote e cronologia.",
+      "noInstancesMessage": "Nessuna istanza di pacchetto attiva trovata.",
+      "loadingMessage": "Caricamento pacchetti…"
+    },
+    "sessionExpired": {
+      "eyebrow": "Sessione",
+      "heading": "La tua sessione è scaduta",
+      "body": "Per favore effettua nuovamente l'accesso per continuare da dove avevi lasciato.",
+      "signInButton": "Accedi di nuovo"
+    },
+    "topBar": {
+      "openSettingsLabel": "Apri impostazioni"
+    },
+    "feedback": {
+      "button": "Feedback",
+      "modalTitle": "Invia feedback",
+      "modalSubtitle": "Aiutaci a migliorare echo-fy. Leggiamo ogni messaggio.",
+      "placeholder": "Cosa hai in mente?",
+      "send": "Invia",
+      "sending": "Invio...",
+      "cancel": "Annulla",
+      "closeAriaLabel": "Chiudi feedback",
+      "thankYou": "Grazie per il tuo feedback!",
+      "error": "Invio non riuscito. Riprova.",
+      "helpfulPrompt": "È stato utile?",
+      "helpful": "Segna come utile",
+      "notHelpful": "Segna come non utile"
+    },
+    "tips": {
+      "heading": "Consigli per i migliori risultati",
+      "items": [
+        "Carica immagini verticali di alta qualità per un'analisi migliore.",
+        "Usa l'AI Chat per perfezionare i tuoi caption o testare idee.",
+        "Controlla la tua Insight History per vedere cosa ha funzionato bene.",
+        "Usa gli hashtag suggeriti dall'IA per una portata maggiore.",
+        "Programma i caricamenti negli orari di punta (es. 18–21 ora locale)."
+      ]
+    },
+    "userPlanCard": {
+      "heading": "Il tuo piano",
+      "planLabel": "Piano:",
+      "uploadsLabel": "Upload rimanenti:",
+      "expiresLabel": "Scade:",
+      "upgradePlanButton": "Aggiorna piano"
+    },
+    "uploadTalkingHead": {
+      "videoItemTitle": "Avatar Video",
+      "heading": "AI Video Avatar",
+      "facePhotoLabel": "Foto del volto (PNG/JPG)",
+      "audioLabel": "Audio vocale (MP3/WAV)",
+      "generateButton": "Genera",
+      "generatingButton": "Generazione…",
+      "resetButton": "Ripristina",
+      "copyButton": "Copia",
+      "supportIdLabel": "Support ID: {id}",
+      "videoReadyIndicator": "Video pronto ✓",
+      "thumbnailNoPreview": "Nessuna anteprima",
+      "videoSourceAlt": "Anteprima sorgente video",
+      "errors": {
+        "facePhotoRequired": "Scegli una foto del volto (PNG/JPG).",
+        "audioRequired": "Scegli un file audio vocale (MP3/WAV).",
+        "noActiveInstance": "Nessuna istanza di pacchetto attiva. Seleziona o acquista un pacchetto per continuare.",
+        "faceEnrollmentRequired": "Registra il volto del tuo profilo per continuare.",
+        "noFaceDetected": "Nessun volto rilevato. Carica una foto chiara con un solo volto visibile.",
+        "multipleFaces": "Rilevati più volti. Carica un'immagine con un solo volto.",
+        "faceVerificationFailed": "Verifica del volto fallita. Questa foto non corrisponde al volto registrato.",
+        "upgradeRequired": "Aggiornamento richiesto",
+        "videoGenerationFailed": "Generazione video fallita."
+      },
+      "errorCtas": {
+        "enrollFace": "Registra volto",
+        "viewPackages": "Vedi pacchetti"
+      },
+      "progress": {
+        "uploading": "Caricamento file...",
+        "verifying": "Verifica identità...",
+        "generating": "Generazione video...",
+        "almostDone": "Quasi pronto..."
+      },
+      "creditWarning": {
+        "heading": "Conferma credito richiesta",
+        "body": "Questo audio dura {seconds}s e userà {count, plural, one {# credito video} other {# crediti video}}. Continuare?",
+        "confirmButton": "{count, plural, one {Conferma (usa # credito)} other {Conferma (usa # crediti)}}",
+        "cancelButton": "Annulla"
+      },
+      "results": {
+        "eyebrow": "Generated Results",
+        "heading": "Recenti",
+        "emptyHeading": "Crea il tuo primo video avatar",
+        "emptyBody": "Carica una foto del volto e audio per generare un video.",
+        "emptyButton": "Inizia a generare"
+      }
+    },
+    "fileUpload": {
+      "heading": "Carica immagine",
+      "subtitle": "Trascina e rilascia o fai clic per sfogliare",
+      "clickToChoose": "Fai clic per scegliere",
+      "orDragDrop": "o trascina e rilascia",
+      "fileConstraintHint": "Max {maxMb}MB • PNG/JPG/WebP/AVIF",
+      "previewAlt": "Anteprima",
+      "uploadedBadge": "Caricato e analizzato",
+      "supportIdLabel": "ID supporto: {id}",
+      "copyButton": "Copia",
+      "analyzeButton": "Analizza con AI",
+      "uploadingButton": "Caricamento…",
+      "cancelButton": "Annulla",
+      "resetButton": "Reimposta",
+      "errors": {
+        "upgradeTitle": "Aggiornamento richiesto",
+        "upgradeMessage": "Il tuo piano non include questa funzione. Aggiorna per continuare.",
+        "upgradeAction": "Vedi piani",
+        "enrollTitle": "Richiesta iscrizione del viso",
+        "enrollMessage": "Registra il viso del tuo profilo per continuare.",
+        "mismatchTitle": "Verifica del viso fallita",
+        "mismatchMessage": "Questo file non corrisponde alla persona iscritta per questo pacchetto.",
+        "driftTitle": "La verifica del viso richiede la reiscrizione",
+        "driftMessage": "Abbiamo rilevato una deriva del face ID. Reiscriviti per continuare.",
+        "driftAction": "Reiscrivere viso",
+        "multipleFacesTitle": "Rilevati più visi",
+        "multipleFacesMessage": "Carica un'immagine con un solo viso visibile.",
+        "alreadyBoundTitle": "Persona già associato",
+        "alreadyBoundMessage": "Questo persona appartiene a un altro pacchetto attivo.",
+        "defaultTitle": "Caricamento fallito",
+        "defaultMessage": "Non siamo riusciti ad analizzare quell'immagine. Riprova."
+      },
+      "personaMismatch": {
+        "message": "Questo pacchetto è associato alla persona {boundPersona}. Hai richiesto {requestedPersona}.",
+        "selectAnotherLink": "Seleziona un altro pacchetto",
+        "buyAnotherLink": "Acquista un altro pacchetto"
+      },
+      "personaAlreadyBound": {
+        "message": "Questa persona appartiene già a un altro pacchetto attivo. Seleziona il pacchetto corretto e riprova.",
+        "selectingButton": "Selezione...",
+        "selectPackageButton": "Seleziona quel pacchetto"
+      },
+      "validate": {
+        "unsupportedType": "Tipo di file non supportato. Usa PNG, JPG, WEBP o AVIF.",
+        "fileTooLarge": "Il file è troppo grande. Max {maxMb} MB."
+      },
+      "progress": {
+        "uploading": "Caricamento foto...",
+        "detectingFace": "Rilevamento viso...",
+        "analyzing": "Analisi contenuto...",
+        "generatingInsights": "Generazione insights...",
+        "almostDone": "Quasi fatto...",
+        "complete": "Completato!"
       }
     }
   },

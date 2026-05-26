@@ -79,6 +79,19 @@
         "strategies": "Estrategias generadas",
         "rating": "Valoración del creador",
         "cadence": "Cadencia semanal más rápida"
+      },
+      "workflowStages": {
+        "photo": "Foto del rostro",
+        "audio": "Audio de voz",
+        "processing": "Generando...",
+        "ready": "Video listo"
+      },
+      "workflowPreview": {
+        "formTitle": "Avatar de Video IA",
+        "generateButton": "Generar",
+        "resultTitle": "Tu video está listo",
+        "downloadButton": "Descargar",
+        "openButton": "Abrir"
       }
     },
     "brands": {
@@ -477,6 +490,20 @@
     "PROMO_REDEEM_FAILED": "Algo salió mal al aplicar el código. Por favor, inténtalo de nuevo.",
     "errorGeneric": "Algo salió mal. Por favor, inténtalo de nuevo."
   },
+  "cart": {
+    "title": "Tu carrito",
+    "closeLabel": "Cerrar carrito",
+    "noItems": "Sin artículos",
+    "itemCount": "{count, plural, one {# artículo} other {# artículos}}",
+    "empty": "Tu carrito está vacío",
+    "emptyHint": "Añade un plan para comenzar",
+    "removeItem": "Eliminar artículo",
+    "subtotal": "Subtotal",
+    "processing": "Procesando…",
+    "cartEmpty": "El carrito está vacío",
+    "checkout": "Pagar · {price}",
+    "secureCheckout": "Pago seguro vía Stripe · Pago único"
+  },
   "dashboard": {
     "aiChat": {
       "emptyState": "Inicia tu conversación...",
@@ -527,6 +554,7 @@
       "errorRateLimit": "Estás enviando mensajes demasiado rápido. Inténtalo de nuevo en breve.",
       "errorChatFailed": "Error en el chat. Por favor, inténtalo de nuevo.",
       "errorSendFailed": "Algo salió mal al enviar tu mensaje. Por favor, inténtalo de nuevo.",
+      "moderationBlocked": "Tu mensaje no pudo procesarse. Reformúlalo e inténtalo de nuevo.",
       "exportHeader": "RESUMEN DE ESTRATEGIA DE CONTENIDO",
       "exportFooter": "--- Fin del Resumen ---",
       "exportGeneratedBy": "Generado por Sage · echo-fy.com",
@@ -596,6 +624,7 @@
       "collapse": "Contraer barra lateral",
       "expand": "Expandir barra lateral",
       "packages": "Paquetes",
+      "lockedTooltip": "Requiere plan activo",
       "profile": "Perfil",
       "menu": {
         "myAccount": "Mi cuenta",
@@ -646,18 +675,6 @@
         "switchProfile": "Cambiar perfil",
         "instanceId": "ID de instancia de paquete",
         "created": "Creado"
-      },
-      "onboarding": {
-        "sectionLabel": "Primeros pasos",
-        "heading": "Empieza con lo básico",
-        "dismissAriaLabel": "Cerrar guía de inicio",
-        "stepUpload": "Sube tu primera imagen",
-        "stepHistory": "Revisa tu estrategia IA",
-        "stepChat": "Prueba el AI Chat",
-        "stepVideo": "Genera un vídeo",
-        "recommended": "Recomendado",
-        "quotaExhausted": "Cuota agotada",
-        "goToStep": "Ir al paso →"
       },
       "quota": {
         "sectionLabel": "Uso de cuota",
@@ -769,7 +786,10 @@
       "addonLabel5Videos": "5 vídeos",
       "addonLabel15Videos": "15 vídeos",
       "addonLabel30Videos": "30 vídeos",
-      "addonBadgeBestValue": "Mejor valor"
+      "addonBadgeBestValue": "Mejor valor",
+      "statusActive": "Activo",
+      "profileLabel": "Perfil {letter}",
+      "remaining": "restante"
     },
     "settings": {
       "heading": "Configuración",
@@ -890,7 +910,18 @@
       "manageBillingLink": "Gestionar facturación →",
       "uploadStageTitle": "Crear",
       "uploadStageSubtitle": "Sube una imagen para generar recomendaciones.",
-      "uploadStageStatusLabel": "Listo para subir"
+      "uploadStageStatusLabel": "Listo para subir",
+      "aiWorkspaceEyebrow": "AI Workspace",
+      "tour": {
+        "step1": { "title": "Bienvenido a Subidas", "body": "Aquí puedes subir contenido para análisis con IA." },
+        "step2": { "title": "Tu cuota", "body": "Cada subida usa un crédito. Recarga cuando quieras desde Facturación." },
+        "step3": { "title": "Arrastra o explora", "body": "Arrastra un archivo aquí o haz clic para elegir desde tu dispositivo." },
+        "step4": { "title": "Subidas recientes", "body": "Las subidas anteriores y sus informes aparecen aquí." },
+        "next": "Siguiente",
+        "gotIt": "Entendido",
+        "skip": "Omitir tour",
+        "stepCount": "{current} de {total}"
+      }
     },
     "recentCreations": {
       "eyebrow": "Resultados generados",
@@ -921,7 +952,18 @@
       "noPlanMessage": "Aún no hay plan de promoción disponible.",
       "retryButton": "Reintentar",
       "copyCaptionButton": "Copiar caption",
+      "captionAngleHook": "Hook",
+      "captionAngleAspirational": "Aspiracional",
+      "captionAngleCta": "Llamada a la acción",
+      "captionAngleDefault": "Pie de foto",
       "copyHashtagsButton": "Copiar hashtags",
+      "showMoreHashtags": "+{count} más",
+      "showLessHashtags": "Ver menos",
+      "hashtagCopied": "Copiado",
+      "hashtagTierReach": "Alcance",
+      "hashtagTierNiche": "Nicho",
+      "hashtagTierBalanced": "Equilibrado",
+      "hashtagTierTrending": "Tendencia",
       "ctaLabel": "CTA:",
       "whyLabel": "Por qué:",
       "markAsPostedButton": "Marcar como publicado",
@@ -940,12 +982,233 @@
       "savingLabel": "Guardando...",
       "saveButton": "Guardar",
       "safetyTipsHeading": "Consejos de publicación segura",
+      "regenerateButton": "Regenerar",
+      "regenerating": "Regenerando...",
+      "regenerateTooltip": "Genera nuevas captions y hashtags — usa 1 upload",
+      "regenerateConfirm": "Esto generará nuevas captions y hashtags. Usa 1 upload de tu cuota. ¿Continuar?",
       "toasts": {
         "linkCopied": "Enlace copiado",
         "feedbackSaved": "Feedback guardado",
         "feedbackError": "Error al guardar feedback",
         "captionCopied": "Caption copiado",
-        "hashtagsCopied": "Hashtags copiados"
+        "hashtagsCopied": "Hashtags copiados",
+        "regenerateSuccess": "Nuevas captions y hashtags generados",
+        "regenerateQuotaExhausted": "Cuota de uploads agotada. Actualiza o espera el reinicio.",
+        "regenerateError": "No se pudo regenerar. Inténtalo de nuevo."
+      }
+    },
+    "talkingHeadPage": {
+      "heading": "AI Video Avatar",
+      "subtitle": "Sube una foto de rostro + audio de voz y generaremos un video hablando.",
+      "uploadQuotaLabel": "Cuota de subida",
+      "tour": {
+        "step1": { "title": "AI Video Avatar", "body": "Genera videos con cabeza parlante a partir de una foto y un audio." },
+        "step2": { "title": "Sube tu retrato", "body": "Una foto frontal y nítida funciona mejor." },
+        "step3": { "title": "Añade audio de voz", "body": "Sube un mp3 o wav con la voz que deseas." },
+        "step4": { "title": "Generar", "body": "Haz clic aquí cuando ambos archivos estén listos. La generación tarda alrededor de un minuto." },
+        "step5": { "title": "Generaciones anteriores", "body": "Tus videos anteriores aparecen aquí, listos para descargar o compartir." },
+        "next": "Siguiente",
+        "gotIt": "Entendido",
+        "skip": "Omitir tour",
+        "stepCount": "{current} de {total}"
+      }
+    },
+    "talkingHeadDrawer": {
+      "closeDrawerLabel": "Cerrar panel",
+      "closeButtonLabel": "Cerrar",
+      "justNowLabel": "Justo ahora",
+      "downloadButton": "Descargar",
+      "openButton": "Abrir",
+      "generatingMessage": "Tu video se está generando.",
+      "stageLabel": "Etapa: {stage}",
+      "stageProcessingFallback": "procesando",
+      "progressLabel": "Progreso: {progress}%",
+      "failureMessage": "La generación de video falló. Inténtalo de nuevo.",
+      "supportIdLabel": "ID de soporte: {id}",
+      "copyButton": "Copiar"
+    },
+    "accountPage": {
+      "heading": "Cuenta",
+      "subtitle": "Gestiona tu perfil y seguridad.",
+      "profileEyebrow": "Perfil",
+      "profileHeading": "Perfil",
+      "emailLabel": "Email:",
+      "notSignedIn": "No has iniciado sesión.",
+      "securityEyebrow": "Seguridad",
+      "securityHeading": "Seguridad",
+      "logoutWarning": "Cerrar sesión te devolverá a la pantalla de inicio de sesión.",
+      "logOutButton": "Cerrar sesión",
+      "noSecurityActions": "No hay acciones de seguridad disponibles.",
+      "planEyebrow": "Plan",
+      "planHeading": "Estado del plan",
+      "currentPlanLabel": "Plan actual:",
+      "uploadsRemainingLabel": "Uploads restantes:",
+      "expiresLabel": "Expira:",
+      "manageBillingLink": "Gestionar facturación →",
+      "noPlanFound": "No se encontró un plan activo."
+    },
+    "billingPage": {
+      "heading": "Plan y facturación",
+      "subtitle": "Gestiona add-ons y perfiles de paquetes.",
+      "successMessage": "Compra de add-on completada. Tus cuotas se están actualizando.",
+      "cancelMessage": "Compra de add-on cancelada.",
+      "appliedLabel": "Aplicado ✓",
+      "pendingLabel": "Pendiente (actualizando)",
+      "verifyErrorLabel": "Aún no se pudo verificar el add-on. Por favor actualiza.",
+      "paymentPendingMessage": "Pago recibido, el add-on aún se está procesando.",
+      "refreshButton": "Actualizar",
+      "contactSupportLink": "Contactar soporte"
+    },
+    "profileSwitcher": {
+      "profileLabel": "Perfil {letter}",
+      "loadErrorMessage": "Error al cargar los paquetes",
+      "heading": "Selecciona un paquete activo",
+      "subtitle": "Elige qué instancia de paquete usar para cuotas e historial.",
+      "noInstancesMessage": "No se encontraron instancias de paquetes activas.",
+      "loadingMessage": "Cargando paquetes…"
+    },
+    "sessionExpired": {
+      "eyebrow": "Sesión",
+      "heading": "Tu sesión ha expirado",
+      "body": "Por favor inicia sesión de nuevo para continuar donde lo dejaste.",
+      "signInButton": "Iniciar sesión de nuevo"
+    },
+    "topBar": {
+      "openSettingsLabel": "Abrir ajustes"
+    },
+    "feedback": {
+      "button": "Comentarios",
+      "modalTitle": "Enviar comentarios",
+      "modalSubtitle": "Ayúdanos a mejorar echo-fy. Leemos cada mensaje.",
+      "placeholder": "¿Qué tienes en mente?",
+      "send": "Enviar",
+      "sending": "Enviando...",
+      "cancel": "Cancelar",
+      "closeAriaLabel": "Cerrar comentarios",
+      "thankYou": "¡Gracias por tus comentarios!",
+      "error": "No se pudo enviar. Por favor, inténtalo de nuevo.",
+      "helpfulPrompt": "¿Fue útil?",
+      "helpful": "Marcar como útil",
+      "notHelpful": "Marcar como no útil"
+    },
+    "tips": {
+      "heading": "Consejos para mejores resultados",
+      "items": [
+        "Sube imágenes verticales de alta calidad para mejor análisis.",
+        "Usa el AI Chat para mejorar tus captions o probar ideas.",
+        "Revisa tu Insight History para ver qué tuvo buen rendimiento.",
+        "Usa los hashtags sugeridos por la IA para mayor alcance.",
+        "Programa subidas en horas pico (ej. 6–9 PM hora local)."
+      ]
+    },
+    "userPlanCard": {
+      "heading": "Tu plan",
+      "planLabel": "Plan:",
+      "uploadsLabel": "Uploads restantes:",
+      "expiresLabel": "Expira:",
+      "upgradePlanButton": "Actualizar plan"
+    },
+    "uploadTalkingHead": {
+      "videoItemTitle": "Avatar Video",
+      "heading": "AI Video Avatar",
+      "facePhotoLabel": "Foto del rostro (PNG/JPG)",
+      "audioLabel": "Audio de voz (MP3/WAV)",
+      "generateButton": "Generar",
+      "generatingButton": "Generando…",
+      "resetButton": "Restablecer",
+      "copyButton": "Copiar",
+      "supportIdLabel": "Support ID: {id}",
+      "videoReadyIndicator": "Video listo ✓",
+      "thumbnailNoPreview": "Sin vista previa",
+      "videoSourceAlt": "Vista previa de la fuente de video",
+      "errors": {
+        "facePhotoRequired": "Elige una foto del rostro (PNG/JPG).",
+        "audioRequired": "Elige un archivo de audio de voz (MP3/WAV).",
+        "noActiveInstance": "No hay instancia de paquete activa. Selecciona o compra un paquete para continuar.",
+        "faceEnrollmentRequired": "Por favor registra tu rostro de perfil para continuar.",
+        "noFaceDetected": "No se detectó rostro. Sube una foto clara con un solo rostro visible.",
+        "multipleFaces": "Se detectaron varios rostros. Sube una imagen con solo un rostro.",
+        "faceVerificationFailed": "La verificación facial falló. Esta foto no coincide con tu rostro registrado.",
+        "upgradeRequired": "Actualización requerida",
+        "videoGenerationFailed": "La generación del video falló."
+      },
+      "errorCtas": {
+        "enrollFace": "Registrar rostro",
+        "viewPackages": "Ver paquetes"
+      },
+      "progress": {
+        "uploading": "Subiendo archivos...",
+        "verifying": "Verificando identidad...",
+        "generating": "Generando video...",
+        "almostDone": "Casi listo..."
+      },
+      "creditWarning": {
+        "heading": "Confirmación de crédito requerida",
+        "body": "Este audio dura {seconds}s y usará {count, plural, one {# crédito de video} other {# créditos de video}}. ¿Continuar?",
+        "confirmButton": "{count, plural, one {Confirmar (usar # crédito)} other {Confirmar (usar # créditos)}}",
+        "cancelButton": "Cancelar"
+      },
+      "results": {
+        "eyebrow": "Generated Results",
+        "heading": "Recientes",
+        "emptyHeading": "Crea tu primer video avatar",
+        "emptyBody": "Sube una foto del rostro y audio para generar un video.",
+        "emptyButton": "Empezar a generar"
+      }
+    },
+    "fileUpload": {
+      "heading": "Subir imagen",
+      "subtitle": "Arrastra y suelta o haz clic para buscar",
+      "clickToChoose": "Haz clic para elegir",
+      "orDragDrop": "o arrastra y suelta",
+      "fileConstraintHint": "Max {maxMb}MB • PNG/JPG/WebP/AVIF",
+      "previewAlt": "Vista previa",
+      "uploadedBadge": "Subido y analizado",
+      "supportIdLabel": "ID de soporte: {id}",
+      "copyButton": "Copiar",
+      "analyzeButton": "Analizar con IA",
+      "uploadingButton": "Subiendo…",
+      "cancelButton": "Cancelar",
+      "resetButton": "Restablecer",
+      "errors": {
+        "upgradeTitle": "Actualización requerida",
+        "upgradeMessage": "Tu plan no incluye esta función. Actualiza para continuar.",
+        "upgradeAction": "Ver planes",
+        "enrollTitle": "Inscripción facial requerida",
+        "enrollMessage": "Por favor inscribe tu foto facial de perfil para continuar.",
+        "mismatchTitle": "Verificación facial fallida",
+        "mismatchMessage": "Este archivo no coincide con el persona inscrito de este paquete.",
+        "driftTitle": "La verificación facial necesita reinscripción",
+        "driftMessage": "Detectamos una deriva de face ID. Por favor reinscribe tu foto facial para continuar.",
+        "driftAction": "Reinscribir rostro",
+        "multipleFacesTitle": "Múltiples rostros detectados",
+        "multipleFacesMessage": "Por favor sube una imagen con solo un rostro visible.",
+        "alreadyBoundTitle": "Persona ya vinculado",
+        "alreadyBoundMessage": "Este persona pertenece a otro paquete activo.",
+        "defaultTitle": "Error al subir",
+        "defaultMessage": "No pudimos analizar esa imagen. Por favor inténtalo de nuevo."
+      },
+      "personaMismatch": {
+        "message": "Este paquete está vinculado al persona {boundPersona}. Solicitaste {requestedPersona}.",
+        "selectAnotherLink": "Seleccionar otro paquete",
+        "buyAnotherLink": "Comprar otro paquete"
+      },
+      "personaAlreadyBound": {
+        "message": "Este persona ya pertenece a otro paquete activo. Por favor selecciona el paquete correcto e inténtalo de nuevo.",
+        "selectingButton": "Seleccionando...",
+        "selectPackageButton": "Seleccionar ese paquete"
+      },
+      "validate": {
+        "unsupportedType": "Tipo de archivo no compatible. Usa PNG, JPG, WEBP o AVIF.",
+        "fileTooLarge": "El archivo es demasiado grande. Max {maxMb} MB."
+      },
+      "progress": {
+        "uploading": "Subiendo foto...",
+        "detectingFace": "Detectando rostro...",
+        "analyzing": "Analizando contenido...",
+        "generatingInsights": "Generando insights...",
+        "almostDone": "Casi listo...",
+        "complete": "¡Completado!"
       }
     }
   },

@@ -1,17 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Bot,
   BrainCircuit,
   Camera,
   CheckCircle2,
   ChevronDown,
+  Download,
+  ExternalLink,
+  Home,
+  Lock,
   MessageCircle,
+  Mic,
+  Play,
   Sparkles,
+  UploadCloud,
+  User,
   Video,
 } from "lucide-react";
 import LandingNavbar from "@/app/components/landing/LandingNavbar";
@@ -20,6 +29,9 @@ import Packages from "@/app/components/packages/Packages";
 import VideoIntro from "@/app/components/features/VideoIntro";
 import ScrollToTop from "@/app/components/features/ScrollToTop";
 import SectionReveal from "@/app/components/common/SectionReveal";
+
+const WAVEFORM_BARS = [10, 22, 14, 28, 12, 20, 10] as const;
+
 
 type RawStep = { num: string; title: string; desc: string };
 type RawFeature = { title: string; desc: string };
@@ -65,13 +77,24 @@ export default function LandingPage() {
   const [showLanding, setShowLanding] = useState(false);
   const [shouldPlayIntro, setShouldPlayIntro] = useState<boolean | null>(null);
   const [faqOpen, setFaqOpen] = useState<number | null>(0);
-  const [wfStep, setWfStep] = useState(0);
+  const [stage, setStage] = useState(0);
+  const reduce = !!useReducedMotion();
 
   // Refs for atmosphere layer elements
   const starsRef = useRef<HTMLCanvasElement>(null);
   const curDotRef = useRef<HTMLDivElement>(null);
   const curRingRef = useRef<HTMLDivElement>(null);
   const scrollProgRef = useRef<HTMLDivElement>(null);
+
+  // Refs for workflow card cursor targeting
+  const cursorContainerRef = useRef<HTMLDivElement>(null);
+  const photoTargetRef = useRef<HTMLDivElement>(null);
+  const generateTargetRef = useRef<HTMLDivElement>(null);
+  const downloadTargetRef = useRef<HTMLDivElement>(null);
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0, visible: false });
+  const [clickCounter, setClickCounter] = useState(0);
+  const prevCursorPos = useRef({ x: 0, y: 0 });
+  const [tilt, setTilt] = useState(0);
   const featureIcons = [BrainCircuit, Sparkles, MessageCircle, Video, Bot, Camera];
   const mediaSectionsMeta = [
     { id: "preview-ai-strategy",     videoSrc: "/Avatar_IV_Video 1*.mp4",          ctaHref: "#pricing",   featured: true,  objectPos: "object-top"    },
@@ -132,12 +155,66 @@ export default function LandingPage() {
     };
   }, []);
 
-  // Workflow card auto-step
+  // Talking-head flow stage auto-advance
   useEffect(() => {
-    const STEP_MS = 2200;
-    const id = setInterval(() => setWfStep((p) => (p + 1) % 4), STEP_MS);
+    if (reduce) return;
+    const id = setInterval(() => setStage((s) => (s + 1) % 4), 3500);
     return () => clearInterval(id);
-  }, []);
+  }, [reduce]);
+
+  // Workflow card cursor — dynamic positioning via refs
+  useEffect(() => {
+    if (reduce) return;
+
+    setCursorPos((p) => ({ ...p, visible: false }));
+    if (stage === 2) return;
+
+    const stageRefs: Array<React.RefObject<HTMLDivElement | null> | null> = [
+      photoTargetRef, generateTargetRef, null, downloadTargetRef,
+    ];
+
+    const compute = () => {
+      const targetRef = stageRefs[stage];
+      if (!targetRef?.current || !cursorContainerRef.current) return;
+      const tr = targetRef.current.getBoundingClientRect();
+      const cr = cursorContainerRef.current.getBoundingClientRect();
+      setCursorPos({
+        x: tr.left - cr.left + tr.width / 2,
+        y: tr.top - cr.top + tr.height / 2,
+        visible: true,
+      });
+    };
+
+    // Wait for AnimatePresence exit (0.4s) + new stage mount before reading DOM
+    const timer = setTimeout(() => {
+      compute();
+      setClickCounter((c) => c + 1);
+    }, 450);
+
+    // Recompute immediately on resize (elements already mounted)
+    window.addEventListener("resize", compute);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", compute);
+    };
+  }, [stage, reduce]);
+
+  // Cursor tilt toward direction of movement
+  useEffect(() => {
+    if (reduce || !cursorPos.visible) {
+      setTilt(0);
+      return;
+    }
+    const dx = cursorPos.x - prevCursorPos.current.x;
+    const dy = cursorPos.y - prevCursorPos.current.y;
+    prevCursorPos.current = { x: cursorPos.x, y: cursorPos.y };
+    if (Math.sqrt(dx * dx + dy * dy) > 5) {
+      setTilt(Math.max(-15, Math.min(15, dx / 8)));
+    }
+    const t = setTimeout(() => setTilt(0), 500);
+    return () => clearTimeout(t);
+  }, [cursorPos.x, cursorPos.y, cursorPos.visible, reduce]);
 
   // Ambient effects: starfield canvas, cursor trail, scroll-progress bar
   useEffect(() => {
@@ -286,7 +363,6 @@ export default function LandingPage() {
     };
   }, [showLanding]);
 
-  const workflowItems = asStringArray(t.raw("hero.workflow.items"));
   const brands = asStringArray(t.raw("brands.items"));
   const stepsRaw = t.raw("how.steps");
   const steps = Array.isArray(stepsRaw) ? stepsRaw.filter(isRawStep) : [];
@@ -480,48 +556,283 @@ export default function LandingPage() {
                 className="relative"
               >
                 <div className="wf-card-glow rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
-                  <div className="mb-4 flex items-center justify-between">
-                    <p className="text-sm font-semibold text-white">{t("hero.workflow.title")}</p>
-                    {/* Badge with pulse dot */}
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-2.5 py-1 text-[11px] text-[var(--hg-muted)]">
-                      <span
-                        className="h-1.5 w-1.5 rounded-full bg-[var(--hg-accent)]"
-                        style={{ boxShadow: "0 0 8px var(--hg-accent)", animation: "badge-pulse 1.8s infinite" }}
-                      />
-                      {t("hero.workflow.badge")}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {workflowItems.map((line, idx) => {
-                      const isCur = idx === wfStep;
-                      const isDone = idx < wfStep;
-                      return (
-                        <div
-                          key={line}
-                          className={`relative overflow-hidden flex items-center gap-3 rounded-xl border px-3 py-3 text-sm transition-all duration-[250ms] ${
-                            isCur
-                              ? "border-[color-mix(in_oklab,var(--hg-accent)_45%,transparent)] bg-[color-mix(in_oklab,var(--hg-accent)_14%,var(--hg-surface-2))] text-white translate-x-1"
-                              : "border-[var(--hg-border)] bg-[var(--hg-surface-2)] text-white/90"
-                          }`}
-                        >
-                          {isCur && (
-                            <span className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm bg-[var(--hg-accent)]" style={{ boxShadow: "0 0 12px var(--hg-accent)" }} />
-                          )}
-                          <CheckCircle2 className={`h-4 w-4 flex-shrink-0 transition-colors duration-[250ms] ${isCur || isDone ? "text-[var(--hg-accent)]" : "text-[var(--hg-muted)]"}`} />
-                          <span>{line}</span>
+                  {/* Browser viewport — mini dashboard */}
+                  <div className="overflow-hidden rounded-xl border border-[var(--hg-border)] bg-[var(--hg-bg)]">
+                    {/* Safari-style chrome bar */}
+                    <div className="flex items-center justify-between border-b border-[var(--hg-border)] bg-[var(--hg-surface)] px-3 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-[#28C840]" />
+                      </div>
+                      <div className="mx-3 flex flex-1 items-center justify-center">
+                        <div className="flex w-full max-w-[220px] items-center justify-center gap-1.5 overflow-hidden rounded-md bg-[var(--hg-surface-2)] px-2.5 py-1 text-[10px]">
+                          <Lock className="h-2.5 w-2.5 shrink-0 text-[var(--hg-muted)]" />
+                          <span className="shrink-0 text-[var(--hg-muted)]">echo-fy.com</span>
+                          <span className="truncate text-white/30">/dashboard/ai-video-avatar</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                  {/* Progress bar */}
-                  <div className="relative mt-3.5 h-0.5 overflow-hidden rounded-full bg-white/[0.05]">
-                    <div
-                      className="absolute inset-y-0 left-0 rounded-full bg-[var(--hg-accent)] transition-[width] duration-[300ms] linear"
-                      style={{
-                        width: `${((wfStep + 1) / Math.max(workflowItems.length, 1)) * 100}%`,
-                        boxShadow: "0 0 10px var(--hg-accent)",
-                      }}
-                    />
+                      </div>
+                      <div className="w-[42px]" />
+                    </div>
+                    <div className="flex" style={{ minHeight: 320 }}>
+                      {/* Mini sidebar rail */}
+                      <div className="flex w-10 shrink-0 flex-col items-center gap-3.5 border-r border-[var(--hg-border)] bg-[var(--hg-surface)] py-3">
+                        {/* Logo */}
+                        <Image src="/echofy-removebg-preview.png" alt="" width={20} height={20} className="mb-0.5 h-5 w-5 object-contain" />
+                        <div className="flex h-6 w-full items-center justify-center text-[var(--hg-muted)]">
+                          <Home className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex h-6 w-full items-center justify-center text-[var(--hg-muted)]">
+                          <UploadCloud className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex h-6 w-full items-center justify-center border-l-2 border-[var(--hg-accent)] bg-[var(--hg-accent)]/10 text-[var(--hg-accent)]">
+                          <Video className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex h-6 w-full items-center justify-center text-[var(--hg-muted)]">
+                          <MessageCircle className="h-3.5 w-3.5" />
+                        </div>
+                      </div>
+
+                      {/* Main content area */}
+                      <div ref={cursorContainerRef} className="relative flex flex-1 items-center justify-center overflow-hidden p-4">
+                        {/* Animated cursor — position driven by refs */}
+                        {!reduce && (
+                          <motion.div
+                            className="pointer-events-none absolute left-0 top-0 z-20"
+                            animate={{
+                              x: cursorPos.x,
+                              y: cursorPos.y,
+                              opacity: cursorPos.visible ? 1 : 0,
+                              rotate: tilt,
+                            }}
+                            transition={{
+                              x: { duration: 0.4, ease: [0.22, 0.61, 0.36, 1] },
+                              y: { duration: 0.4, ease: [0.22, 0.61, 0.36, 1] },
+                              opacity: { duration: 0.4, ease: [0.22, 0.61, 0.36, 1] },
+                              rotate: { duration: 0.25, ease: "easeOut" },
+                            }}
+                          >
+                            {/* Idle pulse ring at tip */}
+                            <motion.span
+                              className="absolute left-0 top-0 h-3 w-3 rounded-full border border-white/50"
+                              animate={{ scale: [0.5, 2.2], opacity: [0.55, 0] }}
+                              transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
+                            />
+                            {/* Click ripple — re-keyed on each click */}
+                            <motion.span
+                              key={clickCounter}
+                              className="absolute left-0 top-0 h-3 w-3 rounded-full bg-white/20"
+                              initial={{ scale: 0, opacity: 0.9 }}
+                              animate={{ scale: 3.5, opacity: 0 }}
+                              transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
+                            />
+                            {/* Arrow with idle float */}
+                            <motion.div
+                              animate={{ y: [0, -2, 0] }}
+                              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                            >
+                              <motion.svg
+                                key={clickCounter}
+                                width="14"
+                                height="18"
+                                viewBox="0 0 14 18"
+                                fill="none"
+                                animate={{ scale: [1, 1, 0.68, 1, 1] }}
+                                transition={{ duration: 0.35, delay: 0.4, times: [0, 0.4, 0.65, 0.85, 1] }}
+                                style={{ filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.7))" }}
+                              >
+                                <path
+                                  d="M2 2L2 13L5.2 9.8L7.4 15.5L9 14.8L6.8 9L12 9L2 2Z"
+                                  fill="white"
+                                  stroke="rgba(0,0,0,0.4)"
+                                  strokeWidth="0.8"
+                                  strokeLinejoin="round"
+                                />
+                              </motion.svg>
+                            </motion.div>
+                          </motion.div>
+                        )}
+                        {reduce ? (
+                          <div className="flex w-full flex-col gap-2">
+                            {[
+                              { Icon: User, label: t("hero.workflowPreview.formTitle") },
+                              { Icon: Mic, label: t("hero.workflowPreview.generateButton") },
+                              { Icon: Sparkles, label: t("hero.workflowPreview.generateButton") },
+                              { Icon: Play, label: t("hero.workflowPreview.resultTitle") },
+                            ].map(({ Icon, label }, i) => (
+                              <div key={i} className="flex items-center gap-2 rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface)] px-2.5 py-2 text-[11px] text-white/80">
+                                <Icon className="h-3 w-3 shrink-0 text-[var(--hg-accent)]" />
+                                {label}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <AnimatePresence mode="wait">
+                            {/* Stage 0 — empty form */}
+                            {stage === 0 && (
+                              <motion.div
+                                key="dash-stage-0"
+                                initial={{ opacity: 0, x: 30 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -30 }}
+                                transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
+                                className="w-full"
+                              >
+                                <p className="mb-3 text-[11px] font-semibold text-white">{t("hero.workflowPreview.formTitle")}</p>
+                                <motion.div
+                                  ref={photoTargetRef}
+                                  key={`p0-${clickCounter}`}
+                                  className="mb-2 h-14 rounded-lg border border-dashed border-[var(--hg-border)] bg-[var(--hg-surface)] flex items-center justify-center gap-1.5 text-[10px] text-[var(--hg-muted)]"
+                                  animate={{ scale: [1, 0.95, 1] }}
+                                  transition={{ duration: 0.25, delay: 0.4, ease: "easeOut" }}
+                                >
+                                  <User className="h-3 w-3" />
+                                  {t("hero.workflowStages.photo")}
+                                </motion.div>
+                                <div className="mb-3 h-10 rounded-lg border border-dashed border-[var(--hg-border)] bg-[var(--hg-surface)] flex items-center justify-center gap-1.5 text-[10px] text-[var(--hg-muted)]">
+                                  <Mic className="h-3 w-3" />
+                                  {t("hero.workflowStages.audio")}
+                                </div>
+                                <div className="h-7 w-full rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface-2)] flex items-center justify-center text-[10px] text-[var(--hg-muted)] opacity-50">
+                                  {t("hero.workflowPreview.generateButton")}
+                                </div>
+                              </motion.div>
+                            )}
+
+                            {/* Stage 1 — filled form */}
+                            {stage === 1 && (
+                              <motion.div
+                                key="dash-stage-1"
+                                initial={{ opacity: 0, x: 30 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -30 }}
+                                transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
+                                className="w-full"
+                              >
+                                <p className="mb-3 text-[11px] font-semibold text-white">{t("hero.workflowPreview.formTitle")}</p>
+                                <div className="relative mb-2 mx-auto aspect-[9/16] w-28 overflow-hidden rounded-xl border border-[var(--hg-border)]">
+                                  <Image
+                                    src="/photo_2026-03-09_17-38-29.jpg"
+                                    alt=""
+                                    fill
+                                    className="object-cover object-center"
+                                    sizes="112px"
+                                  />
+                                </div>
+                                <div className="mb-3 h-10 rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface)] flex items-center justify-center gap-[2px] px-3">
+                                  {WAVEFORM_BARS.map((maxH, i) => (
+                                    <motion.div
+                                      key={i}
+                                      className="w-[2px] rounded-full bg-[var(--hg-accent)]"
+                                      style={{ height: (maxH / 28) * 20 }}
+                                    />
+                                  ))}
+                                </div>
+                                <motion.div
+                                  key={`p1-${clickCounter}`}
+                                  animate={{ scale: [1, 0.95, 1] }}
+                                  transition={{ duration: 0.25, delay: 0.4, ease: "easeOut" }}
+                                >
+                                  <motion.div
+                                    ref={generateTargetRef}
+                                    className="h-7 w-full rounded-lg bg-[var(--hg-accent)] flex items-center justify-center text-[10px] font-semibold text-[#07131d]"
+                                    animate={{ boxShadow: ["0 0 0px rgba(80,192,240,0)", "0 0 12px rgba(80,192,240,0.5)", "0 0 0px rgba(80,192,240,0)"] }}
+                                    transition={{ duration: 1.6, repeat: Infinity }}
+                                  >
+                                    {t("hero.workflowPreview.generateButton")}
+                                  </motion.div>
+                                </motion.div>
+                              </motion.div>
+                            )}
+
+                            {/* Stage 2 — generating */}
+                            {stage === 2 && (
+                              <motion.div
+                                key="dash-stage-2"
+                                initial={{ opacity: 0, x: 30 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -30 }}
+                                transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
+                                className="flex w-full flex-col items-center gap-3"
+                              >
+                                <motion.div
+                                  animate={{ rotate: 360 }}
+                                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                >
+                                  <Sparkles className="h-8 w-8 text-[var(--hg-accent)]" />
+                                </motion.div>
+                                <p className="text-[11px] text-[var(--hg-muted)]">{t("hero.workflowStages.processing")}</p>
+                                <div className="h-1 w-full overflow-hidden rounded-full bg-[var(--hg-surface-2)]">
+                                  <motion.div
+                                    className="h-full rounded-full bg-[var(--hg-accent)]"
+                                    initial={{ width: "0%" }}
+                                    animate={{ width: "85%" }}
+                                    transition={{ duration: 1.3, ease: "easeOut" }}
+                                  />
+                                </div>
+                              </motion.div>
+                            )}
+
+                            {/* Stage 3 — result */}
+                            {stage === 3 && (
+                              <motion.div
+                                key="dash-stage-3"
+                                initial={{ opacity: 0, x: 30 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -30 }}
+                                transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
+                                className="w-full"
+                              >
+                                <div className="mb-2 flex items-center gap-1.5">
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-[var(--hg-accent)]" />
+                                  <p className="text-[11px] font-semibold text-white">{t("hero.workflowPreview.resultTitle")}</p>
+                                </div>
+                                <div className="relative mb-3 mx-auto aspect-[9/16] w-36 overflow-hidden rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]">
+                                  <video
+                                    src="/Avatar_IV_Video%201%2A.mp4"
+                                    autoPlay
+                                    muted
+                                    loop
+                                    playsInline
+                                    className="absolute inset-0 h-full w-full object-cover"
+                                  />
+                                </div>
+                                <div className="mx-auto flex w-36 gap-2">
+                                  <motion.div
+                                    ref={downloadTargetRef}
+                                    key={`p3-${clickCounter}`}
+                                    className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface)] py-1.5 text-[10px] text-[var(--hg-muted)]"
+                                    animate={{ scale: [1, 0.95, 1] }}
+                                    transition={{ duration: 0.25, delay: 0.4, ease: "easeOut" }}
+                                  >
+                                    <Download className="h-2.5 w-2.5" />
+                                    {t("hero.workflowPreview.downloadButton")}
+                                  </motion.div>
+                                  <div className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[var(--hg-accent)]/10 border border-[var(--hg-accent)]/30 py-1.5 text-[10px] text-[var(--hg-accent)]">
+                                    <ExternalLink className="h-2.5 w-2.5" />
+                                    {t("hero.workflowPreview.openButton")}
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Stage dot indicators */}
+                    {!reduce && (
+                      <div className="flex justify-center gap-1.5 border-t border-[var(--hg-border)] py-2">
+                        {[0, 1, 2, 3].map((i) => (
+                          <div
+                            key={i}
+                            className={`h-1 rounded-full transition-all duration-300 ${
+                              stage === i ? "w-4 bg-[var(--hg-accent)]" : "w-1 bg-white/20"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>

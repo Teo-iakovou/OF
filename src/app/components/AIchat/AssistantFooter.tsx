@@ -7,7 +7,7 @@ type Meta = { usedContextIds?: string[]; requestId?: string; latencyMs?: number 
 
 const HINT_ICONS = ["✍️", "🪝", "🎬", "🔁"];
 
-export function AssistantFooter(props: { meta?: Meta }) {
+export function AssistantFooter(props: { meta?: Meta; onPick?: (text: string) => void }) {
   const t = useTranslations("dashboard.aiChat");
   const hintLabels = [t("footerHint1"), t("footerHint2"), t("footerHint3"), t("footerHint4")];
 
@@ -18,13 +18,16 @@ export function AssistantFooter(props: { meta?: Meta }) {
       </p>
       <div className="flex flex-wrap gap-1.5">
       {HINT_ICONS.map((icon, i) => (
-        <span
+        <button
           key={hintLabels[i]}
-          className="inline-flex items-center gap-1 rounded-full border border-gray-700/60 bg-[#1a1f2b] px-2.5 py-0.5 text-[11px] text-gray-300"
+          type="button"
+          onClick={() => props.onPick?.(hintLabels[i])}
+          disabled={!props.onPick}
+          className="inline-flex items-center gap-1 rounded-full border border-gray-700/60 bg-[#1a1f2b] px-2.5 py-0.5 text-[11px] text-gray-300 transition hover:border-[var(--hg-accent)] hover:text-white disabled:cursor-default disabled:opacity-50"
         >
           <span>{icon}</span>
           {hintLabels[i]}
-        </span>
+        </button>
       ))}
       </div>
       {props.meta?.requestId ? (

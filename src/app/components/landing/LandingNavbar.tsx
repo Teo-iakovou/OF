@@ -127,7 +127,7 @@ export default function LandingNavbar({ hideLinks = false }: { hideLinks?: boole
         }`}
       >
         <div className="flex items-center justify-between px-6 py-3">
-          <Link href={locale === "en" ? "/" : `/${locale}`} className="inline-flex items-center gap-2">
+          <Link href="/" className="inline-flex items-center gap-2">
             <Image src="/echofy-removebg-preview.png" alt="Echofy" width={34} height={34} className="rounded-full" />
           </Link>
 

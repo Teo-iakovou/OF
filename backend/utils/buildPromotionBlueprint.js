@@ -2,6 +2,51 @@
 const { getPolicies } = require("../policies/loader");
 const { bestTimesV1 } = require("./bestTimes");
 const { normalizePlatformName, performanceKey } = require("./recommendationKeys");
+const { pickNiche } = require("./pickNiche");
+
+const HASHTAG_TIER_REASONING = {
+  reach: {
+    Instagram: "Broad-reach tags maximize discoverability on the Explore page.",
+    TikTok: "High-volume tags push content into the For You feed more aggressively.",
+    Twitter: "Trending tags increase impressions during peak search windows.",
+    Reddit: "Popular keywords surface the post in subreddit searches.",
+    Telegram: "Reach-focused tags help new followers find pinned content.",
+    OnlyFans: "Broad tags surface the profile in OnlyFans search results.",
+    default: "High-volume tags maximize overall reach.",
+  },
+  niche: {
+    Instagram: "Niche tags attract a smaller but highly engaged audience.",
+    TikTok: "Community-specific tags bring in followers with deeper interest.",
+    Twitter: "Niche tags connect with an existing passionate community.",
+    Reddit: "Targeted keywords attract engaged community members.",
+    Telegram: "Niche tags build a loyal, interest-matched subscriber base.",
+    OnlyFans: "Targeted tags attract subscribers with specific preferences.",
+    default: "Niche tags build a focused, engaged audience.",
+  },
+  balanced: {
+    Instagram: "Mix of broad and niche tags balances reach with engagement quality.",
+    TikTok: "Balanced tag set reaches new viewers while retaining community fit.",
+    Twitter: "Blended tags capture trending traffic and niche followers.",
+    Reddit: "Mixed keywords balance visibility and community relevance.",
+    Telegram: "Balanced tags grow the channel broadly while staying on-topic.",
+    OnlyFans: "Balanced mix optimises both discovery and subscriber fit.",
+    default: "Balanced tags trade some reach for better engagement quality.",
+  },
+  trending: {
+    Instagram: "Trending tags ride current conversation spikes for short-term boosts.",
+    TikTok: "Trend tags synchronise content with viral wave timing.",
+    Twitter: "Hot tags place content inside live trending conversations.",
+    Reddit: "Trending keywords catch cross-subreddit traffic surges.",
+    Telegram: "Trend tags align posts with current platform-wide topics.",
+    OnlyFans: "Trending tags capitalise on current search spikes.",
+    default: "Trending tags capture short-term traffic spikes.",
+  },
+};
+
+function generateHashtagReasoning(tier, niche, platform) {
+  const tierMap = HASHTAG_TIER_REASONING[tier] || HASHTAG_TIER_REASONING.balanced;
+  return tierMap[platform] || tierMap.default;
+}
 
 const scoreOf = (likelihood) =>
   ({ VERY_UNLIKELY: 0, UNLIKELY: 1, POSSIBLE: 2, LIKELY: 3, VERY_LIKELY: 4 }[
@@ -71,22 +116,6 @@ function colorMood(dominantColors = []) {
   return { mood, brightness, warmth };
 }
 
-function pickNiche(labels = [], webEntities = []) {
-  const bag = new Set([
-    ...labels.map((l) => (l.description || "").toLowerCase()),
-    ...webEntities.map((w) => (w.description || "").toLowerCase()),
-  ]);
-  const has = (...k) => k.some((x) => bag.has(x));
-  if (has("cosplay", "anime", "costume", "character")) return "cosplay";
-  if (has("fitness", "bodybuilding", "gym", "workout", "athlete")) return "fitness";
-  if (has("lingerie", "glamour", "fashion", "model")) return "glamour";
-  if (has("bikini", "swimwear", "beach")) return "bikini";
-  if (has("tattoo", "piercing", "goth", "punk", "alternative")) return "alt";
-  if (has("food", "cuisine", "dish")) return "food";
-  if (has("city", "urban area", "skyline", "night")) return "city";
-  if (has("landscape", "nature", "outdoor", "beach")) return "travel";
-  return "general";
-}
 
 const clampHashtags = (platform, list) => {
   const limit = platform === "Instagram" ? 10 : platform === "TikTok" ? 5 : 8;
@@ -263,7 +292,8 @@ function getSeedHashtags(niches, nicheName, emotionName, moodObj) {
     Surprise: ["#unexpected", "#reaction"],
     Neutral: ["#daily", "#creator"],
   }[emotionName] || ["#creator"];
-  const nicheSeeds = niches[nicheName]?.seeds || niches.general?.seeds || [];
+  const nicheMap = niches.niches || niches; // support both wrapped and legacy flat format
+  const nicheSeeds = nicheMap[nicheName]?.seeds || nicheMap.general?.seeds || [];
   const colorSeeds =
     moodObj.warmth === "warm"
       ? ["#goldenhour", "#warmtones"]
@@ -375,18 +405,13 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
 
   const baseSeedHashtags = getSeedHashtags(niches, niche, emotion, cmood);
   const ctaPool = recommendationPools?.ctaVariants?.[goal] || [];
-  const selectedCta = pickVariant(ctaPool, recent.get("cta", null), `${seed}:${goal}:cta`, {
-    kind: "cta",
-    platform: null,
-      performanceData,
-      recentCounts: recent.counts("cta", null),
-      ...selectionOptions,
-  });
 
   const recs = platformOrder.map((platformNameRaw) => {
     const platformName = normalizePlatformName(platformNameRaw);
-    const hashtagPoolForNiche =
-      recommendationPools?.hashtagPacks?.[niche] || recommendationPools?.hashtagPacks?.general || [];
+    const rawHashtagPool = recommendationPools?.hashtagPacks?.[niche] || recommendationPools?.hashtagPacks?.general || [];
+    const hashtagPoolForNiche = Array.isArray(rawHashtagPool)
+      ? rawHashtagPool
+      : rawHashtagPool?.[platformName] || rawHashtagPool?.["Instagram"] || [];
     const hashtagPack = pickVariant(
       hashtagPoolForNiche,
       recent.get("hashtags", platformName),
@@ -429,6 +454,23 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
       }
     );
     const policyHints = buildPolicyHints(platformName, sources);
+
+    const platformCtaPool = ctaPool.filter((c) => c.platform === platformName);
+    const ctaPoolForPlatform = platformCtaPool.length
+      ? platformCtaPool
+      : ctaPool.filter((c) => c.platform === "Instagram");
+    const selectedCta = pickVariant(
+      ctaPoolForPlatform,
+      recent.get("cta", platformName),
+      `${seed}:${platformName}:cta`,
+      {
+        kind: "cta",
+        platform: platformName,
+        performanceData,
+        recentCounts: recent.counts("cta", platformName),
+        ...selectionOptions,
+      }
+    );
 
     const seededHashtags = clampHashtags(
       platformName,
@@ -481,6 +523,13 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
       },
       policyHints: policyHints.hints,
       policyWhy: policyHints.why,
+      hashtagPack: hashtagPack
+        ? {
+            id: hashtagPack.id || null,
+            tier: hashtagPack.tier || "balanced",
+            reasoning: generateHashtagReasoning(hashtagPack.tier || "balanced", niche, platformName),
+          }
+        : null,
     };
   });
 
@@ -490,8 +539,12 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
   if (hasFace) reasons.push("hasFace:true");
   reasons.push(`niche:${niche}`);
 
-  const ctaVariants = selectedCta?.text
-    ? [selectedCta.text]
+  const firstRecCtaId = recs[0]?.selectedIds?.ctaId || null;
+  const firstRecCtaText = firstRecCtaId
+    ? ctaPool.find((c) => c.id === firstRecCtaId)?.text || null
+    : null;
+  const ctaVariants = firstRecCtaText
+    ? [firstRecCtaText]
     : goal === "ppv"
       ? ["Tonight’s PPV is live. DM \"PPV\"."]
       : goal === "customs"
@@ -514,7 +567,7 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
     riskFlags,
     selectedIds: {
       platformMixId: selectedMix?.id || null,
-      ctaId: selectedCta?.id || null,
+      ctaId: firstRecCtaId,
     },
   };
   if (process.env.NODE_ENV !== "production") {

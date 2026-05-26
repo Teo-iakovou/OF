@@ -12,6 +12,7 @@ import BillingPanel from "@/app/components/dashboard/billing/BillingPanel";
 import { resolveQuotaContract } from "@/app/utils/quotaContract";
 import { toast } from "sonner";
 import { updateUserProfile } from "@/app/utils/api";
+import { FeedbackWidget } from "@/app/components/features/FeedbackWidget";
 import { logoutClient } from "@/app/utils/authClient";
 
 export type SettingsSection = "account" | "usage" | "billing" | "history";
@@ -501,6 +502,9 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
 
         {/* Mobile-only footer actions */}
         <div className="shrink-0 border-t border-[var(--hg-border-2)] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+          <div className="mb-3">
+            <FeedbackWidget variant="inline" />
+          </div>
           <div className="flex gap-2">
             <button
               type="button"

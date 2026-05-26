@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { analyzeImageMultipart, selectPackageInstance } from "@/app/utils/api";
@@ -49,72 +50,12 @@ type ErrorMeta = {
   requestId?: string | null;
 };
 
-const mapErrorToUserMessage = (meta: ErrorMeta) => {
-  const code = meta.code || "";
-  if (code === "UPGRADE_REQUIRED") {
-    return {
-      title: "Upgrade required",
-      message: "Your plan doesn’t include this feature. Upgrade to continue.",
-      actionLabel: "View plans",
-      actionHref: PACKAGES_URL,
-      requestId: meta.requestId || undefined,
-    };
-  }
-  if (code === "FACE_REQUIRED_FOR_ENROLLMENT") {
-    return {
-      title: "Face enrollment required",
-      message: "Please enroll your profile face to continue.",
-      requestId: meta.requestId || undefined,
-    };
-  }
-  if (code === "FACE_ENROLLMENT_REQUIRED") {
-    return {
-      title: "Face enrollment required",
-      message: "Please enroll your profile face to continue.",
-      requestId: meta.requestId || undefined,
-    };
-  }
-  if (code === "FACE_MISMATCH") {
-    return {
-      title: "Face verification failed",
-      message: "This upload doesn’t match the enrolled persona for this package.",
-      requestId: meta.requestId || undefined,
-    };
-  }
-  if (code === "FACE_ID_DRIFT" || code === "FACE_REENROLL_REQUIRED") {
-    return {
-      title: "Face verification needs re-enrollment",
-      message: "We detected a face ID drift. Please re-enroll your face photo for this package to continue.",
-      actionLabel: "Re-enroll face",
-      actionHref: "/dashboard?enroll=1",
-      requestId: meta.requestId || undefined,
-    };
-  }
-  if (code === "MULTIPLE_FACES_NOT_ALLOWED") {
-    return {
-      title: "Multiple faces detected",
-      message: "Please upload an image with only one visible face.",
-      requestId: meta.requestId || undefined,
-    };
-  }
-  if (code === "PERSONA_ALREADY_BOUND") {
-    return {
-      title: "Persona already bound",
-      message: "This persona belongs to another active package.",
-      requestId: meta.requestId || undefined,
-    };
-  }
-  return {
-    title: "Upload failed",
-    message: "We couldn’t analyze that image. Please try again.",
-    requestId: meta.requestId || undefined,
-  };
-};
-
 const MAX_MB = 25;
 const ACCEPT = ["image/png", "image/jpeg", "image/webp", "image/avif"];
 
 export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileUploadProps) {
+  const t = useTranslations("dashboard.fileUpload");
+  const locale = useLocale();
   const { refresh: refreshPlan } = usePlanInfo();
   const [status, setStatus] = useState<Status>("idle");
   const [file, setFile] = useState<File | null>(null);
@@ -138,6 +79,64 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
 
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const mapErrorToUserMessage = useCallback(
+    (meta: ErrorMeta) => {
+      const code = meta.code || "";
+      if (code === "UPGRADE_REQUIRED") {
+        return {
+          title: t("errors.upgradeTitle"),
+          message: t("errors.upgradeMessage"),
+          actionLabel: t("errors.upgradeAction"),
+          actionHref: PACKAGES_URL,
+          requestId: meta.requestId || undefined,
+        };
+      }
+      if (code === "FACE_REQUIRED_FOR_ENROLLMENT" || code === "FACE_ENROLLMENT_REQUIRED") {
+        return {
+          title: t("errors.enrollTitle"),
+          message: t("errors.enrollMessage"),
+          requestId: meta.requestId || undefined,
+        };
+      }
+      if (code === "FACE_MISMATCH") {
+        return {
+          title: t("errors.mismatchTitle"),
+          message: t("errors.mismatchMessage"),
+          requestId: meta.requestId || undefined,
+        };
+      }
+      if (code === "FACE_ID_DRIFT" || code === "FACE_REENROLL_REQUIRED") {
+        return {
+          title: t("errors.driftTitle"),
+          message: t("errors.driftMessage"),
+          actionLabel: t("errors.driftAction"),
+          actionHref: "/dashboard?enroll=1",
+          requestId: meta.requestId || undefined,
+        };
+      }
+      if (code === "MULTIPLE_FACES_NOT_ALLOWED") {
+        return {
+          title: t("errors.multipleFacesTitle"),
+          message: t("errors.multipleFacesMessage"),
+          requestId: meta.requestId || undefined,
+        };
+      }
+      if (code === "PERSONA_ALREADY_BOUND") {
+        return {
+          title: t("errors.alreadyBoundTitle"),
+          message: t("errors.alreadyBoundMessage"),
+          requestId: meta.requestId || undefined,
+        };
+      }
+      return {
+        title: t("errors.defaultTitle"),
+        message: t("errors.defaultMessage"),
+        requestId: meta.requestId || undefined,
+      };
+    },
+    [t]
+  );
 
   useEffect(() => {
     return () => {
@@ -167,9 +166,9 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
     }
 
   function validate(f: File): string | null {
-    if (!ACCEPT.includes(f.type)) return "Unsupported file type. Use PNG, JPG, WEBP, or AVIF.";
+    if (!ACCEPT.includes(f.type)) return t("validate.unsupportedType");
     if (f.size > MAX_MB * 1024 * 1024)
-      return `File is too large. Max ${MAX_MB} MB.`;
+      return t("validate.fileTooLarge", { maxMb: MAX_MB });
     return null;
   }
 
@@ -222,6 +221,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
       const { insights, duplicate, requestId } = await analyzeImageMultipart({
         file: selectedFile,
         packageInstanceId,
+        locale,
         signal: controller.signal,
       });
 
@@ -375,11 +375,12 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
       <div className="rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 backdrop-blur">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold tracking-tight text-white">Upload image</h3>
-            <p className="text-xs text-[var(--hg-muted)]">Drag & drop or click to browse</p>
+            <h3 className="text-base font-semibold tracking-tight text-white">{t("heading")}</h3>
+            <p className="text-xs text-[var(--hg-muted)]">{t("subtitle")}</p>
           </div>
         </div>
         <div
+          data-tour="upload-dropzone"
           onDragOver={(e) => {
             e.preventDefault();
             setDragActive(true);
@@ -412,10 +413,10 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
               <UploadCloud className="w-5 h-5" />
             </div>
             <div className="text-sm">
-              <span className="font-semibold text-white">Click to choose</span>{" "}
-              or drag & drop
+              <span className="font-semibold text-white">{t("clickToChoose")}</span>{" "}
+              {t("orDragDrop")}
             </div>
-            <div className="text-[11px] text-[var(--hg-muted-2)]">Max {MAX_MB}MB • PNG/JPG/WebP/AVIF</div>
+            <div className="text-[11px] text-[var(--hg-muted-2)]">{t("fileConstraintHint", { maxMb: MAX_MB })}</div>
           </div>
           {dragActive && (
             <div className="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-[rgba(80,192,240,0.45)]" />
@@ -428,7 +429,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
               {previewURL ? (
                 <Image
                   src={previewURL}
-                  alt="Preview"
+                  alt={t("previewAlt")}
                   width={60}
                   height={60}
                   className="h-[60px] w-[60px] rounded-md object-cover border border-[var(--hg-border)]"
@@ -443,7 +444,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
                 <div className="text-xs hg-muted">{file.type || "image"} • {formatSize(file.size)}</div>
                 {status === "success" ? (
                   <div className="mt-2 inline-flex items-center gap-1 text-emerald-300 text-xs">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Uploaded & analyzed
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {t("uploadedBadge")}
                   </div>
                 ) : null}
               </div>
@@ -473,14 +474,14 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
             {errorRequestId && (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[11px] hg-muted">
-                  Support ID: {errorRequestId}
+                  {t("supportIdLabel", { id: errorRequestId })}
                 </span>
                 <button
                   type="button"
                   onClick={() => navigator.clipboard.writeText(errorRequestId)}
                   className="inline-flex items-center gap-1 text-[11px] hg-muted underline hover:text-[#50C0F0]"
                 >
-                  Copy
+                  {t("copyButton")}
                 </button>
               </div>
             )}
@@ -507,23 +508,23 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
             {personaMismatch ? (
               <div className="rounded-md border border-rose-700/40 bg-rose-900/10 px-3 py-2 text-rose-200">
                 <p>
-                  This package is bound to persona{" "}
-                  <span className="font-semibold">{personaMismatch.packagePersonaKey}</span>.
-                  You requested{" "}
-                  <span className="font-semibold">{personaMismatch.requestedPersonaKey}</span>.
+                  {t("personaMismatch.message", {
+                    boundPersona: personaMismatch.packagePersonaKey,
+                    requestedPersona: personaMismatch.requestedPersonaKey,
+                  })}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-3">
                   <Link
                     href="/dashboard"
                     className="text-[11px] underline underline-offset-2 hover:text-white"
                   >
-                    Select another package
+                    {t("personaMismatch.selectAnotherLink")}
                   </Link>
                   <Link
                     href="/#packages"
                     className="text-[11px] underline underline-offset-2 hover:text-white"
                   >
-                    Buy another package
+                    {t("personaMismatch.buyAnotherLink")}
                   </Link>
                 </div>
               </div>
@@ -531,7 +532,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
             {personaAlreadyBound?.existingInstanceId ? (
               <div className="rounded-md border border-rose-700/40 bg-rose-900/10 px-3 py-2 text-rose-200">
                 <p>
-                  This persona already belongs to another active package. Please select the correct package and try again.
+                  {t("personaAlreadyBound.message")}
                 </p>
                 <button
                   type="button"
@@ -551,7 +552,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
                   disabled={bindingActionLoading}
                   className="mt-2 inline-flex items-center gap-2 rounded-md border border-rose-700/60 px-2.5 py-1 text-[11px] hover:border-rose-400 disabled:opacity-60"
                 >
-                  {bindingActionLoading ? "Selecting..." : "Select that package"}
+                  {bindingActionLoading ? t("personaAlreadyBound.selectingButton") : t("personaAlreadyBound.selectPackageButton")}
                 </button>
               </div>
             ) : null}
@@ -572,10 +573,10 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
             {status === "uploading" ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Uploading…
+                {t("uploadingButton")}
               </>
             ) : (
-              <>Analyze with AI</>
+              <>{t("analyzeButton")}</>
             )}
           </button>
 
@@ -585,7 +586,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
               className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--hg-border)] bg-[rgba(255,255,255,0.05)] px-3 py-2 text-sm text-white/90 hover:bg-[rgba(255,255,255,0.08)]"
             >
               <X className="w-4 h-4" />
-              Cancel
+              {t("cancelButton")}
             </button>
           ) : (
             <button
@@ -593,7 +594,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
               className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--hg-border)] bg-[rgba(255,255,255,0.05)] px-3 py-2 text-sm text-white/90 hover:bg-[rgba(255,255,255,0.08)]"
             >
               <X className="w-4 h-4" />
-              Reset
+              {t("resetButton")}
             </button>
           )}
         {status === "uploading" ? (
@@ -606,16 +607,16 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
             </div>
             <p className="mt-1.5 text-xs text-[var(--hg-muted)]">
               {uploadProgress < 20
-                ? "Uploading photo..."
+                ? t("progress.uploading")
                 : uploadProgress < 40
-                ? "Detecting face..."
+                ? t("progress.detectingFace")
                 : uploadProgress < 70
-                ? "Analyzing content..."
+                ? t("progress.analyzing")
                 : uploadProgress < 90
-                ? "Generating insights..."
+                ? t("progress.generatingInsights")
                 : uploadProgress < 100
-                ? "Almost done..."
-                : "Complete!"}
+                ? t("progress.almostDone")
+                : t("progress.complete")}
             </p>
           </div>
         ) : null}

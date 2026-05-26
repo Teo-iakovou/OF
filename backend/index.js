@@ -49,6 +49,7 @@ const renderInternalRoutes = require("./routes/render-internal");
 const userRoutes = require("./routes/userRoutes");
 const checkoutRoutes = require("./routes/checkout");
 const feedbackRoutes = require("./routes/feedbackRoutes");
+const outputFeedbackRoutes = require("./routes/outputFeedbackRoutes");
 const authRoutes = require("./routes/auth");
 const billingRoutes = require("./routes/billing");
 const debugRoutes = require("./routes/debug");
@@ -135,6 +136,7 @@ app.use("/api/user", requireAuth, userRoutes);
 app.use("/api/checkout", checkoutRoutes); // login not required for webhook/create
 app.use("/api/coach-chat", requireAuth, coachChatRoutes);
 app.use("/api/feedback", requireAuth, feedbackRoutes);
+app.use("/api/output-feedback", requireAuth, outputFeedbackRoutes);
 app.use("/api/conversations", requireAuth, conversationRoutes);
 app.use("/api/render", requireAuth, renderRoutes);
 app.use("/api/render-internal", renderInternalRoutes);

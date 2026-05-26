@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   fetchActivePackageInstances,
   selectPackageInstance,
@@ -17,6 +18,7 @@ const formatPlanLabel = (value: string | null) => {
 };
 
 export default function SelectActiveInstance({ onSelected }: SelectActiveInstanceProps) {
+  const t = useTranslations("dashboard.profileSwitcher");
   const [instances, setInstances] = useState<PackageInstanceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectingId, setSelectingId] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export default function SelectActiveInstance({ onSelected }: SelectActiveInstanc
       list.forEach((instance, index) => {
         labelMap.set(
           instance.id,
-          showProfiles ? `Profile ${String.fromCharCode(65 + index)}` : null
+          showProfiles ? t("profileLabel", { letter: String.fromCharCode(65 + index) }) : null
         );
       });
     });
@@ -53,7 +55,7 @@ export default function SelectActiveInstance({ onSelected }: SelectActiveInstanc
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const message = err instanceof Error ? err.message : "Failed to load packages";
+        const message = err instanceof Error ? err.message : t("loadErrorMessage");
         setError(message);
       })
       .finally(() => {
@@ -92,16 +94,16 @@ export default function SelectActiveInstance({ onSelected }: SelectActiveInstanc
   return (
     <section className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-3">
       <div>
-        <h3 className="text-lg font-semibold text-white">Select an active package</h3>
+        <h3 className="text-lg font-semibold text-white">{t("heading")}</h3>
         <p className="text-sm text-gray-400">
-          Choose which package instance to use for quotas and history.
+          {t("subtitle")}
         </p>
       </div>
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
       {loading ? (
-        <p className="text-sm text-gray-400">Loading packages…</p>
+        <p className="text-sm text-gray-400">{t("loadingMessage")}</p>
       ) : instances.length === 0 ? (
-        <p className="text-sm text-gray-400">No active package instances found.</p>
+        <p className="text-sm text-gray-400">{t("noInstancesMessage")}</p>
       ) : (
         <div className="space-y-2">
           {instances.map((instance) => {

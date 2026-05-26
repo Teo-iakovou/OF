@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-import { ChevronDown, ChevronRight, ChevronUp, Link2, X } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
+import { ChevronDown, ChevronRight, ChevronUp, Link2, Loader2, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 import type { ResultDoc } from "@/app/types/analysis";
-import { getUserResultById, getUserResultImageUrl, postRecommendationFeedback } from "@/app/utils/api";
+import {
+  getUserResultById,
+  getUserResultImageUrl,
+  postRecommendationFeedback,
+  regenerateAnalysisById,
+} from "@/app/utils/api";
+import { CaptionVariantsBlock } from "@/app/components/dashboard/report/CaptionVariantsBlock";
+import { HashtagBlock } from "@/app/components/dashboard/report/HashtagBlock";
+import { ThumbsFeedback } from "@/app/components/feedback/ThumbsFeedback";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 
 type ReportDrawerProps = {
@@ -35,13 +43,14 @@ export default function ReportDrawer({
   initialData,
 }: ReportDrawerProps) {
   const t = useTranslations("dashboard.reportDrawer");
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const [result, setResult] = useState<ResultDoc | null>(initialData || null);
   const [error, setError] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
   const [reloadToken, setReloadToken] = useState(0);
-  const [expandedHashtags, setExpandedHashtags] = useState<Record<string, boolean>>({});
   const [copyLinkStatus, setCopyLinkStatus] = useState<"idle" | "copied">("idle");
   const [feedbackOpen, setFeedbackOpen] = useState<Record<string, boolean>>({});
   const [feedbackValues, setFeedbackValues] = useState<
@@ -64,7 +73,6 @@ export default function ReportDrawer({
     setError(null);
     setRequestId(null);
     setStage(0);
-    setExpandedHashtags({});
     setFeedbackOpen({});
     setFeedbackValues({});
     setFeedbackLoading({});
@@ -199,6 +207,28 @@ export default function ReportDrawer({
     toast(t("toasts.linkCopied"));
   };
 
+  const handleRegenerate = async () => {
+    if (regenerating || !result?._id) return;
+    const confirmed = window.confirm(t("regenerateConfirm"));
+    if (!confirmed) return;
+    setRegenerating(true);
+    try {
+      await regenerateAnalysisById(String(result._id), { locale });
+      toast(t("toasts.regenerateSuccess"));
+      setReloadToken((prev) => prev + 1);
+    } catch (err: unknown) {
+      const e = err as { code?: string; errorCode?: string; status?: number; message?: string };
+      const code = e?.errorCode || e?.code;
+      if (code === "UPGRADE_REQUIRED" || e?.status === 403 || e?.status === 402) {
+        toast.error(t("toasts.regenerateQuotaExhausted"));
+      } else {
+        toast.error(t("toasts.regenerateError"));
+      }
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[85]">
       <button
@@ -231,6 +261,20 @@ export default function ReportDrawer({
             >
               <Link2 className="h-3.5 w-3.5" />
               {copyLinkStatus === "copied" ? t("copiedLabel") : t("copyLinkButton")}
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/70 px-2.5 py-1 text-sm text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)] hover:border-[var(--hg-accent)] disabled:opacity-50 disabled:cursor-wait"
+              onClick={() => void handleRegenerate()}
+              disabled={regenerating || !result?._id}
+              title={t("regenerateTooltip")}
+            >
+              {regenerating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              {regenerating ? t("regenerating") : t("regenerateButton")}
             </button>
             <button
               type="button"
@@ -303,12 +347,6 @@ export default function ReportDrawer({
                   {recommendedPlatforms.map((platform, idx) => {
                     const key = platformKey(platform.platform, idx);
                     const tags = platform.hashtags || [];
-                    const expanded = expandedHashtags[key] === true;
-                    const visibleTags = expanded ? tags : tags.slice(0, 12);
-                    const hiddenCount = Math.max(0, tags.length - visibleTags.length);
-                    const hashtagsText = tags
-                      .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))
-                      .join(" ");
                     const ctaText = result?.promotion?.ctaVariants?.[0] || platform?.notes?.[0] || "";
                     const policyHints = Array.isArray(platform.policyHints)
                       ? platform.policyHints.slice(0, 3)
@@ -420,67 +458,42 @@ export default function ReportDrawer({
                           ) : null}
                         </div>
 
-                        {platform.caption?.trim() ? (
-                          <div className="mt-3 rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/65 p-2.5">
-                            <p className="line-clamp-3 text-sm text-[var(--hg-text)]">{platform.caption}</p>
-                            <button
-                              type="button"
-                              className="mt-2 inline-flex rounded-md border border-[var(--hg-border)] px-2 py-1 text-xs text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
-                              onClick={() => {
-                                void copyText(platform.caption || "");
-                                toast(t("toasts.captionCopied"));
-                              }}
-                            >
-                              {t("copyCaptionButton")}
-                            </button>
-                          </div>
+                        {(platform.captions?.length || platform.caption?.trim()) ? (
+                          <CaptionVariantsBlock
+                            variants={
+                              platform.captions?.length
+                                ? platform.captions
+                                : [{ angle: "default", text: platform.caption || "" }]
+                            }
+                            onCopy={(text) => {
+                              void copyText(text);
+                              toast(t("toasts.captionCopied"));
+                            }}
+                            copyLabel={t("copyCaptionButton")}
+                            angleLabels={{
+                              hook: t("captionAngleHook"),
+                              aspirational: t("captionAngleAspirational"),
+                              cta: t("captionAngleCta"),
+                              default: t("captionAngleDefault"),
+                            }}
+                          />
                         ) : null}
 
-                        {visibleTags.length ? (
-                          <div className="mt-3 flex flex-wrap gap-1.5">
-                            {visibleTags.map((tag) => {
-                              const normalized = tag.startsWith("#") ? tag : `#${tag}`;
-                              return (
-                                <span
-                                  key={`${platform.platform}-${normalized}`}
-                                  className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-[var(--hg-muted)]"
-                                >
-                                  {normalized}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        ) : null}
-
-                        <div className="mt-3 flex flex-wrap items-center gap-3">
-                          {hashtagsText ? (
-                            <button
-                              type="button"
-                              className="text-xs text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
-                              onClick={() => {
-                                void copyText(hashtagsText);
-                                toast(t("toasts.hashtagsCopied"));
-                              }}
-                            >
-                              {t("copyHashtagsButton")}
-                            </button>
-                          ) : null}
-
-                          {hiddenCount > 0 ? (
-                            <button
-                              type="button"
-                              className="text-xs text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)]"
-                              onClick={() =>
-                                setExpandedHashtags((prev) => ({
-                                  ...prev,
-                                  [key]: !expanded,
-                                }))
-                              }
-                            >
-                              {expanded ? "Show less" : `+${hiddenCount} more`}
-                            </button>
-                          ) : null}
-                        </div>
+                        {tags.length > 0 && (
+                          <HashtagBlock
+                            tags={tags}
+                            hashtagPack={platform.hashtagPack}
+                            platform={platform.platform}
+                            onCopyAll={(text) => {
+                              void copyText(text);
+                              toast(t("toasts.hashtagsCopied"));
+                            }}
+                            copyAllLabel={t("copyHashtagsButton")}
+                            showMoreLabel={(count) => t("showMoreHashtags", { count })}
+                            showLessLabel={t("showLessHashtags")}
+                            copiedLabel={t("hashtagCopied")}
+                          />
+                        )}
 
                         {ctaText ? (
                           <p className="mt-3 text-xs text-[var(--hg-muted)]">
@@ -663,6 +676,15 @@ export default function ReportDrawer({
                   ))}
                 </ul>
               </section>
+            ) : null}
+
+            {result._id ? (
+              <div className="border-t border-[var(--hg-border)] pt-4">
+                <ThumbsFeedback
+                  type="upload_report"
+                  referenceId={String(result._id)}
+                />
+              </div>
             ) : null}
           </div>
         ) : null}

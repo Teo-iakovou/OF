@@ -45,7 +45,8 @@ const statusClass: Record<TalkingHeadRecentItem["status"], string> = {
 export default function UploadTalkingHead() {
   useUser({ required: true });
   const locale = useLocale();
-  const t = useTranslations("outOfCredits");
+  const t = useTranslations("dashboard.uploadTalkingHead");
+  const tOOC = useTranslations("outOfCredits");
   const { data: planData, refresh: refreshPlan, hasActiveInstance } = usePlanInfo();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -144,7 +145,7 @@ export default function UploadTalkingHead() {
   const recentItems = useMemo<TalkingHeadRecentItem[]>(() => {
     return history.map((item) => ({
       id: item.jobId,
-      title: "Avatar Video",
+      title: t("videoItemTitle"),
       createdAt: item.createdAt,
       status: "done" as const,
       videoUrl: item.videoUrl,
@@ -153,15 +154,15 @@ export default function UploadTalkingHead() {
       supportId: null,
       thumbnailUrl: item.options?.thumbnailUrl || null,
     }));
-  }, [history]);
+  }, [history, t]);
 
   async function handleGenerate(confirmed: boolean) {
     if (!imageFile) {
-      setHeygenError("Please choose a face photo (PNG/JPG).");
+      setHeygenError(t("errors.facePhotoRequired"));
       return;
     }
     if (!audioFile) {
-      setHeygenError("Please choose a voice audio file (MP3/WAV).");
+      setHeygenError(t("errors.audioRequired"));
       return;
     }
 
@@ -214,14 +215,14 @@ export default function UploadTalkingHead() {
         ) {
           const mappedMessage =
             codeRaw === "ACTIVE_INSTANCE_REQUIRED"
-              ? "No active package instance. Please select or purchase a package to continue."
+              ? t("errors.noActiveInstance")
               : codeRaw === "FACE_ENROLLMENT_REQUIRED"
-              ? "Please enroll your profile face to continue."
+              ? t("errors.faceEnrollmentRequired")
               : codeRaw === "FACE_REQUIRED_FOR_ENROLLMENT"
-                ? "No face detected. Upload a clear photo with one visible face."
+                ? t("errors.noFaceDetected")
                 : codeRaw === "MULTIPLE_FACES_NOT_ALLOWED"
-                  ? "Multiple faces detected. Upload an image with only one face."
-                  : "Face verification failed. This photo does not match your enrolled face.";
+                  ? t("errors.multipleFaces")
+                  : t("errors.faceVerificationFailed");
           setError(mappedMessage);
           setErrorCode(codeRaw);
           setErrorRequestId(typeof data?.requestId === "string" ? data.requestId : null);
@@ -229,7 +230,7 @@ export default function UploadTalkingHead() {
         }
 
         if (data?.code === "UPGRADE_REQUIRED") {
-          setError(data?.error || "Upgrade required");
+          setError(data?.error || t("errors.upgradeRequired"));
           setErrorCode(typeof data?.code === "string" ? data.code : null);
           setErrorRequestId(typeof data?.requestId === "string" ? data.requestId : null);
           setUpgradeInfo({
@@ -243,7 +244,7 @@ export default function UploadTalkingHead() {
           return;
         }
 
-        setHeygenError(data?.error || "Video generation failed.");
+        setHeygenError(data?.error || t("errors.videoGenerationFailed"));
         return;
       }
 
@@ -253,7 +254,7 @@ export default function UploadTalkingHead() {
       await loadHistory();
       await new Promise((r) => setTimeout(r, 600));
     } catch (err: unknown) {
-      setHeygenError(err instanceof Error ? err.message : "Video generation failed.");
+      setHeygenError(err instanceof Error ? err.message : t("errors.videoGenerationFailed"));
     } finally {
       setHeygenLoading(false);
     }
@@ -271,9 +272,9 @@ export default function UploadTalkingHead() {
 
       {isOutOfCredits ? (
         <section className="mx-auto w-full max-w-3xl rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 text-white">
-          <h2 className="text-xl font-semibold">AI Video Avatar</h2>
+          <h2 className="text-xl font-semibold">{t("heading")}</h2>
           <div className="mt-3 rounded-xl hg-surface-soft px-3 py-2 text-sm hg-muted">
-            {t("videos.inlineMessage")}
+            {tOOC("videos.inlineMessage")}
           </div>
           <div className="mt-4 flex flex-wrap gap-3">
             <button
@@ -281,13 +282,13 @@ export default function UploadTalkingHead() {
               onClick={() => setShowCreditsModal(true)}
               className="inline-flex rounded-xl bg-[#50C0F0] px-4 py-3 text-sm font-medium text-[#04131d] hover:opacity-90"
             >
-              {t("buyCredits")}
+              {tOOC("buyCredits")}
             </button>
             <Link
               href={PACKAGES_URL}
               className="inline-flex rounded-xl border border-[var(--hg-border)] px-4 py-3 text-sm font-medium text-white hover:border-[#50C0F0] hover:text-[#50C0F0]"
             >
-              {t("manageBilling")}
+              {tOOC("manageBilling")}
             </Link>
           </div>
         </section>
@@ -295,8 +296,8 @@ export default function UploadTalkingHead() {
       <section className="mx-auto w-full max-w-3xl rounded-2xl hg-surface p-5 md:p-6 text-white">
         <div className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="block text-sm hg-muted">Face photo (PNG/JPG)</label>
+            <div data-tour="avt-image" className="space-y-2">
+              <label className="block text-sm hg-muted">{t("facePhotoLabel")}</label>
               <input
                 type="file"
                 accept="image/png,image/jpeg"
@@ -304,8 +305,8 @@ export default function UploadTalkingHead() {
                 className="block w-full text-sm hg-muted file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--hg-accent)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#04131d] hover:file:opacity-90"
               />
             </div>
-            <div className="space-y-2">
-              <label className="block text-sm hg-muted">Driven audio (MP3/WAV)</label>
+            <div data-tour="avt-audio" className="space-y-2">
+              <label className="block text-sm hg-muted">{t("audioLabel")}</label>
               <input
                 type="file"
                 accept="audio/mpeg,audio/wav"
@@ -317,6 +318,7 @@ export default function UploadTalkingHead() {
 
           <div className="flex flex-wrap items-center gap-2">
             <button
+              data-tour="avt-generate"
               type="button"
               disabled={!canGenerate || isOutOfCredits}
               onClick={() => void handleGenerate(false)}
@@ -327,7 +329,7 @@ export default function UploadTalkingHead() {
               }`}
             >
               <Sparkles className="mr-2 h-4 w-4" />
-              {heygenLoading ? "Generating…" : "Generate"}
+              {heygenLoading ? t("generatingButton") : t("generateButton")}
             </button>
             <button
               type="button"
@@ -343,7 +345,7 @@ export default function UploadTalkingHead() {
               }}
               className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 text-sm text-[var(--hg-muted)] hover:text-white"
             >
-              Reset
+              {t("resetButton")}
             </button>
           </div>
 
@@ -357,12 +359,12 @@ export default function UploadTalkingHead() {
               </div>
               <p className="mt-1.5 text-xs text-[var(--hg-muted)]">
                 {heygenProgress < 15
-                  ? "Uploading files..."
+                  ? t("progress.uploading")
                   : heygenProgress < 30
-                  ? "Verifying identity..."
+                  ? t("progress.verifying")
                   : heygenProgress < 85
-                  ? "Generating video..."
-                  : "Almost done..."}
+                  ? t("progress.generating")
+                  : t("progress.almostDone")}
               </p>
             </div>
           ) : null}
@@ -373,14 +375,14 @@ export default function UploadTalkingHead() {
             <p>{error}</p>
             {errorRequestId ? (
               <div className="flex items-center gap-2 text-xs">
-                <span>Support ID: {errorRequestId}</span>
+                <span>{t("supportIdLabel", { id: errorRequestId })}</span>
                 <button
                   type="button"
                   onClick={() => navigator.clipboard.writeText(errorRequestId)}
                   className="inline-flex items-center gap-1 rounded border border-rose-200/40 px-2 py-1 text-[11px] hover:border-rose-100"
                 >
                   <Copy className="h-3.5 w-3.5" />
-                  Copy
+                  {t("copyButton")}
                 </button>
               </div>
             ) : null}
@@ -395,7 +397,7 @@ export default function UploadTalkingHead() {
                 }}
                 className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--hg-accent)] px-3 text-xs font-semibold text-[#04131d] hover:opacity-90"
               >
-                Enroll face
+                {t("errorCtas.enrollFace")}
               </button>
             ) : null}
             {errorCode === "ACTIVE_INSTANCE_REQUIRED" ? (
@@ -409,7 +411,7 @@ export default function UploadTalkingHead() {
                 }}
                 className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--hg-accent)] px-3 text-xs font-semibold text-[#04131d] hover:opacity-90"
               >
-                View packages
+                {t("errorCtas.viewPackages")}
               </button>
             ) : null}
             {upgradeInfo ? (
@@ -428,10 +430,9 @@ export default function UploadTalkingHead() {
         {/* ── HeyGen warning ──────────────────────────────────────────────── */}
         {heygenWarning ? (
           <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100 space-y-3">
-            <p className="font-semibold">Credit confirmation required</p>
+            <p className="font-semibold">{t("creditWarning.heading")}</p>
             <p>
-              This audio is <strong>{heygenWarning.durationSeconds}s</strong> long and will use{" "}
-              <strong>{heygenWarning.creditsToConsume} video credit{heygenWarning.creditsToConsume !== 1 ? "s" : ""}</strong>. Continue?
+              {t("creditWarning.body", { seconds: heygenWarning.durationSeconds, count: heygenWarning.creditsToConsume })}
             </p>
             <div className="flex gap-2">
               <button
@@ -440,14 +441,14 @@ export default function UploadTalkingHead() {
                 disabled={heygenLoading}
                 className="inline-flex h-9 items-center rounded-lg bg-amber-400 px-3 text-xs font-semibold text-[#07131d] hover:opacity-90 disabled:opacity-50"
               >
-                Confirm (use {heygenWarning.creditsToConsume} credit{heygenWarning.creditsToConsume !== 1 ? "s" : ""})
+                {t("creditWarning.confirmButton", { count: heygenWarning.creditsToConsume })}
               </button>
               <button
                 type="button"
                 onClick={() => setHeygenWarning(null)}
                 className="inline-flex h-9 items-center rounded-lg border border-amber-400/40 px-3 text-xs text-amber-200 hover:border-amber-300"
               >
-                Cancel
+                {t("creditWarning.cancelButton")}
               </button>
             </div>
           </div>
@@ -465,7 +466,7 @@ export default function UploadTalkingHead() {
           <div className="mt-4 space-y-2">
             <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-300">
               <Sparkles className="h-4 w-4" />
-              Video ready ✓
+              {t("videoReadyIndicator")}
             </p>
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video
@@ -479,11 +480,11 @@ export default function UploadTalkingHead() {
       </section>
       )}
 
-      {!isOutOfCredits && <section className="w-full pb-8 pt-1 md:pt-2">
+      {!isOutOfCredits && <section data-tour="avt-history" className="w-full pb-8 pt-1 md:pt-2">
         <div className="flex items-baseline justify-between border-b border-[var(--hg-border-2)] pb-4">
           <div className="space-y-1">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">Generated Results</p>
-            <h2 className="text-2xl font-semibold tracking-tight text-white/95 md:text-3xl">Recents</h2>
+            <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">{t("results.eyebrow")}</p>
+            <h2 className="text-2xl font-semibold tracking-tight text-white/95 md:text-3xl">{t("results.heading")}</h2>
           </div>
         </div>
 
@@ -507,8 +508,8 @@ export default function UploadTalkingHead() {
 
         {!historyLoading && recentItems.length === 0 ? (
           <div className="mt-4 rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5">
-            <h3 className="text-base font-semibold text-white">Create your first avatar video</h3>
-            <p className="mt-1 text-sm hg-muted">Upload a face photo and audio to generate a video.</p>
+            <h3 className="text-base font-semibold text-white">{t("results.emptyHeading")}</h3>
+            <p className="mt-1 text-sm hg-muted">{t("results.emptyBody")}</p>
             <button
               type="button"
               onClick={() => {
@@ -519,7 +520,7 @@ export default function UploadTalkingHead() {
               }}
               className="mt-4 inline-flex rounded-xl bg-[#50C0F0] px-4 py-2 text-sm font-semibold text-[#04131d] hover:opacity-90"
             >
-              Start generating
+              {t("results.emptyButton")}
             </button>
           </div>
         ) : null}
@@ -553,19 +554,19 @@ export default function UploadTalkingHead() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={item.thumbnailUrl}
-                          alt="Video source preview"
+                          alt={t("videoSourceAlt")}
                           className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                           loading="lazy"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-[var(--hg-muted-2)] text-sm">
-                          No preview
+                          {t("thumbnailNoPreview")}
                         </div>
                       )}
                     </div>
                     <div className="mt-3.5 space-y-1.5">
                       <div className="flex items-center justify-between gap-3">
-                        <p className="truncate text-[15px] font-semibold tracking-tight text-white">Avatar Video</p>
+                        <p className="truncate text-[15px] font-semibold tracking-tight text-white">{t("videoItemTitle")}</p>
                         <span
                           className={`inline-flex items-center rounded-full border border-[var(--hg-border)] px-2 py-0.5 text-[11px] ${statusClass[item.status]}`}
                         >

@@ -1,12 +1,245 @@
 {
-  "version": "2025-08-25",
-  "cosplay": { "tone": ["playful","in-character"], "seeds": ["#cosplay","#anime"] },
-  "fitness": { "tone": ["motivational","focused"], "seeds": ["#fitness","#gym"] },
-  "glamour": { "tone": ["elegant","confident"], "seeds": ["#glamour","#fashion"] },
-  "bikini":  { "tone": ["sunny","tease"],       "seeds": ["#bikini","#swimwear"] },
-  "alt":     { "tone": ["edgy","bold"],         "seeds": ["#tattoo","#alt"] },
-  "travel":  { "tone": ["wander","vivid"],      "seeds": ["#travel","#wanderlust"] },
-  "city":    { "tone": ["night","aesthetic"],   "seeds": ["#city","#nightphotography"] },
-  "food":    { "tone": ["tasty","clean"],       "seeds": ["#foodie","#food"] },
-  "general": { "tone": ["clean","direct"],      "seeds": ["#creator","#content"] }
+  "version": "2026-05-25",
+  "niches": {
+    "model": {
+      "id": "model",
+      "name": "Model / Portrait",
+      "tone": "elegant, confident, polished",
+      "seeds": ["#model", "#portrait", "#modellife", "#photoshoot"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["OnlyFans", "Telegram"],
+        "avoid": []
+      },
+      "adultRating": "soft"
+    },
+    "bikini": {
+      "id": "bikini",
+      "name": "Bikini / Swimwear",
+      "tone": "sunny, flirty, confident",
+      "seeds": ["#bikini", "#swimwear", "#beachvibes", "#poolday"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["OnlyFans", "Telegram"],
+        "avoid": []
+      },
+      "adultRating": "soft"
+    },
+    "lingerie": {
+      "id": "lingerie",
+      "name": "Lingerie / Boudoir",
+      "tone": "sensual, tasteful, exclusive",
+      "seeds": ["#lingerie", "#boudoir", "#intimates", "#lacestyle"],
+      "platforms": {
+        "primary": ["OnlyFans", "Telegram"],
+        "secondary": ["Twitter"],
+        "avoid": []
+      },
+      "adultRating": "mid"
+    },
+    "cosplay": {
+      "id": "cosplay",
+      "name": "Cosplay / Anime",
+      "tone": "playful, in-character, fan-driven",
+      "seeds": ["#cosplay", "#anime", "#cosplayer", "#charactercosplay"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["OnlyFans", "Telegram", "Twitter"],
+        "avoid": []
+      },
+      "adultRating": "soft"
+    },
+    "alt": {
+      "id": "alt",
+      "name": "Alt / Tattoo / Goth",
+      "tone": "edgy, bold, unapologetic",
+      "seeds": ["#tattoo", "#altgirl", "#gothaesthetic", "#inkmodel"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["OnlyFans", "Twitter"],
+        "avoid": []
+      },
+      "adultRating": "soft"
+    },
+    "curvy": {
+      "id": "curvy",
+      "name": "Curvy / Body Positive",
+      "tone": "empowering, confident, celebratory",
+      "seeds": ["#curvy", "#bodypositivity", "#curvygirl", "#plussize"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["OnlyFans", "Telegram"],
+        "avoid": []
+      },
+      "adultRating": "mid"
+    },
+    "petite": {
+      "id": "petite",
+      "name": "Petite",
+      "tone": "playful, delicate, confident",
+      "seeds": ["#petite", "#petitestyle", "#petitemodel", "#smallgirlbigworld"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["OnlyFans", "Telegram"],
+        "avoid": []
+      },
+      "adultRating": "mid"
+    },
+    "mature": {
+      "id": "mature",
+      "name": "Mature / 40+",
+      "tone": "sophisticated, self-assured, timeless",
+      "seeds": ["#maturemodel", "#40plusstyle", "#agegracefully", "#maturecreator"],
+      "platforms": {
+        "primary": ["Instagram", "OnlyFans"],
+        "secondary": ["Telegram", "Twitter"],
+        "avoid": []
+      },
+      "adultRating": "mid"
+    },
+    "fitness": {
+      "id": "fitness",
+      "name": "Fitness / Gym",
+      "tone": "motivational, energetic, focused",
+      "seeds": ["#fitness", "#gym", "#fitnessmotivation", "#workout"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Reddit", "Twitter"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    },
+    "wellness": {
+      "id": "wellness",
+      "name": "Wellness / Yoga",
+      "tone": "calm, grounded, aspirational",
+      "seeds": ["#wellness", "#yoga", "#mindfulness", "#selfcare"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Reddit"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    },
+    "beauty": {
+      "id": "beauty",
+      "name": "Beauty / Makeup / Skincare",
+      "tone": "inspiring, tutorial-friendly, aspirational",
+      "seeds": ["#beauty", "#makeup", "#skincare", "#glowup"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Reddit", "Twitter"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    },
+    "fashion": {
+      "id": "fashion",
+      "name": "Fashion / OOTD",
+      "tone": "stylish, aspirational, editorial",
+      "seeds": ["#fashion", "#ootd", "#streetwear", "#style"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Reddit", "Twitter"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    },
+    "travel": {
+      "id": "travel",
+      "name": "Travel / Wanderlust",
+      "tone": "vivid, explorative, wanderlust",
+      "seeds": ["#travel", "#wanderlust", "#travelgram", "#explore"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Reddit", "Twitter"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    },
+    "food": {
+      "id": "food",
+      "name": "Food / Cooking",
+      "tone": "appetizing, warm, community-driven",
+      "seeds": ["#food", "#foodie", "#cooking", "#recipe"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Reddit"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    },
+    "pets": {
+      "id": "pets",
+      "name": "Pets / Animals",
+      "tone": "warm, playful, relatable",
+      "seeds": ["#pets", "#dogsofinstagram", "#catsofinstagram", "#animallovers"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Reddit", "Twitter"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    },
+    "art": {
+      "id": "art",
+      "name": "Art / Illustration / Design",
+      "tone": "expressive, creative, thoughtful",
+      "seeds": ["#art", "#illustration", "#digitalart", "#artistsoninstagram"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Reddit", "Twitter"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    },
+    "music": {
+      "id": "music",
+      "name": "Music / DJ / Artist",
+      "tone": "energetic, passionate, community-driven",
+      "seeds": ["#music", "#musician", "#newmusic", "#producer"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Reddit", "Twitter"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    },
+    "couples": {
+      "id": "couples",
+      "name": "Couples / Relationship",
+      "tone": "warm, romantic, relatable",
+      "seeds": ["#couple", "#couplegoals", "#relationship", "#together"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Reddit"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    },
+    "city": {
+      "id": "city",
+      "name": "City / Urban / Architecture",
+      "tone": "atmospheric, aesthetic, urban",
+      "seeds": ["#city", "#urbanphotography", "#cityscape", "#architecture"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Reddit", "Twitter"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    },
+    "general": {
+      "id": "general",
+      "name": "General",
+      "tone": "clean, direct, versatile",
+      "seeds": ["#creator", "#content", "#contentcreator", "#lifestyle"],
+      "platforms": {
+        "primary": ["Instagram", "TikTok"],
+        "secondary": ["Twitter", "Reddit"],
+        "avoid": []
+      },
+      "adultRating": "sfw"
+    }
+  }
 }

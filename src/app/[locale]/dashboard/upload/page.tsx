@@ -18,9 +18,19 @@ import UploadStage from "@/app/components/upload/UploadStage";
 import RecentCreations from "@/app/components/dashboard/upload/RecentCreations";
 import ReportDrawer from "@/app/components/dashboard/report/ReportDrawer";
 import { useReportDrawer } from "@/app/components/dashboard/upload/useReportDrawer";
+import SpotlightTour from "@/app/components/onboarding/SpotlightTour";
+import { useTour } from "@/app/components/onboarding/useTour";
+
+const UPLOAD_TOUR_STEPS = [
+  { target: "upload-heading",  titleKey: "step1.title", bodyKey: "step1.body", placement: "bottom" as const },
+  { target: "upload-quota",    titleKey: "step2.title", bodyKey: "step2.body", placement: "bottom" as const },
+  { target: "upload-dropzone", titleKey: "step3.title", bodyKey: "step3.body", placement: "top"    as const },
+  { target: "upload-recent",   titleKey: "step4.title", bodyKey: "step4.body", placement: "top"    as const },
+];
 
 export default function UploadPage() {
   const t = useTranslations("dashboard.uploadPage");
+  const { isDone: tourDone, markDone: markTourDone } = useTour("upload");
   const [refreshToken, setRefreshToken] = useState(0);
   const {
     openDrawer,
@@ -83,7 +93,7 @@ export default function UploadPage() {
           <div className="mx-auto w-full max-w-[980px] space-y-7 md:space-y-9">
             <section className="mx-auto max-w-2xl text-center">
               <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)] md:text-xs">{t("eyebrow")}</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+              <h1 data-tour="upload-heading" className="mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl">
                 {t("heading")}
               </h1>
               <p className="mt-2 text-sm text-[var(--hg-muted)] md:text-base">
@@ -159,7 +169,7 @@ export default function UploadPage() {
                       statusLabel={t("uploadStageStatusLabel")}
                       showHeader={false}
                     >
-                      <div className="flex items-center justify-between rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/55 px-3.5 py-2.5">
+                      <div data-tour="upload-quota" className="flex items-center justify-between rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/55 px-3.5 py-2.5">
                         <span className="text-xs uppercase tracking-[0.1em] text-[var(--hg-muted-2)]">
                           Upload quota
                         </span>
@@ -199,6 +209,14 @@ export default function UploadPage() {
         open={showCreditsModal}
         onClose={() => setShowCreditsModal(false)}
       />
+      {tourDone === false && (
+        <SpotlightTour
+          tourId="upload"
+          i18nNamespace="dashboard.uploadPage.tour"
+          steps={UPLOAD_TOUR_STEPS}
+          onComplete={markTourDone}
+        />
+      )}
     </div>
   );
 }

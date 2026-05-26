@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useUser } from "@/app/hooks/useUser";
 import ActivePackageCard from "@/app/components/dashboard/ActivePackageCard";
-import DashboardOnboarding from "@/app/components/dashboard/DashboardOnboarding";
 import LastUploadCard from "@/app/components/dashboard/LastUploadCard";
 import QuotaUsageCard from "@/app/components/dashboard/QuotaUsageCard";
 import QuickActions from "@/app/components/dashboard/QuickActions";
@@ -55,7 +54,6 @@ export default function DashboardPage() {
     coreLoading,
     coreError,
     planData,
-    isNewUser,
     hasActiveInstance,
     isMissingActiveInstance,
     instances,
@@ -196,17 +194,6 @@ export default function DashboardPage() {
               </button>
             </section>
           ) : null}
-
-          <section>
-            <DashboardOnboarding
-              isNewUser={isNewUser}
-              packageInstanceId={packageInstanceId}
-              planKey={planKey || undefined}
-              uploadsRemaining={uploadsRemaining}
-              chatRemaining={chatRemaining}
-              videoRemaining={videoRemaining}
-            />
-          </section>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <section>

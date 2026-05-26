@@ -1,15 +1,18 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Settings } from "lucide-react";
 import { DASHBOARD_LAYOUT } from "@/app/dashboard/dashboardLayout.constants";
 import LocaleSwitcher from "@/app/components/common/LocaleSwitcher";
+import { FeedbackWidget } from "@/app/components/features/FeedbackWidget";
 
 type Props = {
   onOpenSettings: () => void;
 };
 
 export default function DashboardTopBar({ onOpenSettings }: Props) {
+  const t = useTranslations("dashboard.topBar");
   return (
     <div className={`md:hidden fixed left-0 right-0 ${DASHBOARD_LAYOUT.mobileTopBarTopOffset} z-40 flex justify-center`}>
       <div className="w-full max-w-6xl bg-[color:color-mix(in_oklab,white_3%,transparent)] backdrop-blur-[2px]">
@@ -17,7 +20,7 @@ export default function DashboardTopBar({ onOpenSettings }: Props) {
 
           {/* Left: Settings */}
           <button
-            aria-label="Open settings"
+            aria-label={t("openSettingsLabel")}
             onClick={onOpenSettings}
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/10 hover:text-white"
           >
@@ -35,8 +38,11 @@ export default function DashboardTopBar({ onOpenSettings }: Props) {
             />
           </div>
 
-          {/* Right: Language switcher */}
-          <LocaleSwitcher variant="compact" />
+          {/* Right: Feedback + Language switcher */}
+          <div className="flex items-center gap-1">
+            <FeedbackWidget variant="icon" />
+            <LocaleSwitcher variant="compact" />
+          </div>
 
         </div>
       </div>

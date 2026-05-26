@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import ProfileMenuButton from "@/app/components/dashboard/sidebar/ProfileMenuButton";
+import { FeedbackWidget } from "@/app/components/features/FeedbackWidget";
 import PackagesModal from "@/app/components/dashboard/sidebar/PackagesModal";
 import { Link as I18nLink, usePathname } from "@/i18n/navigation";
 import { getTopLevelDashboardNavItems } from "@/app/components/dashboard/navigation/dashboardNav.config";
@@ -36,7 +37,7 @@ export default function DashboardSidebar({
   const t = useTranslations("dashboardNav");
   const tDash = useTranslations("dashboard");
   const pathname = usePathname();
-  const { hasActiveInstance } = usePlanInfo();
+  const { hasActiveInstance, loading: planLoading } = usePlanInfo();
   const [packagesOpen, setPackagesOpen] = useState(false);
   const packagesIconSize = 22;
 
@@ -110,7 +111,7 @@ export default function DashboardSidebar({
             const Icon = item.icon;
             const active = isItemActive(item.href);
             const label = item.labelKey ? t(item.labelKey) : item.label;
-            const isLocked = !hasActiveInstance && item.href !== undefined && LOCKED_HREFS.includes(item.href);
+            const isLocked = !planLoading && !hasActiveInstance && item.href !== undefined && LOCKED_HREFS.includes(item.href);
 
             const base =
               "group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer font-medium text-[15px] transition-all duration-200 w-full border";
@@ -132,7 +133,7 @@ export default function DashboardSidebar({
                       {expanded && (
                         <span className={`flex flex-1 items-center justify-between whitespace-nowrap leading-none ${labelCls}`}>
                           {label}
-                          {isLocked && <Lock size={12} className="shrink-0 text-slate-500" />}
+                          {isLocked && <span aria-label={tDash("sidebar.lockedTooltip")} title={tDash("sidebar.lockedTooltip")}><Lock size={12} className="shrink-0 text-slate-500" /></span>}
                         </span>
                       )}
                     </span>
@@ -147,7 +148,7 @@ export default function DashboardSidebar({
                 {!expanded && (
                   <div className="absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 py-1 text-xs font-semibold text-white opacity-0 shadow-[0_8px_18px_rgba(0,0,0,0.28)] transition group-hover:pointer-events-auto group-hover:opacity-100">
                     {label}
-                    {isLocked && <Lock size={10} className="ml-1.5 inline-block text-slate-400" />}
+                    {isLocked && <span aria-label={tDash("sidebar.lockedTooltip")} title={tDash("sidebar.lockedTooltip")}><Lock size={10} className="ml-1.5 inline-block text-slate-400" /></span>}
                   </div>
                 )}
               </li>
@@ -185,6 +186,9 @@ export default function DashboardSidebar({
             </div>
           ) : null}
         </button>
+        <div className={`w-full px-1${expanded ? "" : " flex justify-center"}`}>
+          <FeedbackWidget variant={expanded ? "floating" : "icon"} />
+        </div>
         <ProfileMenuButton
           expanded={expanded}
           onOpenCookiePreferences={onOpenCookiePreferences}

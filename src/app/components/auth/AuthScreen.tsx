@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import AuthForm from "@/app/components/auth/AuthForm";
@@ -26,21 +27,29 @@ const GoogleIcon = () => (
   </svg>
 );
 
-// Echofy wordmark — bold "echo" + light accent "fy", tight letter-spacing (GymOS logo pattern)
 function EchofyWordmark({ size = 20 }: { size?: number }) {
   return (
-    <span
-      style={{
-        fontFamily: "var(--font-dm-sans, 'DM Sans'), sans-serif",
-        fontSize: size,
-        letterSpacing: "-0.04em",
-        lineHeight: 1,
-        userSelect: "none",
-      }}
-    >
-      <span style={{ color: "#ffffff", fontWeight: 700 }}>echo</span>
-      <span style={{ color: "var(--hg-accent)", fontWeight: 300 }}>fy</span>
-    </span>
+    <Link href="/" className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity">
+      <Image
+        src="/echofy-removebg-preview.png"
+        alt="echo-fy"
+        width={28}
+        height={28}
+        className="h-7 w-auto"
+      />
+      <span
+        style={{
+          fontFamily: "var(--font-dm-sans, 'DM Sans'), sans-serif",
+          fontSize: size,
+          letterSpacing: "-0.04em",
+          lineHeight: 1,
+          userSelect: "none",
+        }}
+      >
+        <span style={{ color: "#ffffff", fontWeight: 700 }}>echo</span>
+        <span style={{ color: "var(--hg-accent)", fontWeight: 300 }}>fy</span>
+      </span>
+    </Link>
   );
 }
 

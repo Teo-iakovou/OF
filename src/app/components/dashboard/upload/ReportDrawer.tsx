@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Link2 } from "lucide-react";
+import { Link2, Loader2, RefreshCw } from "lucide-react";
 import type { ResultDoc } from "@/app/types/analysis";
-import { getUserResultById } from "@/app/utils/api";
+import { getUserResultById, regenerateAnalysisById } from "@/app/utils/api";
+import { CaptionVariantsBlock } from "@/app/components/dashboard/report/CaptionVariantsBlock";
+import { HashtagBlock } from "@/app/components/dashboard/report/HashtagBlock";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 
 type ReportDrawerProps = {
@@ -23,12 +25,12 @@ export default function ReportDrawer({
   resultId,
 }: ReportDrawerProps) {
   const [loading, setLoading] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const [result, setResult] = useState<ResultDoc | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
   const [reloadToken, setReloadToken] = useState(0);
-  const [expandedHashtags, setExpandedHashtags] = useState<Record<string, boolean>>({});
   const [copyLinkStatus, setCopyLinkStatus] = useState<"idle" | "copied">("idle");
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === "undefined" || !window.matchMedia) return false;
@@ -43,7 +45,6 @@ export default function ReportDrawer({
     setError(null);
     setRequestId(null);
     setStage(0);
-    setExpandedHashtags({});
     getUserResultById({ id: resultId })
       .then((data) => {
         if (cancelled) return;
@@ -132,6 +133,30 @@ export default function ReportDrawer({
     window.setTimeout(() => setCopyLinkStatus("idle"), 2000);
   };
 
+  const handleRegenerate = async () => {
+    if (regenerating || !result?._id) return;
+    const confirmed = window.confirm(
+      "This will generate new captions and hashtags. It uses 1 upload from your quota. Continue?"
+    );
+    if (!confirmed) return;
+    setRegenerating(true);
+    try {
+      await regenerateAnalysisById(String(result._id));
+      toast("Fresh captions and hashtags generated");
+      setReloadToken((prev) => prev + 1);
+    } catch (err: unknown) {
+      const e = err as { code?: string; errorCode?: string; status?: number };
+      const code = e?.errorCode || e?.code;
+      if (code === "UPGRADE_REQUIRED" || e?.status === 403 || e?.status === 402) {
+        toast.error("Upload quota exhausted. Upgrade or wait for reset.");
+      } else {
+        toast.error("Couldn't regenerate. Please try again.");
+      }
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[85]">
       <button
@@ -157,6 +182,20 @@ export default function ReportDrawer({
             >
               <Link2 className="h-3.5 w-3.5" />
               {copyLinkStatus === "copied" ? "Copied" : "Copy link"}
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--hg-border)] px-2 py-1 text-sm text-[var(--hg-muted)] transition hover:text-[var(--hg-accent)] hover:border-[var(--hg-accent)] disabled:opacity-50 disabled:cursor-wait"
+              onClick={() => void handleRegenerate()}
+              disabled={regenerating || !result?._id}
+              title="Generate fresh captions and hashtags — uses 1 upload"
+            >
+              {regenerating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              {regenerating ? "Regenerating..." : "Regenerate"}
             </button>
             <button
               type="button"
@@ -218,12 +257,6 @@ export default function ReportDrawer({
                 <div className="mt-3 space-y-3">
                   {recommendedPlatforms.map((platform) => {
                     const tags = platform.hashtags || [];
-                    const expanded = expandedHashtags[platform.platform] === true;
-                    const visibleTags = expanded ? tags : tags.slice(0, 12);
-                    const hiddenCount = Math.max(0, tags.length - visibleTags.length);
-                    const hashtagsText = tags
-                      .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))
-                      .join(" ");
                     return (
                       <div key={platform.platform} className="rounded-lg border border-white/10 bg-black/10 p-3">
                         <p className="text-sm font-medium text-white">{platform.platform}</p>
@@ -234,66 +267,36 @@ export default function ReportDrawer({
                           </p>
                         ) : null}
 
-                        {platform.caption?.trim() ? (
-                          <div className="mt-3 rounded-md border border-white/10 bg-white/5 p-2">
-                            <p className="line-clamp-3 text-sm text-[var(--hg-text)]">{platform.caption}</p>
-                            <button
-                              type="button"
-                              className="mt-2 text-xs text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
-                              onClick={() => {
-                                void copyText(platform.caption || "");
-                                toast("Caption copied");
-                              }}
-                            >
-                              Copy caption
-                            </button>
-                          </div>
+                        {(platform.captions?.length || platform.caption?.trim()) ? (
+                          <CaptionVariantsBlock
+                            variants={
+                              platform.captions?.length
+                                ? platform.captions
+                                : [{ angle: "default", text: platform.caption || "" }]
+                            }
+                            onCopy={(text) => {
+                              void copyText(text);
+                              toast("Caption copied");
+                            }}
+                            copyLabel="Copy caption"
+                          />
                         ) : null}
 
-                        {visibleTags.length ? (
-                          <div className="mt-3 flex flex-wrap gap-1.5">
-                            {visibleTags.map((tag) => {
-                              const normalized = tag.startsWith("#") ? tag : `#${tag}`;
-                              return (
-                                <span
-                                  key={`${platform.platform}-${normalized}`}
-                                  className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-[var(--hg-muted)]"
-                                >
-                                  {normalized}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        ) : null}
-
-                        <div className="mt-3 flex items-center gap-3">
-                          {hashtagsText ? (
-                            <button
-                              type="button"
-                              className="text-xs text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
-                              onClick={() => {
-                                void copyText(hashtagsText);
-                                toast("Hashtags copied");
-                              }}
-                            >
-                              Copy hashtags
-                            </button>
-                          ) : null}
-                          {hiddenCount > 0 ? (
-                            <button
-                              type="button"
-                              className="text-xs text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
-                              onClick={() =>
-                                setExpandedHashtags((prev) => ({
-                                  ...prev,
-                                  [platform.platform]: !expanded,
-                                }))
-                              }
-                            >
-                              {expanded ? "Show less" : `+${hiddenCount} more`}
-                            </button>
-                          ) : null}
-                        </div>
+                        {tags.length > 0 && (
+                          <HashtagBlock
+                            tags={tags}
+                            hashtagPack={platform.hashtagPack}
+                            platform={platform.platform}
+                            onCopyAll={(text) => {
+                              void copyText(text);
+                              toast("Hashtags copied");
+                            }}
+                            copyAllLabel="Copy hashtags"
+                            showMoreLabel={(count) => `+${count} more`}
+                            showLessLabel="Show less"
+                            copiedLabel="Copied"
+                          />
+                        )}
                       </div>
                     );
                   })}

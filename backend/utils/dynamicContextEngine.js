@@ -1,4 +1,5 @@
 // utils/dynamicContextEngine.js
+const { pickNiche } = require("./pickNiche");
 
 // --- helpers ---
 const scoreOf = (likelihood) =>
@@ -44,23 +45,6 @@ const colorMood = (dominantColors=[]) => {
   return { mood, brightness, warmth };
 };
 
-const pickNiche = (labels=[], webEntities=[]) => {
-  const bag = new Set([
-    ...labels.map(l => (l.description||"").toLowerCase()),
-    ...webEntities.map(w => (w.description||"").toLowerCase()),
-  ]);
-  const contains = (...keys) => keys.some(k => bag.has(k));
-
-  if (contains("cosplay","anime","costume","character")) return "cosplay";
-  if (contains("fitness","bodybuilding","gym","workout","athlete")) return "fitness";
-  if (contains("lingerie","glamour","fashion","model")) return "glamour";
-  if (contains("bikini","swimwear","beach")) return "bikini";
-  if (contains("tattoo","piercing","goth","punk","alternative")) return "alt";
-  if (contains("food","cuisine","dish")) return "food";
-  if (contains("city","urban area","skyline","night")) return "city";
-  if (contains("landscape","nature","outdoor")) return "travel";
-  return "general";
-};
 
 const clampHashtags = (platform, list) => {
   const limit = platform==="Instagram" ? 10 : platform==="TikTok" ? 5 : 8;

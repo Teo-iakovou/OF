@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Reveal from "@/app/components/common/Reveal";
 import { clearApiCaches, verifyAddonSession } from "@/app/utils/api";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
@@ -11,6 +12,7 @@ import { useRouter } from "@/i18n/navigation";
 type Notice = { status: "success" | "cancel"; kind?: string | null };
 
 export default function BillingPage() {
+  const t = useTranslations("dashboard.billingPage");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refresh: refreshPlan } = usePlanInfo();
@@ -77,8 +79,8 @@ export default function BillingPage() {
       <header className="shrink-0 px-4 pt-3 md:px-12 md:pt-20 lg:px-20 max-w-6xl mx-auto w-full">
         <div className="flex flex-col gap-3">
           <div>
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Plan &amp; Billing</h1>
-            <p className="text-sm text-gray-400">Manage add-ons and package profiles.</p>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{t("heading")}</h1>
+            <p className="text-sm text-gray-400">{t("subtitle")}</p>
           </div>
         </div>
       </header>
@@ -89,23 +91,23 @@ export default function BillingPage() {
             <Reveal as="section" className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <p className="text-sm text-gray-200">
                 {notice.status === "success"
-                  ? "Add-on purchase completed. Your quotas are refreshing."
-                  : "Add-on purchase canceled."}
+                  ? t("successMessage")
+                  : t("cancelMessage")}
               </p>
               {notice.status === "success" && notice.kind === "addon" ? (
                 <p className="mt-2 text-xs text-gray-300">
                   {addonVerifyStatus === "applied"
-                    ? "Applied ✓"
+                    ? t("appliedLabel")
                     : addonVerifyStatus === "pending"
-                      ? "Pending (refreshing)"
+                      ? t("pendingLabel")
                       : addonVerifyStatus === "error"
-                        ? "Could not verify add-on yet. Please refresh."
+                        ? t("verifyErrorLabel")
                         : null}
                 </p>
               ) : null}
               {notice.status === "success" && notice.kind === "addon" && addonVerifyStatus === "pending" ? (
                 <div className="mt-2 text-xs text-gray-300 space-y-1">
-                  <div>Payment received, add-on still processing.</div>
+                  <div>{t("paymentPendingMessage")}</div>
                   <div>
                     Session: {addonVerifyInfo?.sessionId || "—"}
                     {addonVerifyInfo?.requestId ? ` · Request ID: ${addonVerifyInfo.requestId}` : ""}
@@ -119,13 +121,13 @@ export default function BillingPage() {
                       }}
                       className="rounded-md border border-white/20 px-2 py-1 text-[11px] text-white/80 hover:border-white/40"
                     >
-                      Refresh
+                      {t("refreshButton")}
                     </button>
                     <a
                       href="mailto:support@yourapp.com"
                       className="rounded-md border border-white/20 px-2 py-1 text-[11px] text-white/80 hover:border-white/40"
                     >
-                      Contact support
+                      {t("contactSupportLink")}
                     </a>
                   </div>
                 </div>

@@ -5,7 +5,8 @@ const {
   fetchAnalysisHistory,
   getAnalysisById,
   deleteAnalysisResult,
-updateAnalysisResult
+  updateAnalysisResult,
+  regenerateAnalysisResult,
 } = require("../controllers/analyzeController");
 const { guardActiveInstanceAndFace } = require("../middleware/guardActiveInstanceAndFace");
 const { uploadLimiter } = require("../middleware/rateLimiters");
@@ -17,7 +18,8 @@ router.use(guardActiveInstanceAndFace({ requireFaceEnrolled: true }));
 
 // Upload an image (supports ?captions=false)
 router.post("/", uploadLimiter, upload.single("image"), analyzeImage);
-router.patch("/:id", updateAnalysisResult); 
+router.patch("/:id", updateAnalysisResult);
+router.post("/:id/regenerate", uploadLimiter, regenerateAnalysisResult);
 
 
 // Paginated history

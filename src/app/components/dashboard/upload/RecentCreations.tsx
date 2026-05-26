@@ -28,7 +28,7 @@ export default function RecentCreations({
   }, [refreshToken, refresh]);
 
   return (
-    <section className="w-full pb-8 pt-1 md:pt-2">
+    <section data-tour="upload-recent" className="w-full pb-8 pt-1 md:pt-2">
       <div className="flex items-baseline justify-between border-b border-[var(--hg-border-2)] pb-4">
         <div className="space-y-1">
           <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">{t("eyebrow")}</p>

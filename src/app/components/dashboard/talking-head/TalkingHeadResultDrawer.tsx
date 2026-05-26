@@ -1,6 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Copy, Download, ExternalLink, X } from "lucide-react";
+import { ThumbsFeedback } from "@/app/components/feedback/ThumbsFeedback";
 
 type RecentStatus = "queued" | "processing" | "done" | "failed";
 
@@ -34,13 +36,14 @@ export default function TalkingHeadResultDrawer({
   onOpenChange,
   item,
 }: TalkingHeadResultDrawerProps) {
+  const t = useTranslations("dashboard.talkingHeadDrawer");
   if (!open || !item) return null;
 
   return (
     <div className="fixed inset-0 z-[96]">
       <button
         type="button"
-        aria-label="Close drawer"
+        aria-label={t("closeDrawerLabel")}
         className="absolute inset-0 bg-black/55 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
@@ -59,7 +62,7 @@ export default function TalkingHeadResultDrawer({
                         minute: "2-digit",
                         hour12: false,
                       })
-                    : "Just now"}
+                    : t("justNowLabel")}
                 </span>
                 <span className={`inline-flex rounded-full px-2 py-0.5 font-medium ${statusStyles[item.status]}`}>
                   {item.status}
@@ -70,7 +73,7 @@ export default function TalkingHeadResultDrawer({
               type="button"
               onClick={() => onOpenChange(false)}
               className="rounded-md p-1.5 text-[var(--hg-muted)] hover:text-white"
-              aria-label="Close"
+              aria-label={t("closeButtonLabel")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -91,7 +94,7 @@ export default function TalkingHeadResultDrawer({
                     className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#50C0F0] px-4 text-sm font-semibold text-[#04131d] hover:opacity-90"
                   >
                     <Download className="h-4 w-4" />
-                    Download
+                    {t("downloadButton")}
                   </a>
                   <a
                     href={item.videoUrl}
@@ -100,18 +103,21 @@ export default function TalkingHeadResultDrawer({
                     className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 text-sm text-[var(--hg-muted)] hover:text-white"
                   >
                     <ExternalLink className="h-4 w-4" />
-                    Open
+                    {t("openButton")}
                   </a>
+                </div>
+                <div className="border-t border-[var(--hg-border)] pt-4">
+                  <ThumbsFeedback type="video" referenceId={item.id} />
                 </div>
               </div>
             ) : null}
 
             {(item.status === "queued" || item.status === "processing") ? (
               <div className="space-y-4 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] p-4">
-                <p className="text-sm text-white">Your video is being generated.</p>
+                <p className="text-sm text-white">{t("generatingMessage")}</p>
                 <div className="space-y-1 text-xs text-[var(--hg-muted)]">
-                  <p>Stage: {item.stage || "processing"}</p>
-                  <p>Progress: {typeof item.progress === "number" ? `${item.progress.toFixed(0)}%` : "—"}</p>
+                  <p>{t("stageLabel", { stage: item.stage || t("stageProcessingFallback") })}</p>
+                  <p>{t("progressLabel", { progress: typeof item.progress === "number" ? item.progress.toFixed(0) : "—" })}</p>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
                   <div
@@ -124,17 +130,17 @@ export default function TalkingHeadResultDrawer({
 
             {item.status === "failed" ? (
               <div className="space-y-3 rounded-xl border border-rose-500/35 bg-rose-500/10 p-4 text-sm text-rose-100">
-                <p>Video generation failed. Please try again.</p>
+                <p>{t("failureMessage")}</p>
                 {item.supportId ? (
                   <div className="flex items-center gap-2 text-xs">
-                    <span>Support ID: {item.supportId}</span>
+                    <span>{t("supportIdLabel", { id: item.supportId })}</span>
                     <button
                       type="button"
                       onClick={() => navigator.clipboard.writeText(item.supportId || "")}
                       className="inline-flex items-center gap-1 rounded border border-rose-200/40 px-2 py-1 text-[11px] hover:border-rose-100"
                     >
                       <Copy className="h-3.5 w-3.5" />
-                      Copy
+                      {t("copyButton")}
                     </button>
                   </div>
                 ) : null}

@@ -79,6 +79,19 @@
         "strategies": "Στρατηγικές που δημιουργήθηκαν",
         "rating": "Βαθμολογία δημιουργού",
         "cadence": "Ταχύτερη εβδομαδιαία ρουτίνα"
+      },
+      "workflowStages": {
+        "photo": "Φωτογραφία προσώπου",
+        "audio": "Ηχητικό φωνής",
+        "processing": "Δημιουργία...",
+        "ready": "Βίντεο έτοιμο"
+      },
+      "workflowPreview": {
+        "formTitle": "Avatar Βίντεο AI",
+        "generateButton": "Δημιουργία",
+        "resultTitle": "Το βίντεό σας είναι έτοιμο",
+        "downloadButton": "Λήψη",
+        "openButton": "Άνοιγμα"
       }
     },
     "brands": {
@@ -477,6 +490,20 @@
     "PROMO_REDEEM_FAILED": "Παρουσιάστηκε σφάλμα κατά την εφαρμογή του κωδικού. Παρακαλώ δοκιμάστε ξανά.",
     "errorGeneric": "Κάτι πήγε στραβά. Παρακαλώ δοκιμάστε ξανά."
   },
+  "cart": {
+    "title": "Το καλάθι σας",
+    "closeLabel": "Κλείσιμο καλαθιού",
+    "noItems": "Κανένα προϊόν",
+    "itemCount": "{count, plural, one {# προϊόν} other {# προϊόντα}}",
+    "empty": "Το καλάθι σας είναι άδειο",
+    "emptyHint": "Προσθέστε ένα πλάνο για να ξεκινήσετε",
+    "removeItem": "Αφαίρεση προϊόντος",
+    "subtotal": "Υποσύνολο",
+    "processing": "Επεξεργασία…",
+    "cartEmpty": "Το καλάθι είναι άδειο",
+    "checkout": "Ολοκλήρωση · {price}",
+    "secureCheckout": "Ασφαλής πληρωμή μέσω Stripe · Εφάπαξ πληρωμή"
+  },
   "dashboard": {
     "aiChat": {
       "emptyState": "Ξεκινήστε τη συνομιλία σας...",
@@ -515,7 +542,7 @@
       "catHooks": "Hooks",
       "catAvatarVideo": "Avatar / Βίντεο",
       "catPlanning": "Σχεδιασμός",
-      "placeholderDefault": "Πληκτρολογήστε το μήνυμά σας...",
+      "placeholderDefault": "Γράψτε μήνυμα...",
       "placeholderLimited": "Αναβαθμίστε για να συνεχίσετε...",
       "placeholderContextLimited": "Φτάσατε το όριο context. Ξεκινήστε νέα συνομιλία ή συνοψίστε.",
       "tokensUsage": "Context Tokens: {used} από {limit} χρησιμοποιήθηκαν σε αυτή τη συνομιλία",
@@ -527,6 +554,7 @@
       "errorRateLimit": "Στέλνετε μηνύματα πολύ γρήγορα. Δοκιμάστε ξανά σε λίγο.",
       "errorChatFailed": "Αποτυχία chat. Παρακαλώ δοκιμάστε ξανά.",
       "errorSendFailed": "Κάτι πήγε στραβά κατά την αποστολή. Παρακαλώ δοκιμάστε ξανά.",
+      "moderationBlocked": "Το μήνυμά σου δεν μπορεί να επεξεργαστεί. Αναδιατύπωσέ το και δοκίμασε ξανά.",
       "exportHeader": "ΠΕΡΙΛΗΨΗ ΣΤΡΑΤΗΓΙΚΗΣ ΠΕΡΙΕΧΟΜΕΝΟΥ",
       "exportFooter": "--- Τέλος Σύνοψης ---",
       "exportGeneratedBy": "Δημιουργήθηκε από Sage · echo-fy.com",
@@ -596,6 +624,7 @@
       "collapse": "Σύμπτυξη πλευρικής μπάρας",
       "expand": "Ανάπτυξη πλευρικής μπάρας",
       "packages": "Πακέτα",
+      "lockedTooltip": "Απαιτεί ενεργό πλάνο",
       "profile": "Προφίλ",
       "menu": {
         "myAccount": "Ο λογαριασμός μου",
@@ -646,18 +675,6 @@
         "switchProfile": "Εναλλαγή προφίλ",
         "instanceId": "ID Package Instance",
         "created": "Δημιουργήθηκε"
-      },
-      "onboarding": {
-        "sectionLabel": "Ξεκινώντας",
-        "heading": "Ξεκινήστε με τα βασικά",
-        "dismissAriaLabel": "Απόκρυψη οδηγού",
-        "stepUpload": "Ανεβάστε την πρώτη σας εικόνα",
-        "stepHistory": "Δείτε τη στρατηγική AI",
-        "stepChat": "Δοκιμάστε το AI Chat",
-        "stepVideo": "Δημιουργήστε βίντεο",
-        "recommended": "Προτεινόμενο",
-        "quotaExhausted": "Εξαντλήθηκε το quota",
-        "goToStep": "Μετάβαση →"
       },
       "quota": {
         "sectionLabel": "Χρήση quota",
@@ -769,7 +786,10 @@
       "addonLabel5Videos": "5 βίντεο",
       "addonLabel15Videos": "15 βίντεο",
       "addonLabel30Videos": "30 βίντεο",
-      "addonBadgeBestValue": "Καλύτερη αξία"
+      "addonBadgeBestValue": "Καλύτερη αξία",
+      "statusActive": "Ενεργό",
+      "profileLabel": "Προφίλ {letter}",
+      "remaining": "υπόλοιπο"
     },
     "settings": {
       "heading": "Ρυθμίσεις",
@@ -890,7 +910,18 @@
       "manageBillingLink": "Διαχείριση χρεώσεων →",
       "uploadStageTitle": "Δημιουργία",
       "uploadStageSubtitle": "Ανέβασε μια εικόνα για να δημιουργήσεις προτάσεις.",
-      "uploadStageStatusLabel": "Έτοιμο για ανέβασμα"
+      "uploadStageStatusLabel": "Έτοιμο για ανέβασμα",
+      "aiWorkspaceEyebrow": "AI Workspace",
+      "tour": {
+        "step1": { "title": "Καλώς ήρθες στα Uploads", "body": "Εδώ ανεβάζεις περιεχόμενο για ανάλυση από τεχνητή νοημοσύνη." },
+        "step2": { "title": "Το όριό σου", "body": "Κάθε upload χρησιμοποιεί ένα credit. Αναπλήρωσε οποτεδήποτε από το Billing." },
+        "step3": { "title": "Σύρε ή επίλεξε αρχείο", "body": "Σύρε ένα αρχείο εδώ ή κάνε κλικ για να επιλέξεις από τη συσκευή σου." },
+        "step4": { "title": "Πρόσφατα uploads", "body": "Τα προηγούμενα uploads και τα αποτελέσματά τους εμφανίζονται εδώ." },
+        "next": "Επόμενο",
+        "gotIt": "Το κατάλαβα",
+        "skip": "Παράλειψη",
+        "stepCount": "{current} από {total}"
+      }
     },
     "recentCreations": {
       "eyebrow": "Δημιουργημένα αποτελέσματα",
@@ -921,7 +952,18 @@
       "noPlanMessage": "Δεν υπάρχει ακόμη διαθέσιμο σχέδιο προώθησης.",
       "retryButton": "Επανάληψη",
       "copyCaptionButton": "Αντιγραφή caption",
+      "captionAngleHook": "Hook",
+      "captionAngleAspirational": "Aspirational",
+      "captionAngleCta": "Call to action",
+      "captionAngleDefault": "Λεζάντα",
       "copyHashtagsButton": "Αντιγραφή hashtags",
+      "showMoreHashtags": "+{count} περισσότερα",
+      "showLessHashtags": "Λιγότερα",
+      "hashtagCopied": "Αντιγράφηκε",
+      "hashtagTierReach": "Εμβέλεια",
+      "hashtagTierNiche": "Στόχευση",
+      "hashtagTierBalanced": "Ισορροπία",
+      "hashtagTierTrending": "Τάση",
       "ctaLabel": "CTA:",
       "whyLabel": "Γιατί:",
       "markAsPostedButton": "Σημείωσε ως δημοσιευμένο",
@@ -940,12 +982,233 @@
       "savingLabel": "Αποθήκευση...",
       "saveButton": "Αποθήκευση",
       "safetyTipsHeading": "Συμβουλές ασφαλούς δημοσίευσης",
+      "regenerateButton": "Ανανέωση",
+      "regenerating": "Ανανεώνεται...",
+      "regenerateTooltip": "Νέες λεζάντες και hashtags — χρησιμοποιεί 1 upload",
+      "regenerateConfirm": "Θα δημιουργηθούν νέες λεζάντες και hashtags. Χρησιμοποιεί 1 upload από το όριό σου. Συνέχεια;",
       "toasts": {
         "linkCopied": "Το link αντιγράφηκε",
         "feedbackSaved": "Το feedback αποθηκεύτηκε",
         "feedbackError": "Αποτυχία αποθήκευσης feedback",
         "captionCopied": "Το caption αντιγράφηκε",
-        "hashtagsCopied": "Τα hashtags αντιγράφηκαν"
+        "hashtagsCopied": "Τα hashtags αντιγράφηκαν",
+        "regenerateSuccess": "Ανανεώθηκαν λεζάντες και hashtags",
+        "regenerateQuotaExhausted": "Εξαντλήθηκε το όριο uploads. Αναβάθμισε ή περίμενε το reset.",
+        "regenerateError": "Αποτυχία ανανέωσης. Δοκίμασε ξανά."
+      }
+    },
+    "talkingHeadPage": {
+      "heading": "AI Video Avatar",
+      "subtitle": "Ανέβασε μια φωτογραφία προσώπου + ηχητικό φωνής και θα δημιουργήσουμε ένα βίντεο που μιλάει.",
+      "uploadQuotaLabel": "Όριο upload",
+      "tour": {
+        "step1": { "title": "AI Video Avatar", "body": "Δημιούργησε βίντεο ομιλίας από μια φωτογραφία και ένα αρχείο ήχου." },
+        "step2": { "title": "Ανέβασε τη φωτογραφία σου", "body": "Μια καθαρή, μετωπική φωτογραφία αποδίδει καλύτερα." },
+        "step3": { "title": "Πρόσθεσε ήχο φωνής", "body": "Ανέβασε ένα mp3 ή wav με τη φωνή που θέλεις." },
+        "step4": { "title": "Δημιουργία", "body": "Κάνε κλικ εδώ όταν είναι έτοιμα και τα δύο αρχεία. Η δημιουργία διαρκεί περίπου ένα λεπτό." },
+        "step5": { "title": "Προηγούμενα βίντεο", "body": "Τα προηγούμενα βίντεό σου εμφανίζονται εδώ, έτοιμα για λήψη ή κοινοποίηση." },
+        "next": "Επόμενο",
+        "gotIt": "Το κατάλαβα",
+        "skip": "Παράλειψη",
+        "stepCount": "{current} από {total}"
+      }
+    },
+    "talkingHeadDrawer": {
+      "closeDrawerLabel": "Κλείσιμο drawer",
+      "closeButtonLabel": "Κλείσιμο",
+      "justNowLabel": "Μόλις τώρα",
+      "downloadButton": "Λήψη",
+      "openButton": "Άνοιγμα",
+      "generatingMessage": "Το βίντεό σου δημιουργείται.",
+      "stageLabel": "Στάδιο: {stage}",
+      "stageProcessingFallback": "επεξεργασία",
+      "progressLabel": "Πρόοδος: {progress}%",
+      "failureMessage": "Η δημιουργία βίντεο απέτυχε. Δοκίμασε ξανά.",
+      "supportIdLabel": "ID υποστήριξης: {id}",
+      "copyButton": "Αντιγραφή"
+    },
+    "accountPage": {
+      "heading": "Λογαριασμός",
+      "subtitle": "Διαχείριση προφίλ και ασφάλειας.",
+      "profileEyebrow": "Προφίλ",
+      "profileHeading": "Προφίλ",
+      "emailLabel": "Email:",
+      "notSignedIn": "Δεν είσαι συνδεδεμένος.",
+      "securityEyebrow": "Ασφάλεια",
+      "securityHeading": "Ασφάλεια",
+      "logoutWarning": "Η αποσύνδεση θα σε επιστρέψει στην οθόνη σύνδεσης.",
+      "logOutButton": "Αποσύνδεση",
+      "noSecurityActions": "Δεν υπάρχουν διαθέσιμες ενέργειες ασφαλείας.",
+      "planEyebrow": "Πλάνο",
+      "planHeading": "Κατάσταση πλάνου",
+      "currentPlanLabel": "Τρέχον πλάνο:",
+      "uploadsRemainingLabel": "Uploads που απομένουν:",
+      "expiresLabel": "Λήγει:",
+      "manageBillingLink": "Διαχείριση χρεώσεων →",
+      "noPlanFound": "Δεν βρέθηκε ενεργό πλάνο."
+    },
+    "billingPage": {
+      "heading": "Πλάνο & Χρεώσεις",
+      "subtitle": "Διαχείριση add-ons και προφίλ πακέτων.",
+      "successMessage": "Η αγορά του add-on ολοκληρώθηκε. Τα όρια σου ανανεώνονται.",
+      "cancelMessage": "Η αγορά του add-on ακυρώθηκε.",
+      "appliedLabel": "Εφαρμόστηκε ✓",
+      "pendingLabel": "Εκκρεμεί (ανανέωση)",
+      "verifyErrorLabel": "Δεν μπόρεσε να επιβεβαιωθεί το add-on ακόμη. Παρακαλώ ανανέωσε.",
+      "paymentPendingMessage": "Η πληρωμή ελήφθη, το add-on εξακολουθεί να επεξεργάζεται.",
+      "refreshButton": "Ανανέωση",
+      "contactSupportLink": "Επικοινωνία με υποστήριξη"
+    },
+    "profileSwitcher": {
+      "profileLabel": "Προφίλ {letter}",
+      "loadErrorMessage": "Αποτυχία φόρτωσης πακέτων",
+      "heading": "Επίλεξε ενεργό πακέτο",
+      "subtitle": "Διάλεξε ποιο instance πακέτου θα χρησιμοποιείται για όρια και ιστορικό.",
+      "noInstancesMessage": "Δεν βρέθηκαν ενεργά instances πακέτων.",
+      "loadingMessage": "Φόρτωση πακέτων…"
+    },
+    "sessionExpired": {
+      "eyebrow": "Συνεδρία",
+      "heading": "Η συνεδρία σου έληξε",
+      "body": "Παρακαλώ συνδέσου ξανά για να συνεχίσεις από εκεί που σταμάτησες.",
+      "signInButton": "Σύνδεση ξανά"
+    },
+    "topBar": {
+      "openSettingsLabel": "Άνοιγμα ρυθμίσεων"
+    },
+    "feedback": {
+      "button": "Σχόλια",
+      "modalTitle": "Στείλε σχόλια",
+      "modalSubtitle": "Βοήθησέ μας να βελτιώσουμε το echo-fy. Διαβάζουμε κάθε μήνυμα.",
+      "placeholder": "Τι θέλεις να πεις;",
+      "send": "Αποστολή",
+      "sending": "Αποστολή...",
+      "cancel": "Ακύρωση",
+      "closeAriaLabel": "Κλείσιμο σχολίων",
+      "thankYou": "Ευχαριστούμε για τα σχόλιά σου!",
+      "error": "Δεν ήταν δυνατή η αποστολή. Δοκίμασε ξανά.",
+      "helpfulPrompt": "Ήταν χρήσιμο;",
+      "helpful": "Σήμανση ως χρήσιμο",
+      "notHelpful": "Σήμανση ως μη χρήσιμο"
+    },
+    "tips": {
+      "heading": "Συμβουλές για καλύτερα αποτελέσματα",
+      "items": [
+        "Ανέβαζε κάθετες φωτογραφίες υψηλής ποιότητας για καλύτερη ανάλυση.",
+        "Χρησιμοποίησε το AI Chat για να βελτιώσεις τα captions ή να δοκιμάσεις ιδέες.",
+        "Έλεγξε το Insight History για να δεις τι είχε καλή απόδοση.",
+        "Χρησιμοποίησε hashtags που προτείνει το AI για μεγαλύτερη απήχηση.",
+        "Προγραμμάτισε uploads σε ώρες αιχμής (π.χ. 6–9 μ.μ. τοπική ώρα)."
+      ]
+    },
+    "userPlanCard": {
+      "heading": "Το πλάνο σου",
+      "planLabel": "Πλάνο:",
+      "uploadsLabel": "Uploads που απομένουν:",
+      "expiresLabel": "Λήγει:",
+      "upgradePlanButton": "Αναβάθμιση πλάνου"
+    },
+    "uploadTalkingHead": {
+      "videoItemTitle": "Avatar Video",
+      "heading": "AI Video Avatar",
+      "facePhotoLabel": "Φωτογραφία προσώπου (PNG/JPG)",
+      "audioLabel": "Αρχείο φωνής (MP3/WAV)",
+      "generateButton": "Δημιουργία",
+      "generatingButton": "Δημιουργία…",
+      "resetButton": "Επαναφορά",
+      "copyButton": "Αντιγραφή",
+      "supportIdLabel": "Support ID: {id}",
+      "videoReadyIndicator": "Το βίντεο είναι έτοιμο ✓",
+      "thumbnailNoPreview": "Χωρίς προεπισκόπηση",
+      "videoSourceAlt": "Προεπισκόπηση πηγής βίντεο",
+      "errors": {
+        "facePhotoRequired": "Επίλεξε μια φωτογραφία προσώπου (PNG/JPG).",
+        "audioRequired": "Επίλεξε ένα αρχείο φωνής (MP3/WAV).",
+        "noActiveInstance": "Δεν υπάρχει ενεργό πακέτο. Επίλεξε ή αγόρασε ένα πακέτο για να συνεχίσεις.",
+        "faceEnrollmentRequired": "Καταχώρησε το προφίλ προσώπου σου για να συνεχίσεις.",
+        "noFaceDetected": "Δεν εντοπίστηκε πρόσωπο. Ανέβασε μια καθαρή φωτογραφία με ένα ορατό πρόσωπο.",
+        "multipleFaces": "Εντοπίστηκαν πολλά πρόσωπα. Ανέβασε μια εικόνα με ένα μόνο πρόσωπο.",
+        "faceVerificationFailed": "Η επαλήθευση προσώπου απέτυχε. Αυτή η φωτογραφία δεν ταιριάζει με το καταχωρημένο πρόσωπο.",
+        "upgradeRequired": "Απαιτείται αναβάθμιση",
+        "videoGenerationFailed": "Η δημιουργία βίντεο απέτυχε."
+      },
+      "errorCtas": {
+        "enrollFace": "Καταχώρηση προσώπου",
+        "viewPackages": "Δες πακέτα"
+      },
+      "progress": {
+        "uploading": "Μεταφόρτωση αρχείων...",
+        "verifying": "Επαλήθευση ταυτότητας...",
+        "generating": "Δημιουργία βίντεο...",
+        "almostDone": "Σχεδόν έτοιμο..."
+      },
+      "creditWarning": {
+        "heading": "Απαιτείται επιβεβαίωση credit",
+        "body": "Αυτό το audio διαρκεί {seconds}s και θα χρησιμοποιήσει {count, plural, one {# credit βίντεο} other {# credits βίντεο}}. Συνέχεια;",
+        "confirmButton": "{count, plural, one {Επιβεβαίωση (χρήση # credit)} other {Επιβεβαίωση (χρήση # credits)}}",
+        "cancelButton": "Ακύρωση"
+      },
+      "results": {
+        "eyebrow": "Generated Results",
+        "heading": "Πρόσφατα",
+        "emptyHeading": "Δημιούργησε το πρώτο σου avatar video",
+        "emptyBody": "Ανέβασε μια φωτογραφία προσώπου και audio για να δημιουργήσεις βίντεο.",
+        "emptyButton": "Ξεκίνα τη δημιουργία"
+      }
+    },
+    "fileUpload": {
+      "heading": "Ανέβασε εικόνα",
+      "subtitle": "Σύρε & κατέβασε ή κάνε κλικ για αναζήτηση",
+      "clickToChoose": "Κάνε κλικ για επιλογή",
+      "orDragDrop": "ή σύρε & κατέβασε",
+      "fileConstraintHint": "Max {maxMb}MB • PNG/JPG/WebP/AVIF",
+      "previewAlt": "Προεπισκόπηση",
+      "uploadedBadge": "Ανέβηκε & αναλύθηκε",
+      "supportIdLabel": "ID υποστήριξης: {id}",
+      "copyButton": "Αντιγραφή",
+      "analyzeButton": "Ανάλυση με AI",
+      "uploadingButton": "Μεταφόρτωση…",
+      "cancelButton": "Άκυρο",
+      "resetButton": "Επαναφορά",
+      "errors": {
+        "upgradeTitle": "Απαιτείται αναβάθμιση",
+        "upgradeMessage": "Το πλάνο σου δεν περιλαμβάνει αυτή τη λειτουργία. Αναβάθμισε για να συνεχίσεις.",
+        "upgradeAction": "Δες πλάνα",
+        "enrollTitle": "Απαιτείται εγγραφή προσώπου",
+        "enrollMessage": "Παρακαλώ εγγράψου το πρόσωπό σου για να συνεχίσεις.",
+        "mismatchTitle": "Η επαλήθευση προσώπου απέτυχε",
+        "mismatchMessage": "Το αρχείο δεν αντιστοιχεί στο εγγεγραμμένο persona αυτού του πακέτου.",
+        "driftTitle": "Απαιτείται επανεγγραφή επαλήθευσης προσώπου",
+        "driftMessage": "Ανιχνεύθηκε απόκλιση face ID. Επανεγγράψου για να συνεχίσεις.",
+        "driftAction": "Επανεγγραφή προσώπου",
+        "multipleFacesTitle": "Εντοπίστηκαν πολλά πρόσωπα",
+        "multipleFacesMessage": "Παρακαλώ ανέβασε εικόνα με ένα μόνο ορατό πρόσωπο.",
+        "alreadyBoundTitle": "Το persona ανήκει ήδη",
+        "alreadyBoundMessage": "Αυτό το persona ανήκει σε άλλο ενεργό πακέτο.",
+        "defaultTitle": "Αποτυχία ανεβάσματος",
+        "defaultMessage": "Δεν μπορέσαμε να αναλύσουμε αυτή την εικόνα. Δοκίμασε ξανά."
+      },
+      "personaMismatch": {
+        "message": "Αυτό το πακέτο είναι συνδεδεμένο με persona {boundPersona}. Ζήτησες {requestedPersona}.",
+        "selectAnotherLink": "Επέλεξε άλλο πακέτο",
+        "buyAnotherLink": "Αγόρασε άλλο πακέτο"
+      },
+      "personaAlreadyBound": {
+        "message": "Αυτό το persona ανήκει ήδη σε άλλο ενεργό πακέτο. Επέλεξε το σωστό πακέτο και δοκίμασε ξανά.",
+        "selectingButton": "Επιλογή...",
+        "selectPackageButton": "Επέλεξε αυτό το πακέτο"
+      },
+      "validate": {
+        "unsupportedType": "Μη υποστηριζόμενος τύπος αρχείου. Χρησιμοποίησε PNG, JPG, WEBP ή AVIF.",
+        "fileTooLarge": "Το αρχείο είναι πολύ μεγάλο. Max {maxMb} MB."
+      },
+      "progress": {
+        "uploading": "Μεταφόρτωση φωτογραφίας...",
+        "detectingFace": "Ανίχνευση προσώπου...",
+        "analyzing": "Ανάλυση περιεχομένου...",
+        "generatingInsights": "Δημιουργία αναλύσεων...",
+        "almostDone": "Σχεδόν έτοιμο...",
+        "complete": "Ολοκληρώθηκε!"
       }
     }
   },

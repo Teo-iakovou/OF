@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import Spinner from "@/app/components/dashboard/loading spinner/page";
 import DashboardSidebar from "@/app/components/dashboard/sidebar/DashboardSidebar";
@@ -27,6 +28,7 @@ export default function LayoutClient({
   children: React.ReactNode;
   initialUser?: User;
 }) {
+  const t = useTranslations("dashboard.sessionExpired");
   const [expanded, setExpanded] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -137,17 +139,17 @@ export default function LayoutClient({
     return (
       <div className="min-h-screen grid place-items-center bg-[var(--hg-bg)] px-4 text-white">
         <div className="w-full max-w-md rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-6 text-center shadow-[0_16px_36px_rgba(0,0,0,0.25)]">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)]">Session</p>
-          <h2 className="mt-2 text-xl font-semibold text-white">Your session expired</h2>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)]">{t("eyebrow")}</p>
+          <h2 className="mt-2 text-xl font-semibold text-white">{t("heading")}</h2>
           <p className="mt-2 text-sm text-[var(--hg-muted)]">
-            Please sign in again to continue where you left off.
+            {t("body")}
           </p>
           <button
             type="button"
             onClick={() => router.replace(loginHref)}
             className="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-[var(--hg-accent)] px-4 text-sm font-semibold text-[#07141d] hover:opacity-90"
           >
-            Sign in again
+            {t("signInButton")}
           </button>
         </div>
       </div>
