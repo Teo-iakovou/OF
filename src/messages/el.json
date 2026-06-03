@@ -1174,14 +1174,15 @@
     "billingPage": {
       "heading": "Πλάνο & Χρεώσεις",
       "subtitle": "Διαχείριση add-ons και προφίλ πακέτων.",
-      "successMessage": "Η αγορά του add-on ολοκληρώθηκε. Τα όρια σου ανανεώνονται.",
-      "cancelMessage": "Η αγορά του add-on ακυρώθηκε.",
-      "appliedLabel": "Εφαρμόστηκε ✓",
-      "pendingLabel": "Εκκρεμεί (ανανέωση)",
-      "verifyErrorLabel": "Δεν μπόρεσε να επιβεβαιωθεί το add-on ακόμη. Παρακαλώ ανανέωσε.",
-      "paymentPendingMessage": "Η πληρωμή ελήφθη, το add-on εξακολουθεί να επεξεργάζεται.",
-      "refreshButton": "Ανανέωση",
-      "contactSupportLink": "Επικοινωνία με υποστήριξη"
+      "toasts": {
+        "verifyingPurchase": "Επιβεβαίωση αγοράς…",
+        "creditsAdded": "Τα credits προστέθηκαν!",
+        "creditsPending": "Τα credits ακόμα επεξεργάζονται",
+        "creditsPendingDesc": "Η αγορά ολοκληρώθηκε. Τα credits θα εμφανιστούν σε λίγο.",
+        "checkAgain": "Δοκίμασε ξανά",
+        "checkoutCancelled": "Η αγορά ακυρώθηκε.",
+        "planActivated": "Το πακέτο ενεργοποιήθηκε!"
+      }
     },
     "profileSwitcher": {
       "profileLabel": "Προφίλ {letter}",

@@ -50,6 +50,7 @@ export function useOverviewModel({ enabled }: UseOverviewModelOptions) {
   const [state, setState] = useState<OverviewModelState>(INITIAL_STATE);
   const requestSeq = useRef(0);
   const instancesSeq = useRef(0);
+  const inFlightRef = useRef(false);
 
   const safeCheckUserPackage = useCallback(async (force = false) => {
     const fn: (options?: { force?: boolean }) => Promise<UserPackageResponse> =
@@ -92,21 +93,29 @@ export function useOverviewModel({ enabled }: UseOverviewModelOptions) {
     }
   }, [enabled]);
 
-  const refresh = useCallback(async (force = false) => {
+  const refresh = useCallback(async (force = false, silent = false) => {
     if (!enabled) {
       return;
     }
 
+    // Dedup: skip concurrent non-forced calls — the in-flight fetch will settle
+    // into the same final state. Forced calls always proceed (user intent).
+    if (inFlightRef.current && !force) return;
+
+    inFlightRef.current = true;
     const seq = ++requestSeq.current;
     const startedAt = Date.now();
-    setState((prev) => ({
-      ...prev,
-      ready: false,
-      coreLoading: true,
-      latestResult: null,
-      latestLoading: false,
-      coreError: null,
-    }));
+
+    if (!silent) {
+      setState((prev) => ({
+        ...prev,
+        ready: false,
+        coreLoading: true,
+        latestResult: null,
+        latestLoading: false,
+        coreError: null,
+      }));
+    }
 
     let planData: UserPackageResponse | null = null;
     let coreError: string | null = null;
@@ -119,6 +128,8 @@ export function useOverviewModel({ enabled }: UseOverviewModelOptions) {
           ? err.message
           : "Failed to load dashboard overview";
       coreError = message;
+    } finally {
+      inFlightRef.current = false;
     }
 
     if (seq !== requestSeq.current) return;
@@ -137,7 +148,7 @@ export function useOverviewModel({ enabled }: UseOverviewModelOptions) {
     const isNewUser = uploadsUsed === 0 || (uploadsUsed === null && within24h);
 
     const elapsed = Date.now() - startedAt;
-    const wait = Math.max(0, MIN_SKELETON_MS - elapsed);
+    const wait = force ? 0 : Math.max(0, MIN_SKELETON_MS - elapsed);
     if (wait > 0) {
       await new Promise((resolve) => setTimeout(resolve, wait));
     }
@@ -178,7 +189,12 @@ export function useOverviewModel({ enabled }: UseOverviewModelOptions) {
   }, [enabled, safeCheckUserPackage]);
 
   useEffect(() => {
-    void refresh(false);
+    // Silent if planData is already populated — stale-while-revalidate, no
+    // skeleton flash on return from billing page.
+    const alreadyHasData = state.planData !== null;
+    void refresh(false, alreadyHasData);
+    // Run only on mount and when `refresh` identity changes (i.e. `enabled` flips).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh]);
 
   useEffect(() => {

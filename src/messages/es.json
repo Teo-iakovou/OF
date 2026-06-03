@@ -1081,14 +1081,15 @@
     "billingPage": {
       "heading": "Plan y facturación",
       "subtitle": "Gestiona add-ons y perfiles de paquetes.",
-      "successMessage": "Compra de add-on completada. Tus cuotas se están actualizando.",
-      "cancelMessage": "Compra de add-on cancelada.",
-      "appliedLabel": "Aplicado ✓",
-      "pendingLabel": "Pendiente (actualizando)",
-      "verifyErrorLabel": "Aún no se pudo verificar el add-on. Por favor actualiza.",
-      "paymentPendingMessage": "Pago recibido, el add-on aún se está procesando.",
-      "refreshButton": "Actualizar",
-      "contactSupportLink": "Contactar soporte"
+      "toasts": {
+        "verifyingPurchase": "Verificando compra…",
+        "creditsAdded": "¡Créditos añadidos!",
+        "creditsPending": "Los créditos aún se están procesando",
+        "creditsPendingDesc": "Tu compra fue exitosa. Los créditos llegarán en un momento.",
+        "checkAgain": "Verificar de nuevo",
+        "checkoutCancelled": "Compra cancelada.",
+        "planActivated": "¡Plan activado!"
+      }
     },
     "profileSwitcher": {
       "profileLabel": "Perfil {letter}",

@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
-import Reveal from "@/app/components/common/Reveal";
+import { useTranslations, useLocale } from "next-intl";
+import { toast } from "sonner";
 import { clearApiCaches, verifyAddonSession } from "@/app/utils/api";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import BillingPanel from "@/app/components/dashboard/billing/BillingPanel";
 import { useRouter } from "@/i18n/navigation";
 
-type Notice = { status: "success" | "cancel"; kind?: string | null };
 type AddonParam = "uploads" | "chat" | "videos";
 
 const VALID_ADDON_PARAMS = new Set<string>(["uploads", "chat", "videos"]);
@@ -22,67 +21,98 @@ function parseAddonParam(value: string | null): AddonParam | undefined {
 export default function BillingPage() {
   const t = useTranslations("dashboard.billingPage");
   const router = useRouter();
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const { refresh: refreshPlan } = usePlanInfo();
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const [addonVerifyStatus, setAddonVerifyStatus] = useState<"applied" | "pending" | "error" | null>(null);
-  const [addonVerifyInfo, setAddonVerifyInfo] = useState<{
-    sessionId?: string | null;
-    requestId?: string | null;
-  } | null>(null);
   const [panelRefreshToken, setPanelRefreshToken] = useState(0);
 
   const initialAddon = parseAddonParam(searchParams.get("addon"));
+  const handledRef = useRef(false);
+
+  const runAddonVerify = useCallback(
+    async (sessionId: string) => {
+      const verifyingToastId = toast.custom(
+        () => (
+          <div className="flex w-[320px] items-center gap-3 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-3 shadow-xl">
+            <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-cyan-400/30 border-t-cyan-400" />
+            <p className="text-sm text-[var(--hg-text)]">{t("toasts.verifyingPurchase")}</p>
+          </div>
+        ),
+        { duration: Infinity }
+      );
+
+      const backoff = [2000, 3000, 5000, 5000, 5000];
+      let applied = false;
+
+      for (const delay of backoff) {
+        await new Promise<void>((r) => setTimeout(r, delay));
+        try {
+          const res = await verifyAddonSession(sessionId);
+          if (res?.applied) {
+            applied = true;
+            break;
+          }
+        } catch {
+          // swallow; fall through to pending path
+        }
+      }
+
+      toast.dismiss(verifyingToastId);
+
+      if (applied) {
+        clearApiCaches();
+        await refreshPlan(true);
+        setPanelRefreshToken((prev) => prev + 1);
+        toast.success(t("toasts.creditsAdded"));
+        setTimeout(() => router.replace(`/${locale}/dashboard` as "/"), 150);
+        return;
+      }
+
+      // Poll exhausted — webhook still in flight server-side
+      toast(t("toasts.creditsPending"), {
+        description: t("toasts.creditsPendingDesc"),
+        duration: 10000,
+        action: {
+          label: t("toasts.checkAgain"),
+          onClick: () => void runAddonVerify(sessionId),
+        },
+      });
+      // Stay on billing — do not redirect on non-applied path
+    },
+    [locale, refreshPlan, router, t]
+  );
 
   useEffect(() => {
-    const status = searchParams.get("status");
-    const kind = searchParams.get("kind");
-    const sessionId = searchParams.get("session_id");
-    if (status === "success" || status === "cancel") {
-      setNotice({ status, kind });
-      (async () => {
-        clearApiCaches();
-        setPanelRefreshToken((prev) => prev + 1);
-        refreshPlan(true);
-        if (status === "success" && kind === "addon" && sessionId) {
-          const backoff = [2000, 3000, 5000, 5000, 5000];
-          let lastRes: { applied: boolean; paymentStatus?: string; sessionId?: string; requestId?: string | null } | null =
-            null;
-          try {
-            for (let i = 0; i < backoff.length; i += 1) {
-              const res = await verifyAddonSession(sessionId);
-              lastRes = res;
-              setAddonVerifyInfo({ sessionId: res.sessionId, requestId: res.requestId ?? null });
-              if (res.applied) {
-                setAddonVerifyStatus("applied");
-                refreshPlan(true);
-                setPanelRefreshToken((prev) => prev + 1);
-                break;
-              }
-              if (res.paymentStatus !== "paid") {
-                setAddonVerifyStatus("pending");
-                break;
-              }
-              setAddonVerifyStatus("pending");
-              await new Promise((r) => setTimeout(r, backoff[i]));
-            }
-            if (lastRes && lastRes.paymentStatus === "paid" && !lastRes.applied) {
-              setAddonVerifyStatus("pending");
-            }
-          } catch {
-            setAddonVerifyStatus("error");
-          }
-        } else {
-          setAddonVerifyStatus(null);
-          setAddonVerifyInfo(null);
-        }
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("ai-auth-changed"));
-        }
-        router.replace("/dashboard/billing");
-      })();
+    if (handledRef.current) return;
+
+    const sp = new URLSearchParams(window.location.search);
+    const status = sp.get("status");
+    const kind = sp.get("kind");
+    const sessionId = sp.get("session_id");
+
+    if (!status) return;
+
+    handledRef.current = true;
+
+    // Strip params immediately so a refresh doesn't re-trigger
+    router.replace(`/${locale}/dashboard/billing` as "/", { scroll: false });
+
+    if (status === "cancel") {
+      toast.info(t("toasts.checkoutCancelled"));
+      return;
     }
-  }, [searchParams, router, refreshPlan]);
+
+    if (status === "success" && kind === "plan") {
+      toast.success(t("toasts.planActivated"));
+      setTimeout(() => router.replace(`/${locale}/dashboard` as "/"), 150);
+      return;
+    }
+
+    if (status === "success" && kind === "addon" && sessionId) {
+      void runAddonVerify(sessionId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col text-white">
@@ -97,54 +127,6 @@ export default function BillingPage() {
 
       <main>
         <div className="max-w-6xl mx-auto w-full px-4 md:px-12 lg:px-20 pb-10 space-y-6">
-          {notice ? (
-            <Reveal as="section" className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-sm text-gray-200">
-                {notice.status === "success"
-                  ? t("successMessage")
-                  : t("cancelMessage")}
-              </p>
-              {notice.status === "success" && notice.kind === "addon" ? (
-                <p className="mt-2 text-xs text-gray-300">
-                  {addonVerifyStatus === "applied"
-                    ? t("appliedLabel")
-                    : addonVerifyStatus === "pending"
-                      ? t("pendingLabel")
-                      : addonVerifyStatus === "error"
-                        ? t("verifyErrorLabel")
-                        : null}
-                </p>
-              ) : null}
-              {notice.status === "success" && notice.kind === "addon" && addonVerifyStatus === "pending" ? (
-                <div className="mt-2 text-xs text-gray-300 space-y-1">
-                  <div>{t("paymentPendingMessage")}</div>
-                  <div>
-                    Session: {addonVerifyInfo?.sessionId || "—"}
-                    {addonVerifyInfo?.requestId ? ` · Request ID: ${addonVerifyInfo.requestId}` : ""}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        refreshPlan(true);
-                        setPanelRefreshToken((prev) => prev + 1);
-                      }}
-                      className="rounded-md border border-white/20 px-2 py-1 text-[11px] text-white/80 hover:border-white/40"
-                    >
-                      {t("refreshButton")}
-                    </button>
-                    <a
-                      href="mailto:support@yourapp.com"
-                      className="rounded-md border border-white/20 px-2 py-1 text-[11px] text-white/80 hover:border-white/40"
-                    >
-                      {t("contactSupportLink")}
-                    </a>
-                  </div>
-                </div>
-              ) : null}
-            </Reveal>
-          ) : null}
-
           <BillingPanel refreshToken={panelRefreshToken} initialAddon={initialAddon} />
         </div>
       </main>

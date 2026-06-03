@@ -1174,14 +1174,15 @@
     "billingPage": {
       "heading": "Plan & Billing",
       "subtitle": "Manage add-ons and package profiles.",
-      "successMessage": "Add-on purchase completed. Your quotas are refreshing.",
-      "cancelMessage": "Add-on purchase canceled.",
-      "appliedLabel": "Applied ✓",
-      "pendingLabel": "Pending (refreshing)",
-      "verifyErrorLabel": "Could not verify add-on yet. Please refresh.",
-      "paymentPendingMessage": "Payment received, add-on still processing.",
-      "refreshButton": "Refresh",
-      "contactSupportLink": "Contact support"
+      "toasts": {
+        "verifyingPurchase": "Verifying purchase…",
+        "creditsAdded": "Credits added!",
+        "creditsPending": "Credits still processing",
+        "creditsPendingDesc": "Your purchase went through. Credits should arrive in a moment.",
+        "checkAgain": "Check again",
+        "checkoutCancelled": "Checkout cancelled.",
+        "planActivated": "Plan activated!"
+      }
     },
     "profileSwitcher": {
       "profileLabel": "Profile {letter}",

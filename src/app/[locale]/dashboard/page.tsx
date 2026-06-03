@@ -339,7 +339,7 @@ export default function DashboardPage() {
   const t = useTranslations("dashboard.home");
   const tActivation = useTranslations("dashboard.home.checkoutActivation");
   const locale = useLocale();
-  const showSkeleton = !loading && coreLoading && !ready;
+  const showSkeleton = !loading && coreLoading && !ready && planData === null;
   const showGetStarted =
     !loading && ready && !coreError && (isMissingActiveInstance || !hasActiveInstance);
 

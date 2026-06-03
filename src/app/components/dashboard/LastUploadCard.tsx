@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ImageIcon, ArrowRight } from "lucide-react";
@@ -43,17 +43,25 @@ export default function LastUploadCard({ packageInstanceId, className }: LastUpl
   const locale = useLocale();
   const [item, setItem] = useState<RecentCreation | null>(null);
   const [loading, setLoading] = useState(false);
+  // Skips re-fetch when packageInstanceId hasn't changed across context refreshes.
+  // Reset to null externally (e.g. via an upload-created event) to force a reload.
+  const loadedForRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!packageInstanceId) {
       setItem(null);
       return;
     }
+    // Already fetched for this package — no re-fetch needed.
+    if (loadedForRef.current === packageInstanceId) return;
+
     let cancelled = false;
     setLoading(true);
     getRecentCreations({ packageInstanceId, limit: 1 })
       .then((res) => {
-        if (!cancelled) setItem(res[0] ?? null);
+        if (cancelled) return;
+        setItem(res[0] ?? null);
+        loadedForRef.current = packageInstanceId;
       })
       .catch(() => {
         if (!cancelled) setItem(null);
