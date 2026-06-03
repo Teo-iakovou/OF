@@ -470,6 +470,7 @@
     "manageBilling": "Διαχείριση χρέωσης →",
     "or": "ή",
     "upgradePlan": "Αναβάθμιση πλάνου",
+    "buyCreditsCta": "Αγορά credits στη σελίδα χρέωσης",
     "cancel": "Ακύρωση",
     "buy": "Αγορά",
     "loading": "Φόρτωση επιλογών…",
@@ -663,6 +664,21 @@
       "demoCaptionLabel": "Demo λεζάντα",
       "demoCaption": "🔥 Νέα κυκλοφορία απόψε! Ρυθμίστε τις ειδοποιήσεις σας και να είστε έτοιμοι."
     },
+    "packageSwitcher": {
+      "title": "Τα πακέτα σου",
+      "subtitle": "Εναλλαγή μεταξύ των ενεργών πακέτων σου",
+      "active": "Ενεργό",
+      "setActive": "Ενεργοποίηση",
+      "switching": "Εναλλαγή...",
+      "faceVerified": "Επιβεβαιωμένο πρόσωπο",
+      "faceSetupNeeded": "Χρειάζεται επιβεβαίωση προσώπου",
+      "uploadsLeft": "{count} uploads διαθέσιμα",
+      "unlimited": "Απεριόριστα",
+      "switchPackage": "Αλλαγή πακέτου",
+      "packageCount": "{count} πακέτα",
+      "noInstances": "Δεν βρέθηκαν ενεργά πακέτα.",
+      "closeAriaLabel": "Κλείσιμο"
+    },
     "home": {
       "sectionOverview": "ΕΠΙΣΚΟΠΗΣΗ",
       "heading": "Dashboard",
@@ -683,7 +699,15 @@
         "uploads": "Uploads",
         "aiTokens": "AI Tokens",
         "videos": "Βίντεο",
-        "unlimited": "Απεριόριστο"
+        "unlimited": "Απεριόριστο",
+        "remaining": "{n} διαθέσιμα",
+        "topUp": "ανανέωση →",
+        "comingSoon": "Σύντομα"
+      },
+      "manageCredits": {
+        "heading": "Διαχείριση credits",
+        "body": "Ανανέωσε uploads, chat ή video credits.",
+        "cta": "Μετάβαση στη χρέωση →"
       },
       "quickActions": {
         "sectionLabel": "Γρήγορες ενέργειες",
@@ -693,18 +717,37 @@
         "aiChat": "AI Chat",
         "chatTooltip": "Φτάσατε το όριο chat",
         "aiVideoAvatar": "AI Video Avatar",
+        "uploadSublabel": "Ανάλυση νέας φωτογραφίας",
+        "chatSublabel": "Ρώτα τον AI coach",
+        "videoSublabel": "Δημιούργησε talking video",
         "unavailable": "Μη διαθέσιμο"
       },
       "lastActivity": {
         "sectionLabel": "Τελευταία δραστηριότητα",
         "heading": "Τελευταίο upload",
+        "lastUpload": "Τελευταίο upload",
+        "viewRecommendations": "Ιστορικό",
         "noUploads": "Δεν υπάρχουν uploads ακόμα. Ανεβάστε την πρώτη σας εικόνα για να δείτε insights.",
         "createdAt": "Δημιουργήθηκε {date}",
         "insightsReady": "Τα AI insights είναι έτοιμα.",
         "viewFullInsight": "Πλήρης Ανάλυση →",
         "imageAlt": "Προεπισκόπηση τελευταίου upload",
         "niche": "Niche",
-        "topPlatform": "Κορυφαία πλατφόρμα"
+        "topPlatform": "Κορυφαία πλατφόρμα",
+        "recentUploadsLabel": "Πρόσφατη δραστηριότητα",
+        "recentUploadsHeading": "Πρόσφατα uploads",
+        "viewAll": "Όλα →",
+        "unspecifiedNiche": "Upload"
+      },
+      "nudge": {
+        "nudgeUploadsLow": "Τα uploads σου τελειώνουν. Ανανέωσε πριν εξαντληθούν.",
+        "nudgeBuyMore": "Αγόρασε περισσότερα",
+        "nudgeNoRecentUpload": "Πέρασε καιρός — ανέβασε νέα φωτογραφία για φρέσκα insights.",
+        "nudgeUploadNow": "Ανέβασε τώρα",
+        "nudgeChatUntouched": "Δεν έχεις δοκιμάσει ακόμα το AI Chat. Ρώτα τον coach σου.",
+        "nudgeTryChat": "Δοκίμασέ το",
+        "nudgeVideoUntouched": "Δημιούργησε talking-head βίντεο από το τελευταίο σου upload.",
+        "nudgeTryVideo": "Δοκίμασέ το"
       },
       "switcher": {
         "closeAriaLabel": "Κλείσιμο εναλλαγής προφίλ",
@@ -721,6 +764,20 @@
         "statusActive": "Ενεργό",
         "statusInactive": "Ανενεργό",
         "setActive": "Ορισμός ως ενεργό"
+      },
+      "checkoutActivation": {
+        "activating": "Ενεργοποίηση πακέτου…",
+        "activatingSubtitle": "Θα διαρκέσει μόνο λίγο.",
+        "timeoutTitle": "Διαρκεί περισσότερο από το αναμενόμενο",
+        "timeoutBody": "Η πληρωμή σας ελήφθη, αλλά το πακέτο ακόμα ενεργοποιείται. Ανανεώστε τη σελίδα για να ελέγξετε ξανά.",
+        "timeoutRefresh": "Ανανέωση σελίδας"
+      },
+      "newPackageModal": {
+        "heading": "Νέο πακέτο έτοιμο",
+        "body": "Το νέο σας πακέτο {plan} έχει ενεργοποιηθεί. Θέλετε να μεταβείτε σε αυτό τώρα;",
+        "switchButton": "Εναλλαγή τώρα",
+        "keepButton": "Διατήρηση τρέχοντος",
+        "closeAriaLabel": "Κλείσιμο ειδοποίησης νέου πακέτου"
       }
     },
     "history": {
@@ -866,16 +923,75 @@
       "ultimateHighlights": ["Καλύτερη αξία για ομάδες", "Μέγιστα όρια", "Υποστήριξη προτεραιότητας"]
     },
     "faceEnroll": {
-      "heading": "Απαιτείται καταχώρηση προσώπου",
-      "body": "Ανέβασε μια καθαρή φωτογραφία με ένα μόνο πρόσωπο για να ξεκλειδώσεις όλες τις λειτουργίες αυτού του πακέτου.",
-      "uploadButton": "Ανέβασε φωτογραφία προσώπου",
-      "copyRequestId": "Αντιγραφή request ID",
+      "title": {
+        "initial": "Ας επιβεβαιώσουμε ότι είσαι εσύ",
+        "camera": "Τοποθέτησε το πρόσωπό σου στο πλαίσιο",
+        "analyzing": "Ανάλυση φωτογραφίας",
+        "success": "Επιβεβαιώθηκε — όλα έτοιμα"
+      },
+      "body": {
+        "initial": "Επιβεβαιώνουμε το πρόσωπό σου μία φορά για να προστατεύσουμε το περιεχόμενό σου και να αποτρέψουμε κακή χρήση της εικόνας τρίτων. Διαρκεί περίπου 30 δευτερόλεπτα.",
+        "camera": "Τοποθέτησε τον εαυτό σου εντός του πλαισίου. Το κουμπί λήψης θα ενεργοποιηθεί όταν είσαι έτοιμος.",
+        "analyzing": "Αυτό συνήθως διαρκεί λίγα δευτερόλεπτα. Μην κλείσεις αυτό το παράθυρο.",
+        "success": "Η ταυτότητά σου είναι ασφαλής. Μπορείς πλέον να χρησιμοποιήσεις ολόκληρη την πλατφόρμα.",
+        "analyzingSteps": "Εντοπισμός προσώπου · Έλεγχος ποιότητας · Κρυπτογράφηση"
+      },
+      "tips": {
+        "header": "Για καλύτερα αποτελέσματα",
+        "lighting": "Καλός φωτισμός, χωρίς σκληρές σκιές",
+        "facing": "Κοίτα την κάμερα κατευθείαν, με ανοιχτά μάτια",
+        "noObstructions": "Αφαίρεσε γυαλιά ηλίου, καπέλο ή μάσκα"
+      },
+      "actions": {
+        "takePhoto": "Λήψη φωτογραφίας",
+        "takePhotoSub": "Χρησιμοποίησε την κάμερά σου",
+        "uploadFile": "Ανέβασμα αρχείου",
+        "uploadFileSub": "Από τη συσκευή σου",
+        "capture": "Λήψη",
+        "cancel": "Ακύρωση",
+        "tryAgain": "Δοκίμασε ξανά",
+        "contactSupport": "Χρειάζεσαι βοήθεια; Επικοινώνησε μαζί μας",
+        "encrypted": "Κρυπτογραφημένα & ιδιωτικά"
+      },
       "errors": {
-        "alreadyEnrolled": "Έχει ήδη καταχωρηθεί πρόσωπο για αυτό το πακέτο.",
-        "multipleFaces": "Ανέβασε μια φωτογραφία με ακριβώς ένα πρόσωπο.",
-        "noFaceDetected": "Δεν εντοπίστηκε πρόσωπο. Ανέβασε μια καθαρή φωτογραφία με ένα μόνο πρόσωπο.",
-        "generic": "Η καταχώρηση απέτυχε. Δοκίμασε ξανά.",
-        "network": "Σφάλμα δικτύου."
+        "FACE_REQUIRED_FOR_ENROLLMENT": {
+          "title": "Δεν εντοπίσαμε πρόσωπο",
+          "body": "Δοκίμασε με καλύτερο φωτισμό και φρόντισε το πρόσωπό σου να καταλαμβάνει το πλαίσιο. Χωρίς γυαλιά, καπέλο ή μάσκα."
+        },
+        "MULTIPLE_FACES_NOT_ALLOWED": {
+          "title": "Εντοπίστηκαν πολλά πρόσωπα",
+          "body": "Χρησιμοποίησε φωτογραφία με ένα μόνο άτομο."
+        },
+        "ACTIVE_INSTANCE_REQUIRED": {
+          "title": "Δεν υπάρχει ενεργό πακέτο",
+          "body": "Το πακέτο σου δεν είναι ακόμα ενεργό. Δοκίμασε να ανανεώσεις τη σελίδα."
+        },
+        "ENROLL_FACE_FAILED": {
+          "title": "Η επαλήθευση απέτυχε",
+          "body": "Κάτι πήγε στραβά από την πλευρά μας. Δοκίμασε ξανά σε λίγο."
+        },
+        "CAMERA_UNAVAILABLE": {
+          "title": "Η κάμερα δεν είναι διαθέσιμη",
+          "body": "Δεν μπορέσαμε να αποκτήσουμε πρόσβαση στην κάμερά σου. Ανέβασε αρχείο αντί αυτού."
+        },
+        "__default": {
+          "title": "Σφάλμα δικτύου",
+          "body": "Δεν ήταν δυνατή η επικοινωνία με τους διακομιστές μας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά."
+        },
+        "referenceId": "Αναφορά: {id}"
+      },
+      "_legacy": {
+        "heading": "Απαιτείται καταχώρηση προσώπου",
+        "body": "Ανέβασε μια καθαρή φωτογραφία με ένα μόνο πρόσωπο για να ξεκλειδώσεις όλες τις λειτουργίες αυτού του πακέτου.",
+        "uploadButton": "Ανέβασε φωτογραφία προσώπου",
+        "copyRequestId": "Αντιγραφή request ID",
+        "errors": {
+          "alreadyEnrolled": "Έχει ήδη καταχωρηθεί πρόσωπο για αυτό το πακέτο.",
+          "multipleFaces": "Ανέβασε μια φωτογραφία με ακριβώς ένα πρόσωπο.",
+          "noFaceDetected": "Δεν εντοπίστηκε πρόσωπο. Ανέβασε μια καθαρή φωτογραφία με ένα μόνο πρόσωπο.",
+          "generic": "Η καταχώρηση απέτυχε. Δοκίμασε ξανά.",
+          "network": "Σφάλμα δικτύου."
+        }
       }
     },
     "mobileBottomBar": {
@@ -938,12 +1054,14 @@
       "closeButtonLabel": "Κλείσιμο report drawer",
       "reportEyebrow": "Αναφορά AI ανάλυσης",
       "promotionPlanFallback": "Σχέδιο προώθησης",
+      "drawerTitle": "Οι προτάσεις σου",
+      "platformsAnalyzedSubtitle": "{count, plural, one {# πλατφόρμα αναλύθηκε} other {# πλατφόρμες αναλύθηκαν}}",
       "strategyHeadingTemplate": "Στρατηγική {platform}",
       "copyLinkButton": "Αντιγραφή link",
       "copiedLabel": "Αντιγράφηκε",
       "summaryEyebrow": "Σύνοψη",
       "summaryTitle": "Το AI ανέλυσε την εικόνα σου και δημιούργησε μια στρατηγική",
-      "recommendationCount": "{count, plural, one {# σύσταση πλατφόρμας με captions, hashtags και χρονικά παραθύρα δημοσίευσης.} other {# συστάσεις πλατφορμών με captions, hashtags και χρονικά παραθύρα δημοσίευσης.}}",
+      "recommendationCount": "{count, plural, one {# πλατφόρμα προτείνεται} other {# πλατφόρμες προτείνονται}}",
       "noRecommendationsMessage": "Δεν επιστράφηκαν ακόμη συστάσεις πλατφορμών για αυτή την εικόνα.",
       "noImagePreview": "Δεν υπάρχει προεπισκόπηση εικόνας",
       "uploadedImageAlt": "Ανεβασμένο περιεχόμενο",
@@ -965,7 +1083,6 @@
       "hashtagTierBalanced": "Ισορροπία",
       "hashtagTierTrending": "Τάση",
       "ctaLabel": "CTA:",
-      "whyLabel": "Γιατί:",
       "markAsPostedButton": "Σημείωσε ως δημοσιευμένο",
       "justMarkButton": "Απλά σημείωσε ως δημοσιευμένο",
       "savedIndicator": "Αποθηκεύτηκε ✓",
@@ -980,12 +1097,21 @@
       "decreaseEngagementsLabel": "Μείωση engagements",
       "engagementsHint": "Likes + σχόλια + κοινοποιήσεις.",
       "savingLabel": "Αποθήκευση...",
-      "saveButton": "Αποθήκευση",
-      "safetyTipsHeading": "Συμβουλές ασφαλούς δημοσίευσης",
+      "saveButton": "Αποθήκευση με μετρικές",
+      "markWithoutMetrics": "Σημείωσε χωρίς μετρικές",
+      "cancelButton": "Ακύρωση",
+      "metricsViewsHint": "προβολές",
       "regenerateButton": "Ανανέωση",
       "regenerating": "Ανανεώνεται...",
       "regenerateTooltip": "Νέες λεζάντες και hashtags — χρησιμοποιεί 1 upload",
-      "regenerateConfirm": "Θα δημιουργηθούν νέες λεζάντες και hashtags. Χρησιμοποιεί 1 upload από το όριό σου. Συνέχεια;",
+      "regenerateToastTitle": "Δημιουργία ξανά;",
+      "regenerateToastBody": "Αυτό θα χρησιμοποιήσει 1 credit. Σου απομένουν {n} credits.",
+      "regenerateToastBodyNoCount": "Αυτό θα χρησιμοποιήσει 1 credit.",
+      "regenerateConfirm": "Χρήση 1 credit",
+      "regenerateCancel": "Άκυρο",
+      "captionPlaceholder": "Γράψε την λεζάντα σου...",
+      "captionAriaLabel": "Λεζάντα (κλικ για επεξεργασία)",
+      "resetToAI": "Επαναφορά σε AI",
       "toasts": {
         "linkCopied": "Το link αντιγράφηκε",
         "feedbackSaved": "Το feedback αποθηκεύτηκε",
@@ -994,7 +1120,10 @@
         "hashtagsCopied": "Τα hashtags αντιγράφηκαν",
         "regenerateSuccess": "Ανανεώθηκαν λεζάντες και hashtags",
         "regenerateQuotaExhausted": "Εξαντλήθηκε το όριο uploads. Αναβάθμισε ή περίμενε το reset.",
-        "regenerateError": "Αποτυχία ανανέωσης. Δοκίμασε ξανά."
+        "regenerateError": "Αποτυχία ανανέωσης. Δοκίμασε ξανά.",
+        "captionSaved": "Η λεζάντα αποθηκεύτηκε",
+        "captionReset": "Επαναφορά σε αρχική AI λεζάντα",
+        "captionError": "Αποτυχία αποθήκευσης λεζάντας"
       }
     },
     "talkingHeadPage": {
@@ -1089,7 +1218,9 @@
       "error": "Δεν ήταν δυνατή η αποστολή. Δοκίμασε ξανά.",
       "helpfulPrompt": "Ήταν χρήσιμο;",
       "helpful": "Σήμανση ως χρήσιμο",
-      "notHelpful": "Σήμανση ως μη χρήσιμο"
+      "notHelpful": "Σήμανση ως μη χρήσιμο",
+      "helpfulYes": "Χρήσιμο",
+      "helpfulNo": "Μη χρήσιμο"
     },
     "tips": {
       "heading": "Συμβουλές για καλύτερα αποτελέσματα",
@@ -1155,6 +1286,24 @@
         "emptyBody": "Ανέβασε μια φωτογραφία προσώπου και audio για να δημιουργήσεις βίντεο.",
         "emptyButton": "Ξεκίνα τη δημιουργία"
       }
+    },
+    "recommendations": {
+      "tabsAriaLabel": "Καρτέλες πλατφορμών",
+      "skippedSection": "Δεν ταιριάζει ιδανικά",
+      "skippedReason": "Γιατί δεν προτείνεται:",
+      "notRecommendedForContent": "Δεν προτείνεται για αυτό το περιεχόμενο",
+      "fitGreat": "Εξαιρετική επιλογή",
+      "fitGood": "Καλή επιλογή",
+      "fitScore": "{score}%",
+      "noRecommendations": "Δεν υπάρχουν προτάσεις πλατφόρμας ακόμα.",
+      "retryButton": "Επανάληψη",
+      "bestTimesHeading": "Καλύτερες ώρες ανάρτησης",
+      "subredditsHeading": "Subreddits",
+      "previewHeading": "Προεπισκόπηση",
+      "captionsHeading": "Παραλλαγές λεζάντας",
+      "hashtagsHeading": "Hashtags",
+      "reasoningLabel": "Γιατί λειτουργεί:",
+      "ctaLabel": "CTA:"
     },
     "fileUpload": {
       "heading": "Ανέβασε εικόνα",

@@ -1,23 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { fetchLatestResultForPackageInstance } from "@/app/utils/api";
-import type { ResultDoc } from "@/app/types/analysis";
+import { ImageIcon, ArrowRight } from "lucide-react";
+import { getRecentCreations, type RecentCreation } from "@/app/utils/api";
 import { useLocale, useTranslations } from "next-intl";
 
 type LastUploadCardProps = {
   packageInstanceId?: string | null;
-  result?: ResultDoc | null;
-  loading?: boolean;
-};
-
-const summaryFor = (result: ResultDoc, nicheLabel: string, platformLabel: string) => {
-  const niche = result.niche ? `${nicheLabel}: ${result.niche}` : null;
-  const platform = result.promotion?.recommendedPlatforms?.[0]?.platform;
-  const platformLine = platform ? `${platformLabel}: ${platform}` : null;
-  return [niche, platformLine].filter(Boolean).join(" · ");
+  className?: string;
 };
 
 const IMAGE_EXT_RE = /\.(jpe?g|png|webp|gif|avif)(?:$|[?#])/i;
@@ -35,146 +27,117 @@ const isLikelyImageUrl = (value: string) => {
   }
 };
 
-const extractImageUrl = (result: ResultDoc | null) => {
-  const meta = (result as unknown as { meta?: Record<string, unknown> } | null)?.meta;
-  if (!meta || typeof meta !== "object") return null;
-  const candidates = [
-    meta.thumbnailUrl,
-    meta.imageUrl,
-    meta.assetUrl,
-    (meta.upload as { url?: unknown } | undefined)?.url,
-    (meta.image as { url?: unknown } | undefined)?.url,
-    (meta.r2 as { publicUrl?: unknown } | undefined)?.publicUrl,
-    meta.r2Url,
-    meta.fileUrl,
-  ];
-  for (const candidate of candidates) {
-    if (typeof candidate === "string" && isLikelyImageUrl(candidate)) {
-      return candidate;
-    }
-  }
-  return null;
+const relativeDate = (dateStr: string, locale: string) => {
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "";
+  const diffDays = Math.floor((Date.now() - d.getTime()) / 86_400_000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return d.toLocaleDateString(locale, { month: "short", day: "numeric" });
 };
 
-export default function LastUploadCard({ packageInstanceId, result, loading }: LastUploadCardProps) {
+export default function LastUploadCard({ packageInstanceId, className }: LastUploadCardProps) {
   const t = useTranslations("dashboard.home.lastActivity");
   const locale = useLocale();
-  const [internalResult, setInternalResult] = useState<ResultDoc | null>(null);
-  const [internalLoading, setInternalLoading] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
-
-  const shouldUseInternalFetch = typeof result === "undefined";
+  const [item, setItem] = useState<RecentCreation | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!shouldUseInternalFetch) return;
-    let cancelled = false;
     if (!packageInstanceId) {
-      setInternalResult(null);
+      setItem(null);
       return;
     }
-    setInternalLoading(true);
-    fetchLatestResultForPackageInstance(packageInstanceId)
+    let cancelled = false;
+    setLoading(true);
+    getRecentCreations({ packageInstanceId, limit: 1 })
       .then((res) => {
-        if (!cancelled) setInternalResult(res);
+        if (!cancelled) setItem(res[0] ?? null);
       })
       .catch(() => {
-        if (!cancelled) setInternalResult(null);
+        if (!cancelled) setItem(null);
       })
       .finally(() => {
-        if (!cancelled) setInternalLoading(false);
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [packageInstanceId, shouldUseInternalFetch]);
+  }, [packageInstanceId]);
 
-  const effectiveResult = shouldUseInternalFetch ? internalResult : result ?? null;
-  const effectiveLoading = shouldUseInternalFetch ? internalLoading : Boolean(loading);
+  const hasThumb =
+    item &&
+    typeof item.thumbnailUrl === "string" &&
+    isLikelyImageUrl(item.thumbnailUrl);
 
-  const createdAt = useMemo(() => {
-    if (!effectiveResult?.createdAt) return null;
-    const d = new Date(effectiveResult.createdAt);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }, [effectiveResult?.createdAt]);
-
-  const previewUrl = useMemo(() => extractImageUrl(effectiveResult), [effectiveResult]);
-
-  useEffect(() => {
-    setImageLoaded(false);
-  }, [previewUrl]);
-
-  const renderContent = () => {
-    if (effectiveLoading) {
-      return (
-        <>
-          <div className="h-4 w-36 animate-pulse rounded bg-white/10" />
-          <div className="mt-2 h-4 w-full animate-pulse rounded bg-white/10" />
-          <div className="mt-4 h-4 w-28 animate-pulse rounded bg-white/10" />
-        </>
-      );
-    }
-
-    if (!effectiveResult) {
-      return (
-        <p className="text-sm hg-muted">
-          {t("noUploads")}
-        </p>
-      );
-    }
-
-    return (
-      <>
-        <p className="text-sm hg-muted">{t("createdAt", { date: createdAt?.toLocaleString(locale) ?? "" })}</p>
-        <p className="mt-2 text-sm text-[var(--hg-text)]">{summaryFor(effectiveResult, t("niche"), t("topPlatform")) || t("insightsReady")}</p>
-        <Link
-          href="/dashboard?settings=1&tab=history"
-          className="mt-4 inline-flex text-sm font-medium text-[#50C0F0] hover:text-[#7ed2f5]"
-        >
-          {t("viewFullInsight")}
-        </Link>
-      </>
-    );
-  };
+  const nicheLabel = item
+    ? item.title.replace(/ report$/i, "") || t("unspecifiedNiche")
+    : "";
+  const dateLabel = item?.createdAt ? relativeDate(item.createdAt, locale) : "";
+  const typeLabel = item?.type || "";
 
   return (
-    <div className="rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 shadow-sm shadow-black/20">
-      <p className="text-xs uppercase tracking-wide hg-muted">{t("sectionLabel")}</p>
-      <h3 className="mt-2 text-xl font-semibold text-white">{t("heading")}</h3>
-      <div className="mt-3 flex min-h-24 flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-[var(--hg-border-2)] bg-[var(--hg-surface-2)]">
-          {previewUrl ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+    <div
+      className={`rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] px-5 py-4 shadow-sm shadow-black/20${className ? ` ${className}` : ""}`}
+    >
+      {loading ? (
+        <div className="flex items-center gap-4 animate-pulse">
+          <div className="h-16 w-16 shrink-0 rounded-xl bg-[var(--hg-surface-2)]" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-32 rounded bg-white/10" />
+            <div className="h-3 w-48 rounded bg-white/10" />
+          </div>
+          <div className="h-8 w-28 rounded-xl bg-white/10" />
+        </div>
+      ) : !item ? (
+        <p className="text-sm text-[var(--hg-muted)]">{t("noUploads")}</p>
+      ) : (
+        <div className="flex items-center gap-4">
+          {/* Thumbnail */}
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[var(--hg-border-2)] bg-[var(--hg-surface-2)]">
+            {hasThumb ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={previewUrl}
-                alt={t("imageAlt")}
-                className={`h-full w-full object-cover transition-opacity duration-300 ${
-                  imageLoaded ? "opacity-100" : "opacity-0"
-                }`}
+                src={item.thumbnailUrl!}
+                alt={nicheLabel}
+                className="h-full w-full object-cover"
                 loading="lazy"
                 decoding="async"
-                fetchPriority="low"
                 referrerPolicy="no-referrer"
-                onLoad={() => setImageLoaded(true)}
-                onError={() => setImageLoaded(true)}
               />
-              {!imageLoaded ? <div className="absolute inset-0 animate-pulse bg-white/10" /> : null}
-            </>
-          ) : (
-            <Image
-              src="/echofy-removebg-preview.png"
-              alt={t("imageAlt")}
-              fill
-              sizes="96px"
-              className="object-contain p-3"
-            />
-          )}
-        </div>
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <ImageIcon className="h-6 w-6 text-[var(--hg-muted-2)]" strokeWidth={1.5} />
+              </div>
+            )}
+          </div>
 
-        <div className="flex-1">
-          {renderContent()}
+          {/* Info */}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-[var(--hg-text)]">
+              {t("lastUpload")}
+            </p>
+            <p className="mt-0.5 truncate text-[13px] text-[var(--hg-muted)]">
+              {[dateLabel, typeLabel].filter(Boolean).join(" · ")}
+            </p>
+            {nicheLabel ? (
+              <p className="mt-0.5 truncate text-[12px] text-[var(--hg-muted-2)]">
+                {nicheLabel}
+              </p>
+            ) : null}
+          </div>
+
+          {/* CTA */}
+          <Link
+            href="/dashboard?settings=1&tab=history"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--hg-border)] px-3 py-2 text-xs font-medium text-[var(--hg-text)] transition-colors hover:border-[var(--hg-accent)] hover:text-[var(--hg-accent)]"
+          >
+            {t("viewRecommendations")}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
-      </div>
+      )}
     </div>
   );
 }

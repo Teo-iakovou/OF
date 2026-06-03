@@ -33,6 +33,13 @@ const CHECKOUT_MAP: Record<string, { addonType: AddonType; addonPack: string }> 
   video_30:  { addonType: "sadtalkerVideos", addonPack: "pack_30"   },
 };
 
+// Maps modal type → billing ?addon= param
+const BILLING_PARAM: Record<ModalType, string> = {
+  uploads: "uploads",
+  ai: "chat",
+  videos: "videos",
+};
+
 function formatPrice(priceCents: number, currency: string): string {
   const amount = priceCents / 100;
   try {
@@ -98,7 +105,6 @@ export default function OutOfCreditsModal({ type, open, onClose }: Props) {
     fetchedRef.current = false;
     setAddons([]);
     setPricesError(false);
-    // Re-trigger the effect by toggling open (already open), so we reset the ref
     fetchedRef.current = false;
     setPricesLoading(true);
     setPricesError(false);
@@ -147,9 +153,10 @@ export default function OutOfCreditsModal({ type, open, onClose }: Props) {
     }
   }
 
-  function handleUpgradePlan() {
+  function handleGoToBilling() {
     onClose();
-    router.push(`/${locale}/account/plans`);
+    const addonParam = BILLING_PARAM[type];
+    router.push(`/${locale}/dashboard/billing?addon=${addonParam}`);
   }
 
   if (!mounted || !open) return null;
@@ -208,7 +215,7 @@ export default function OutOfCreditsModal({ type, open, onClose }: Props) {
               {addons.map((addon) => (
                 <div
                   key={addon.id}
-                  className="flex items-center justify-between rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]/60 px-4 py-3"
+                  className="flex items-center justify-between rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-3"
                 >
                   <div>
                     <p className="text-sm font-medium">{addon.label}</p>
@@ -241,10 +248,10 @@ export default function OutOfCreditsModal({ type, open, onClose }: Props) {
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={handleUpgradePlan}
+            onClick={handleGoToBilling}
             className="w-full rounded-xl border border-[var(--hg-border)] px-4 py-2.5 text-sm font-semibold text-white hover:border-[var(--hg-accent)] hover:text-[var(--hg-accent)] transition-colors"
           >
-            {t("upgradePlan")}
+            {t("buyCreditsCta")}
           </button>
           <button
             type="button"

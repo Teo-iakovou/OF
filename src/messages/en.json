@@ -470,6 +470,7 @@
     "manageBilling": "Manage billing →",
     "or": "or",
     "upgradePlan": "Upgrade plan",
+    "buyCreditsCta": "Buy credits on billing page",
     "cancel": "Cancel",
     "buy": "Buy",
     "loading": "Loading options…",
@@ -663,6 +664,21 @@
       "demoCaptionLabel": "Demo caption",
       "demoCaption": "🔥 New drop tonight! Set your reminders now and be ready for the reveal."
     },
+    "packageSwitcher": {
+      "title": "Your packages",
+      "subtitle": "Switch between your active packages",
+      "active": "Active",
+      "setActive": "Set active",
+      "switching": "Switching...",
+      "faceVerified": "Face verified",
+      "faceSetupNeeded": "Face setup needed",
+      "uploadsLeft": "{count} uploads left",
+      "unlimited": "Unlimited",
+      "switchPackage": "Switch package",
+      "packageCount": "{count} packages",
+      "noInstances": "No active packages found.",
+      "closeAriaLabel": "Close package switcher"
+    },
     "home": {
       "sectionOverview": "OVERVIEW",
       "heading": "Dashboard",
@@ -683,7 +699,15 @@
         "uploads": "Uploads",
         "aiTokens": "AI Tokens",
         "videos": "Videos",
-        "unlimited": "Unlimited"
+        "unlimited": "Unlimited",
+        "remaining": "{n} remaining",
+        "topUp": "top up →",
+        "comingSoon": "Coming soon"
+      },
+      "manageCredits": {
+        "heading": "Manage credits",
+        "body": "Top up uploads, chat, or video credits.",
+        "cta": "Go to billing →"
       },
       "quickActions": {
         "sectionLabel": "Quick actions",
@@ -693,18 +717,37 @@
         "aiChat": "AI Chat",
         "chatTooltip": "Chat limit reached",
         "aiVideoAvatar": "AI Video Avatar",
+        "uploadSublabel": "Analyze a new photo",
+        "chatSublabel": "Ask the AI coach",
+        "videoSublabel": "Generate talking video",
         "unavailable": "Unavailable"
       },
       "lastActivity": {
         "sectionLabel": "Last activity",
         "heading": "Last upload",
+        "lastUpload": "Last upload",
+        "viewRecommendations": "View history",
         "noUploads": "No uploads yet. Upload your first image to see insights here.",
         "createdAt": "Created {date}",
         "insightsReady": "AI insights ready.",
         "viewFullInsight": "View Full Insight →",
         "imageAlt": "Last upload preview",
         "niche": "Niche",
-        "topPlatform": "Top platform"
+        "topPlatform": "Top platform",
+        "recentUploadsLabel": "Recent activity",
+        "recentUploadsHeading": "Recent uploads",
+        "viewAll": "View all →",
+        "unspecifiedNiche": "Upload"
+      },
+      "nudge": {
+        "nudgeUploadsLow": "You're running low on uploads. Top up before you run out.",
+        "nudgeBuyMore": "Buy more",
+        "nudgeNoRecentUpload": "It's been a while — upload a new photo to keep your insights fresh.",
+        "nudgeUploadNow": "Upload now",
+        "nudgeChatUntouched": "You haven't tried AI Chat yet. Ask your coach anything.",
+        "nudgeTryChat": "Try it",
+        "nudgeVideoUntouched": "Generate a talking-head video from your latest upload.",
+        "nudgeTryVideo": "Try it"
       },
       "switcher": {
         "closeAriaLabel": "Close profile switcher",
@@ -721,6 +764,20 @@
         "statusActive": "Active",
         "statusInactive": "Inactive",
         "setActive": "Set active"
+      },
+      "checkoutActivation": {
+        "activating": "Activating your package…",
+        "activatingSubtitle": "This will only take a moment.",
+        "timeoutTitle": "Taking longer than expected",
+        "timeoutBody": "Your payment was received but the package is still activating. Refresh the page to check again.",
+        "timeoutRefresh": "Refresh page"
+      },
+      "newPackageModal": {
+        "heading": "New package ready",
+        "body": "Your new {plan} package has been activated. Do you want to switch to it now?",
+        "switchButton": "Switch now",
+        "keepButton": "Keep current",
+        "closeAriaLabel": "Close new package notice"
       }
     },
     "history": {
@@ -866,16 +923,75 @@
       "ultimateHighlights": ["Best value for teams", "Maximum quotas", "Priority support"]
     },
     "faceEnroll": {
-      "heading": "Face enrollment required",
-      "body": "Upload a clear, single-face photo to unlock all features for this package.",
-      "uploadButton": "Upload face photo",
-      "copyRequestId": "Copy request ID",
+      "title": {
+        "initial": "Let's verify it's you",
+        "camera": "Center your face in the frame",
+        "analyzing": "Analyzing your photo",
+        "success": "Verified — you're all set"
+      },
+      "body": {
+        "initial": "We verify your face once to protect your content and prevent misuse of others' likeness on our platform. Takes about 30 seconds.",
+        "camera": "Position yourself within the outline. The capture button will activate when ready.",
+        "analyzing": "This usually takes a few seconds. Please don't close this window.",
+        "success": "Your identity is secured. You can now use the full platform.",
+        "analyzingSteps": "Detecting face · Checking quality · Encrypting"
+      },
+      "tips": {
+        "header": "For best results",
+        "lighting": "Good lighting, no harsh shadows",
+        "facing": "Face the camera directly, eyes open",
+        "noObstructions": "Remove sunglasses, hat, or mask"
+      },
+      "actions": {
+        "takePhoto": "Take photo",
+        "takePhotoSub": "Use your camera",
+        "uploadFile": "Upload file",
+        "uploadFileSub": "From your device",
+        "capture": "Capture",
+        "cancel": "Cancel",
+        "tryAgain": "Try again",
+        "contactSupport": "Having trouble? Contact support",
+        "encrypted": "Encrypted & private"
+      },
       "errors": {
-        "alreadyEnrolled": "Face already enrolled for this package.",
-        "multipleFaces": "Please upload a photo with exactly one face.",
-        "noFaceDetected": "No face detected. Please upload a clear single-face photo.",
-        "generic": "Enrollment failed. Please try again.",
-        "network": "Network error."
+        "FACE_REQUIRED_FOR_ENROLLMENT": {
+          "title": "We couldn't detect a face",
+          "body": "Try better lighting and make sure your face fills the frame. No glasses, hat, or mask."
+        },
+        "MULTIPLE_FACES_NOT_ALLOWED": {
+          "title": "Multiple faces detected",
+          "body": "Please use a photo with only one person in it."
+        },
+        "ACTIVE_INSTANCE_REQUIRED": {
+          "title": "No active package",
+          "body": "Your package isn't active yet. Try refreshing the page."
+        },
+        "ENROLL_FACE_FAILED": {
+          "title": "Verification failed",
+          "body": "Something went wrong on our end. Please try again in a moment."
+        },
+        "CAMERA_UNAVAILABLE": {
+          "title": "Camera not available",
+          "body": "We couldn't access your camera. Please upload a file instead."
+        },
+        "__default": {
+          "title": "Network error",
+          "body": "Couldn't reach our servers. Check your connection and try again."
+        },
+        "referenceId": "Reference: {id}"
+      },
+      "_legacy": {
+        "heading": "Face enrollment required",
+        "body": "Upload a clear, single-face photo to unlock all features for this package.",
+        "uploadButton": "Upload face photo",
+        "copyRequestId": "Copy request ID",
+        "errors": {
+          "alreadyEnrolled": "Face already enrolled for this package.",
+          "multipleFaces": "Please upload a photo with exactly one face.",
+          "noFaceDetected": "No face detected. Please upload a clear single-face photo.",
+          "generic": "Enrollment failed. Please try again.",
+          "network": "Network error."
+        }
       }
     },
     "mobileBottomBar": {
@@ -938,12 +1054,14 @@
       "closeButtonLabel": "Close report drawer",
       "reportEyebrow": "AI Analysis Report",
       "promotionPlanFallback": "Promotion Plan",
+      "drawerTitle": "Your recommendations",
+      "platformsAnalyzedSubtitle": "{count, plural, one {# platform analyzed} other {# platforms analyzed}}",
       "strategyHeadingTemplate": "{platform} Strategy",
       "copyLinkButton": "Copy link",
       "copiedLabel": "Copied",
       "summaryEyebrow": "Summary",
       "summaryTitle": "AI analyzed your image and generated a strategy",
-      "recommendationCount": "{count, plural, one {# platform recommendation with captions, hashtags, and posting windows.} other {# platform recommendations with captions, hashtags, and posting windows.}}",
+      "recommendationCount": "{count, plural, one {# platform recommended} other {# platforms recommended}}",
       "noRecommendationsMessage": "No platform recommendations were returned for this image yet.",
       "noImagePreview": "No image preview",
       "uploadedImageAlt": "Uploaded content",
@@ -965,7 +1083,6 @@
       "hashtagTierBalanced": "Balanced",
       "hashtagTierTrending": "Trending",
       "ctaLabel": "CTA:",
-      "whyLabel": "Why:",
       "markAsPostedButton": "Mark as posted",
       "justMarkButton": "Just mark as posted",
       "savedIndicator": "Saved ✓",
@@ -980,12 +1097,21 @@
       "decreaseEngagementsLabel": "Decrease engagements",
       "engagementsHint": "Likes + comments + shares.",
       "savingLabel": "Saving...",
-      "saveButton": "Save",
-      "safetyTipsHeading": "Posting Safety Tips",
+      "saveButton": "Save with metrics",
+      "markWithoutMetrics": "Mark without metrics",
+      "cancelButton": "Cancel",
+      "metricsViewsHint": "views",
       "regenerateButton": "Regenerate",
       "regenerating": "Regenerating...",
       "regenerateTooltip": "Generate fresh captions and hashtags — uses 1 upload",
-      "regenerateConfirm": "This will generate new captions and hashtags. It uses 1 upload from your quota. Continue?",
+      "regenerateToastTitle": "Regenerate recommendations?",
+      "regenerateToastBody": "This will use 1 upload credit. You have {n} credits remaining.",
+      "regenerateToastBodyNoCount": "This will use 1 upload credit.",
+      "regenerateConfirm": "Use 1 credit",
+      "regenerateCancel": "Cancel",
+      "captionPlaceholder": "Write your caption...",
+      "captionAriaLabel": "Caption (click to edit)",
+      "resetToAI": "Reset to AI",
       "toasts": {
         "linkCopied": "Copied link",
         "feedbackSaved": "Feedback saved",
@@ -994,7 +1120,10 @@
         "hashtagsCopied": "Hashtags copied",
         "regenerateSuccess": "Fresh captions and hashtags generated",
         "regenerateQuotaExhausted": "Upload quota exhausted. Upgrade or wait for reset.",
-        "regenerateError": "Couldn't regenerate. Please try again."
+        "regenerateError": "Couldn't regenerate. Please try again.",
+        "captionSaved": "Caption saved",
+        "captionReset": "Caption restored to AI version",
+        "captionError": "Couldn't save caption"
       }
     },
     "talkingHeadPage": {
@@ -1089,7 +1218,9 @@
       "error": "Couldn't send. Please try again.",
       "helpfulPrompt": "Was this helpful?",
       "helpful": "Mark as helpful",
-      "notHelpful": "Mark as not helpful"
+      "notHelpful": "Mark as not helpful",
+      "helpfulYes": "Helpful",
+      "helpfulNo": "Not helpful"
     },
     "tips": {
       "heading": "Tips for Best Results",
@@ -1155,6 +1286,24 @@
         "emptyBody": "Upload a face photo and audio to generate a video.",
         "emptyButton": "Start generating"
       }
+    },
+    "recommendations": {
+      "tabsAriaLabel": "Platform tabs",
+      "skippedSection": "Not recommended",
+      "skippedReason": "Why not recommended:",
+      "notRecommendedForContent": "Not recommended for this content",
+      "fitGreat": "Great fit",
+      "fitGood": "Good fit",
+      "fitScore": "{score}%",
+      "noRecommendations": "No platform recommendations available.",
+      "retryButton": "Retry",
+      "bestTimesHeading": "Best posting times",
+      "subredditsHeading": "Subreddits",
+      "previewHeading": "Preview",
+      "captionsHeading": "Captions",
+      "hashtagsHeading": "Hashtags",
+      "reasoningLabel": "Why this angle:",
+      "ctaLabel": "CTA:"
     },
     "fileUpload": {
       "heading": "Upload image",

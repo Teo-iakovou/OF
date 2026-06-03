@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
+import { Layers } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 type ActivePackageCardProps = {
@@ -11,6 +12,8 @@ type ActivePackageCardProps = {
   createdAt?: string | Date | null;
   onOpenSwitcher?: () => void;
   profileLabel?: string | null;
+  instanceCount?: number;
+  className?: string;
 };
 
 const planLabel = (planKey?: string | null) => {
@@ -28,8 +31,11 @@ export default function ActivePackageCard({
   createdAt,
   onOpenSwitcher,
   profileLabel,
+  instanceCount,
+  className,
 }: ActivePackageCardProps) {
   const t = useTranslations("dashboard.home.activePackage");
+  const tSwitcher = useTranslations("dashboard.packageSwitcher");
   const locale = useLocale();
   const [profileName, setProfileName] = useState("");
   const created =
@@ -41,6 +47,7 @@ export default function ActivePackageCard({
 
   const isInteractive = Boolean(onOpenSwitcher);
   const displayProfile = profileName || profileLabel;
+  const hasMultiple = typeof instanceCount === "number" && instanceCount > 1;
 
   useEffect(() => {
     if (!packageInstanceId) {
@@ -57,9 +64,7 @@ export default function ActivePackageCard({
 
   return (
     <div
-      className={`rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 shadow-sm shadow-black/20${
-        isInteractive ? " cursor-pointer" : ""
-      }`}
+      className={`h-full flex flex-col justify-between rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 shadow-sm shadow-black/20${isInteractive ? " cursor-pointer" : ""}${className ? ` ${className}` : ""}`}
       {...(isInteractive
         ? {
             role: "button" as const,
@@ -86,30 +91,29 @@ export default function ActivePackageCard({
           <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-200">
             {status === "active" ? t("active") : status || t("active")}
           </span>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpenSwitcher?.();
-            }}
-            className="inline-flex h-8 items-center rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 text-xs font-semibold text-[var(--hg-text)] hover:border-[var(--hg-accent)]/40 hover:text-white"
-          >
-            {t("switchProfile")}
-          </button>
+          {onOpenSwitcher ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenSwitcher();
+              }}
+              className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 text-xs font-semibold text-[var(--hg-text)] hover:border-[var(--hg-accent)] hover:text-white transition-colors"
+            >
+              <Layers className="h-3.5 w-3.5" strokeWidth={1.5} />
+              {hasMultiple
+                ? tSwitcher("packageCount", { count: instanceCount })
+                : tSwitcher("switchPackage")}
+            </button>
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-5 space-y-2 text-sm hg-muted">
-        <div>
-          <p className="text-xs uppercase tracking-wide hg-muted">{t("instanceId")}</p>
-          <p className="mt-1 text-[var(--hg-text)]">{packageInstanceId || "—"}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-wide hg-muted">{t("created")}</p>
-          <p className="mt-1 text-[var(--hg-text)]">
-            {created ? created.toLocaleString(locale) : "—"}
-          </p>
-        </div>
+      <div className="mt-5 space-y-1">
+        <p className="text-xs uppercase tracking-wide text-[var(--hg-muted-2)]">{t("created")}</p>
+        <p className="text-sm text-[var(--hg-text)]">
+          {created ? created.toLocaleString(locale) : "—"}
+        </p>
       </div>
     </div>
   );

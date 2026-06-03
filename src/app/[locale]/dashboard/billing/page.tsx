@@ -10,6 +10,14 @@ import BillingPanel from "@/app/components/dashboard/billing/BillingPanel";
 import { useRouter } from "@/i18n/navigation";
 
 type Notice = { status: "success" | "cancel"; kind?: string | null };
+type AddonParam = "uploads" | "chat" | "videos";
+
+const VALID_ADDON_PARAMS = new Set<string>(["uploads", "chat", "videos"]);
+
+function parseAddonParam(value: string | null): AddonParam | undefined {
+  if (value && VALID_ADDON_PARAMS.has(value)) return value as AddonParam;
+  return undefined;
+}
 
 export default function BillingPage() {
   const t = useTranslations("dashboard.billingPage");
@@ -23,6 +31,8 @@ export default function BillingPage() {
     requestId?: string | null;
   } | null>(null);
   const [panelRefreshToken, setPanelRefreshToken] = useState(0);
+
+  const initialAddon = parseAddonParam(searchParams.get("addon"));
 
   useEffect(() => {
     const status = searchParams.get("status");
@@ -135,7 +145,7 @@ export default function BillingPage() {
             </Reveal>
           ) : null}
 
-          <BillingPanel refreshToken={panelRefreshToken} />
+          <BillingPanel refreshToken={panelRefreshToken} initialAddon={initialAddon} />
         </div>
       </main>
     </div>

@@ -470,6 +470,7 @@
     "manageBilling": "Gestionar facturación →",
     "or": "o",
     "upgradePlan": "Mejorar plan",
+    "buyCreditsCta": "Comprar créditos en facturación",
     "cancel": "Cancelar",
     "buy": "Comprar",
     "loading": "Cargando opciones…",
@@ -683,7 +684,15 @@
         "uploads": "Cargas",
         "aiTokens": "AI Tokens",
         "videos": "Vídeos",
-        "unlimited": "Ilimitado"
+        "unlimited": "Ilimitado",
+        "remaining": "{n} restantes",
+        "topUp": "recargar →",
+        "comingSoon": "Próximamente"
+      },
+      "manageCredits": {
+        "heading": "Gestionar créditos",
+        "body": "Recarga cargas, chat o créditos de vídeo.",
+        "cta": "Ir a facturación →"
       },
       "quickActions": {
         "sectionLabel": "Acciones rápidas",
@@ -693,18 +702,37 @@
         "aiChat": "AI Chat",
         "chatTooltip": "Límite de chat alcanzado",
         "aiVideoAvatar": "AI Video Avatar",
+        "uploadSublabel": "Analiza una nueva foto",
+        "chatSublabel": "Pregunta al coach de IA",
+        "videoSublabel": "Genera un video animado",
         "unavailable": "No disponible"
       },
       "lastActivity": {
         "sectionLabel": "Última actividad",
         "heading": "Última subida",
+        "lastUpload": "Última subida",
+        "viewRecommendations": "Ver historial",
         "noUploads": "Aún no hay cargas. Sube tu primera imagen para ver insights aquí.",
         "createdAt": "Creado {date}",
         "insightsReady": "Insights de IA listos.",
         "viewFullInsight": "Ver análisis completo →",
         "imageAlt": "Vista previa de la última subida",
         "niche": "Nicho",
-        "topPlatform": "Plataforma principal"
+        "topPlatform": "Plataforma principal",
+        "recentUploadsLabel": "Actividad reciente",
+        "recentUploadsHeading": "Subidas recientes",
+        "viewAll": "Ver todo →",
+        "unspecifiedNiche": "Subida"
+      },
+      "nudge": {
+        "nudgeUploadsLow": "Te quedan pocas cargas. Recarga antes de que se agoten.",
+        "nudgeBuyMore": "Comprar más",
+        "nudgeNoRecentUpload": "Hace tiempo que no subes — sube una foto nueva para mantener tus insights al día.",
+        "nudgeUploadNow": "Subir ahora",
+        "nudgeChatUntouched": "Todavía no has probado AI Chat. Pregunta lo que quieras al coach.",
+        "nudgeTryChat": "Pruébalo",
+        "nudgeVideoUntouched": "Genera un video talking-head desde tu última subida.",
+        "nudgeTryVideo": "Pruébalo"
       },
       "switcher": {
         "closeAriaLabel": "Cerrar cambio de perfil",
@@ -943,7 +971,7 @@
       "copiedLabel": "Copiado",
       "summaryEyebrow": "Resumen",
       "summaryTitle": "La IA analizó tu imagen y generó una estrategia",
-      "recommendationCount": "{count, plural, one {# recomendación de plataforma con captions, hashtags y ventanas de publicación.} other {# recomendaciones de plataforma con captions, hashtags y ventanas de publicación.}}",
+      "recommendationCount": "{count, plural, one {# plataforma recomendada} other {# plataformas recomendadas}}",
       "noRecommendationsMessage": "Aún no se han devuelto recomendaciones de plataforma para esta imagen.",
       "noImagePreview": "Sin vista previa de imagen",
       "uploadedImageAlt": "Contenido subido",
@@ -965,7 +993,6 @@
       "hashtagTierBalanced": "Equilibrado",
       "hashtagTierTrending": "Tendencia",
       "ctaLabel": "CTA:",
-      "whyLabel": "Por qué:",
       "markAsPostedButton": "Marcar como publicado",
       "justMarkButton": "Solo marcar como publicado",
       "savedIndicator": "Guardado ✓",
@@ -981,11 +1008,17 @@
       "engagementsHint": "Likes + comentarios + compartidos.",
       "savingLabel": "Guardando...",
       "saveButton": "Guardar",
-      "safetyTipsHeading": "Consejos de publicación segura",
       "regenerateButton": "Regenerar",
       "regenerating": "Regenerando...",
       "regenerateTooltip": "Genera nuevas captions y hashtags — usa 1 upload",
-      "regenerateConfirm": "Esto generará nuevas captions y hashtags. Usa 1 upload de tu cuota. ¿Continuar?",
+      "regenerateToastTitle": "¿Regenerar recomendaciones?",
+      "regenerateToastBody": "Esto usará 1 crédito de upload. Te quedan {n} créditos.",
+      "regenerateToastBodyNoCount": "Esto usará 1 crédito de upload.",
+      "regenerateConfirm": "Usar 1 crédito",
+      "regenerateCancel": "Cancelar",
+      "captionPlaceholder": "Escribe tu caption...",
+      "captionAriaLabel": "Caption (clic para editar)",
+      "resetToAI": "Restaurar a IA",
       "toasts": {
         "linkCopied": "Enlace copiado",
         "feedbackSaved": "Feedback guardado",
@@ -994,7 +1027,10 @@
         "hashtagsCopied": "Hashtags copiados",
         "regenerateSuccess": "Nuevas captions y hashtags generados",
         "regenerateQuotaExhausted": "Cuota de uploads agotada. Actualiza o espera el reinicio.",
-        "regenerateError": "No se pudo regenerar. Inténtalo de nuevo."
+        "regenerateError": "No se pudo regenerar. Inténtalo de nuevo.",
+        "captionSaved": "Caption guardado",
+        "captionReset": "Caption restaurado a la versión IA",
+        "captionError": "No se pudo guardar el caption"
       }
     },
     "talkingHeadPage": {

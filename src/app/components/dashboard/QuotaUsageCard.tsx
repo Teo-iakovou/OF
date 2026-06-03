@@ -88,7 +88,7 @@ export default function QuotaUsageCard({
   const t = useTranslations("dashboard.home.quota");
   const unlimitedLabel = t("unlimited");
   return (
-    <div className="rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 shadow-sm shadow-black/20">
+    <div className="h-full rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 shadow-sm shadow-black/20">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide hg-muted">{t("sectionLabel")}</p>

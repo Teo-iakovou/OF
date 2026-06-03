@@ -470,6 +470,7 @@
     "manageBilling": "Gestisci fatturazione →",
     "or": "oppure",
     "upgradePlan": "Migliora piano",
+    "buyCreditsCta": "Acquista crediti nella pagina di fatturazione",
     "cancel": "Annulla",
     "buy": "Acquista",
     "loading": "Caricamento opzioni…",
@@ -683,7 +684,15 @@
         "uploads": "Upload",
         "aiTokens": "AI Token",
         "videos": "Video",
-        "unlimited": "Illimitato"
+        "unlimited": "Illimitato",
+        "remaining": "{n} rimanenti",
+        "topUp": "ricarica →",
+        "comingSoon": "Prossimamente"
+      },
+      "manageCredits": {
+        "heading": "Gestisci crediti",
+        "body": "Ricarica upload, chat o crediti video.",
+        "cta": "Vai alla fatturazione →"
       },
       "quickActions": {
         "sectionLabel": "Azioni rapide",
@@ -693,18 +702,37 @@
         "aiChat": "AI Chat",
         "chatTooltip": "Limite chat raggiunto",
         "aiVideoAvatar": "AI Video Avatar",
+        "uploadSublabel": "Analizza una nuova foto",
+        "chatSublabel": "Chiedi al coach AI",
+        "videoSublabel": "Genera un video parlante",
         "unavailable": "Non disponibile"
       },
       "lastActivity": {
         "sectionLabel": "Ultima attività",
         "heading": "Ultimo upload",
+        "lastUpload": "Ultimo upload",
+        "viewRecommendations": "Vedi cronologia",
         "noUploads": "Nessun upload ancora. Carica la tua prima immagine per vedere gli insight.",
         "createdAt": "Creato il {date}",
         "insightsReady": "Insight AI pronti.",
         "viewFullInsight": "Vedi analisi completa →",
         "imageAlt": "Anteprima ultimo upload",
         "niche": "Nicchia",
-        "topPlatform": "Piattaforma principale"
+        "topPlatform": "Piattaforma principale",
+        "recentUploadsLabel": "Attività recente",
+        "recentUploadsHeading": "Upload recenti",
+        "viewAll": "Vedi tutti →",
+        "unspecifiedNiche": "Upload"
+      },
+      "nudge": {
+        "nudgeUploadsLow": "Stai esaurendo gli upload. Ricarica prima che finiscano.",
+        "nudgeBuyMore": "Acquista altri",
+        "nudgeNoRecentUpload": "È passato un po' — carica una nuova foto per tenere aggiornati i tuoi insight.",
+        "nudgeUploadNow": "Carica ora",
+        "nudgeChatUntouched": "Non hai ancora provato AI Chat. Chiedi qualsiasi cosa al tuo coach.",
+        "nudgeTryChat": "Provalo",
+        "nudgeVideoUntouched": "Genera un video talking-head dal tuo ultimo upload.",
+        "nudgeTryVideo": "Provalo"
       },
       "switcher": {
         "closeAriaLabel": "Chiudi cambio profilo",
@@ -943,7 +971,7 @@
       "copiedLabel": "Copiato",
       "summaryEyebrow": "Riepilogo",
       "summaryTitle": "L'IA ha analizzato la tua immagine e generato una strategia",
-      "recommendationCount": "{count, plural, one {# raccomandazione di piattaforma con captions, hashtag e finestre di pubblicazione.} other {# raccomandazioni di piattaforma con captions, hashtag e finestre di pubblicazione.}}",
+      "recommendationCount": "{count, plural, one {# piattaforma consigliata} other {# piattaforme consigliate}}",
       "noRecommendationsMessage": "Nessuna raccomandazione di piattaforma è stata ancora restituita per questa immagine.",
       "noImagePreview": "Nessuna anteprima immagine",
       "uploadedImageAlt": "Contenuto caricato",
@@ -965,7 +993,6 @@
       "hashtagTierBalanced": "Bilanciato",
       "hashtagTierTrending": "Trend",
       "ctaLabel": "CTA:",
-      "whyLabel": "Perché:",
       "markAsPostedButton": "Segna come pubblicato",
       "justMarkButton": "Segna solo come pubblicato",
       "savedIndicator": "Salvato ✓",
@@ -981,11 +1008,17 @@
       "engagementsHint": "Like + commenti + condivisioni.",
       "savingLabel": "Salvataggio...",
       "saveButton": "Salva",
-      "safetyTipsHeading": "Suggerimenti di pubblicazione sicura",
       "regenerateButton": "Rigenera",
       "regenerating": "Rigenerazione...",
       "regenerateTooltip": "Genera nuove didascalie e hashtag — usa 1 upload",
-      "regenerateConfirm": "Verranno generate nuove didascalie e hashtag. Usa 1 upload dalla tua quota. Continuare?",
+      "regenerateToastTitle": "Rigenerare i consigli?",
+      "regenerateToastBody": "Verranno usati 1 credito upload. Ne rimangono {n}.",
+      "regenerateToastBodyNoCount": "Verranno usati 1 credito upload.",
+      "regenerateConfirm": "Usa 1 credito",
+      "regenerateCancel": "Annulla",
+      "captionPlaceholder": "Scrivi la tua didascalia...",
+      "captionAriaLabel": "Didascalia (clicca per modificare)",
+      "resetToAI": "Ripristina AI",
       "toasts": {
         "linkCopied": "Link copiato",
         "feedbackSaved": "Feedback salvato",
@@ -994,7 +1027,10 @@
         "hashtagsCopied": "Hashtag copiati",
         "regenerateSuccess": "Nuove didascalie e hashtag generati",
         "regenerateQuotaExhausted": "Quota upload esaurita. Esegui l'upgrade o attendi il reset.",
-        "regenerateError": "Impossibile rigenerare. Riprova."
+        "regenerateError": "Impossibile rigenerare. Riprova.",
+        "captionSaved": "Didascalia salvata",
+        "captionReset": "Didascalia ripristinata alla versione AI",
+        "captionError": "Impossibile salvare la didascalia"
       }
     },
     "talkingHeadPage": {

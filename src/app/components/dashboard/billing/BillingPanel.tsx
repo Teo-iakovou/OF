@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ImagePlus, Loader2, MessageSquare, Sparkles, Video } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Spinner from "@/app/components/dashboard/loading spinner/page";
@@ -71,6 +71,12 @@ const ADDON_PACKS: Array<{
   { labelKey: "addonLabel30Videos", type: "sadtalkerVideos", pack: "pack_30", badgeKey: "addonBadgeBestValue" },
 ];
 
+// Pre-compute first index per type (module-level, constant)
+const FIRST_INDEX_BY_TYPE: Partial<Record<string, number>> = {};
+ADDON_PACKS.forEach((p, i) => {
+  if (!(p.type in FIRST_INDEX_BY_TYPE)) FIRST_INDEX_BY_TYPE[p.type] = i;
+});
+
 const ICON_FOR_TYPE: Record<AddonType, React.ComponentType<{ className?: string }>> = {
   uploads: ImagePlus,
   chat: MessageSquare,
@@ -83,12 +89,28 @@ const CATEGORY_KEY_FOR_TYPE: Record<AddonType, string> = {
   sadtalkerVideos: "videos",
 };
 
+// Maps billing ?addon= param → AddonType for scroll/highlight
+const PARAM_TO_ADDON_TYPE: Record<string, AddonType> = {
+  uploads: "uploads",
+  chat: "chat",
+  videos: "sadtalkerVideos",
+};
+
+// Maps AddonType → addon section id
+const ADDON_SECTION_ID = (type: AddonType) =>
+  `addon-section-${type === "sadtalkerVideos" ? "videos" : type}`;
+
 type BillingPanelProps = {
   embedded?: boolean;
   refreshToken?: number;
+  initialAddon?: "uploads" | "chat" | "videos";
 };
 
-export default function BillingPanel({ embedded = false, refreshToken = 0 }: BillingPanelProps) {
+export default function BillingPanel({
+  embedded = false,
+  refreshToken = 0,
+  initialAddon,
+}: BillingPanelProps) {
   const t = useTranslations("dashboard.billing");
   const locale = useLocale();
   const { data: planData, loading: planLoading, refresh: refreshPlan, hasActiveInstance } =
@@ -99,9 +121,32 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
   const [errorRequestId, setErrorRequestId] = useState<string | null>(null);
   const [actionKey, setActionKey] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [highlightAddon, setHighlightAddon] = useState<string | null>(null);
+  const scrolledRef = useRef(false);
 
   const planInstanceId = planData?.packageInstanceId ?? null;
   const needsSelection = Boolean(planData?.needsInstanceSelection);
+
+  // Scroll to and briefly highlight the addon section matching initialAddon
+  useEffect(() => {
+    if (!initialAddon || scrolledRef.current) return;
+    scrolledRef.current = true;
+    setHighlightAddon(initialAddon);
+
+    const scrollTimer = setTimeout(() => {
+      const targetType = PARAM_TO_ADDON_TYPE[initialAddon];
+      const el = targetType
+        ? document.getElementById(ADDON_SECTION_ID(targetType))
+        : null;
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 500);
+
+    const clearTimer = setTimeout(() => setHighlightAddon(null), 2500);
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(clearTimer);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const profileLabelById = useMemo(() => {
     const grouped = new Map<string, PackageInstanceSummary[]>();
@@ -262,6 +307,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
           {instances.map((instance) => {
             const quotas = resolveQuotaContract(instance, "billing.panel.instance");
             const isSelected = instance.id === planInstanceId;
+            const isActiveInstance = instance.id === planInstanceId;
             const uploadRemaining = formatLimit(quotas.uploads.effectiveLimit, quotas.uploads.remaining);
             const chatRemainingRaw = quotas.aiTokens.remaining;
             const isChatUnlimited = quotas.aiTokens.isUnlimited;
@@ -394,7 +440,7 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
                 <div className="border-t border-[var(--hg-border)] pt-5">
                   <p className="mb-4 text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)]">{t("buyAddons")}</p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {ADDON_PACKS.map((pack) => {
+                    {ADDON_PACKS.map((pack, packIndex) => {
                       const key = `${instance.id}:${pack.type}:${pack.pack}`;
                       const busy = actionKey === key;
                       const isIncluded =
@@ -404,15 +450,32 @@ export default function BillingPanel({ embedded = false, refreshToken = 0 }: Bil
                       const isBestValue = Boolean(pack.badgeKey);
                       const Icon = ICON_FOR_TYPE[pack.type];
                       const categoryLabel = t(CATEGORY_KEY_FOR_TYPE[pack.type] as Parameters<typeof t>[0]);
+
+                      // Attach scroll-target id to the first card of each type, for the active instance
+                      const isFirstOfType = FIRST_INDEX_BY_TYPE[pack.type] === packIndex;
+                      const sectionId = (isActiveInstance && isFirstOfType)
+                        ? ADDON_SECTION_ID(pack.type)
+                        : undefined;
+
+                      // Highlight ring when this pack's type matches the initialAddon param
+                      const isHighlighted =
+                        isActiveInstance &&
+                        highlightAddon !== null &&
+                        ((highlightAddon === "uploads" && pack.type === "uploads") ||
+                         (highlightAddon === "chat" && pack.type === "chat") ||
+                         (highlightAddon === "videos" && pack.type === "sadtalkerVideos"));
+
                       return (
                         <div
                           key={key}
+                          id={sectionId}
                           className={[
                             "relative flex flex-col gap-3 rounded-2xl border p-4 transition-all",
                             isBestValue
                               ? "border-[rgba(80,192,240,0.40)] bg-[rgba(80,192,240,0.05)] shadow-[0_0_24px_rgba(80,192,240,0.08)]"
                               : "border-[var(--hg-border)] bg-[var(--hg-surface-2)]",
                             isIncluded ? "opacity-55" : "",
+                            isHighlighted ? "ring-2 ring-[#50C0F0]" : "",
                           ].join(" ")}
                         >
                           {isBestValue && (
