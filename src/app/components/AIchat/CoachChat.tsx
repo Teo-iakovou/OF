@@ -144,6 +144,7 @@ function CoachChat({
   const [bootstrapping, setBootstrapping] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
+  const [wrongPackageContext, setWrongPackageContext] = useState(false);
   const [isLimited, setIsLimited] = useState(false);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [isContextLimited, setIsContextLimited] = useState(false);
@@ -273,7 +274,10 @@ function tokenizeWordsWithSpaces(s: string) {
     let ignore = false;
     const id = initialConversationId;
 
-    if (!id) return;
+    if (!id) {
+      setWrongPackageContext(false);
+      return;
+    }
 
     // If we already adopted/loaded this id, skip
     if (loadedIdRef.current === id) return;
@@ -282,12 +286,21 @@ function tokenizeWordsWithSpaces(s: string) {
       return;
     }
 
+    setWrongPackageContext(false);
     setBootstrapping(true);
     fetchConversation(id)
       .then((c) => {
         if (ignore) return;
         setConversation(c);
         loadedIdRef.current = id;
+      })
+      .catch((err) => {
+        if (ignore) return;
+        if (String(err?.message).includes("WRONG_PACKAGE_CONTEXT")) {
+          setWrongPackageContext(true);
+          setConversation(null);
+          loadedIdRef.current = null;
+        }
       })
       .finally(() => {
         if (!ignore) setBootstrapping(false);
@@ -654,6 +667,15 @@ function tokenizeWordsWithSpaces(s: string) {
 
   return (
     <div className="flex flex-col h-full min-h-0">
+      {/* Wrong-package banner */}
+      {wrongPackageContext && (
+        <div className="w-full max-w-2xl mx-auto px-4 mb-2">
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-200 text-sm px-3 py-2">
+            This conversation belongs to a different package. Switch packages to view it, or start a new chat.
+          </div>
+        </div>
+      )}
+
       {/* Error banner */}
       {error && (
         <div className="w-full max-w-2xl mx-auto px-4 mb-2">
@@ -881,7 +903,7 @@ function tokenizeWordsWithSpaces(s: string) {
           </div>
         )}
         <OutOfCreditsModal
-          type="ai"
+          type="chat"
           open={showCreditsModal}
           onClose={() => setShowCreditsModal(false)}
         />

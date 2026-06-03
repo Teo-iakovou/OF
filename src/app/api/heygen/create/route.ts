@@ -152,6 +152,21 @@ export async function POST(req: NextRequest) {
 
   // ── 2. Estimate duration + credits ────────────────────────────────────────
   const durationSeconds = estimateDurationSeconds(drivenAudio.size, drivenAudio.type);
+
+  const MAX_VIDEO_DURATION_SECONDS = 60;
+  if (durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
+    return NextResponse.json(
+      {
+        error: "Audio is too long. Maximum video duration is 60 seconds.",
+        errorCode: "VIDEO_DURATION_EXCEEDED",
+        maxSeconds: MAX_VIDEO_DURATION_SECONDS,
+        actualSeconds: durationSeconds,
+        requestId,
+      },
+      { status: 400 }
+    );
+  }
+
   const creditsToConsume = calcCredits(durationSeconds);
 
   // ── 3. Multi-credit warning gate ─────────────────────────────────────────

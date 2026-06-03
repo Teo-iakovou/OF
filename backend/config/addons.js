@@ -1,39 +1,60 @@
-/** @typedef {"uploads" | "chat" | "sadtalkerVideos"} AddonType */
+// External API addonType ↔ internal PackageInstance.addons field name.
+// DB field "sadtalkerVideos" retained for backward compat — rename to "videos"
+// queued as a separate migration PR.
+const TYPE_TO_FIELD = {
+  uploads: "uploads",
+  chat:    "chat",
+  videos:  "sadtalkerVideos",
+};
 
-const ADDONS = {
+const ADDON_PACKS = {
+  videos: {
+    pack_3:  { qty: 3,          stripePriceEnv: "STRIPE_PRICE_VIDEOS_PACK_3",   bestValue: false },
+    pack_10: { qty: 10,         stripePriceEnv: "STRIPE_PRICE_VIDEOS_PACK_10",  bestValue: false },
+    pack_25: { qty: 25,         stripePriceEnv: "STRIPE_PRICE_VIDEOS_PACK_25",  bestValue: true  },
+  },
   uploads: {
-    packs: {
-      pack_5: { qty: 5, priceEnv: "STRIPE_PRICE_UPLOADS_5" },
-      pack_20: { qty: 20, priceEnv: "STRIPE_PRICE_UPLOADS_20" },
-    },
+    pack_25:  { qty: 25,        stripePriceEnv: "STRIPE_PRICE_UPLOADS_PACK_25",  bestValue: false },
+    pack_75:  { qty: 75,        stripePriceEnv: "STRIPE_PRICE_UPLOADS_PACK_75",  bestValue: false },
+    pack_200: { qty: 200,       stripePriceEnv: "STRIPE_PRICE_UPLOADS_PACK_200", bestValue: true  },
   },
   chat: {
-    packs: {
-      pack_100k: { qty: 100000, priceEnv: "STRIPE_PRICE_CHAT_100K" },
-    },
-  },
-  sadtalkerVideos: {
-    packs: {
-      pack_5: { qty: 5, priceEnv: "STRIPE_PRICE_VIDEOS_5" },
-      pack_15: { qty: 15, priceEnv: "STRIPE_PRICE_VIDEOS_15" },
-      pack_30: { qty: 30, priceEnv: "STRIPE_PRICE_VIDEOS_30" },
-    },
+    pack_1m:  { qty: 1_000_000,  stripePriceEnv: "STRIPE_PRICE_CHAT_PACK_1M",   bestValue: false },
+    pack_5m:  { qty: 5_000_000,  stripePriceEnv: "STRIPE_PRICE_CHAT_PACK_5M",   bestValue: false },
+    pack_15m: { qty: 15_000_000, stripePriceEnv: "STRIPE_PRICE_CHAT_PACK_15M",  bestValue: true  },
   },
 };
 
-const getAddonPack = (addonType, packKey) => {
-  const addon = ADDONS[addonType];
-  const pack = addon?.packs?.[packKey];
+// Set of externally-valid addon types (used for request validation)
+const ALLOWED_ADDON_TYPES = new Set(Object.keys(ADDON_PACKS)); // {"videos","uploads","chat"}
+
+/** Return pack config or null. */
+function getAddonPack(type, packKey) {
+  const pack = ADDON_PACKS[type]?.[packKey];
   if (!pack) return null;
-  return { ...pack, priceId: process.env[pack.priceEnv] || null };
-};
+  return { ...pack };
+}
 
-const validateAddonPriceEnv = () => {
-  const missing = [];
-  for (const addon of Object.values(ADDONS)) {
-    for (const pack of Object.values(addon.packs)) {
-      if (!process.env[pack.priceEnv]) missing.push(pack.priceEnv);
+/** Translate external addonType to the internal PackageInstance.addons field name. */
+function getDbFieldForType(type) {
+  return TYPE_TO_FIELD[type] || null;
+}
+
+/** Flatten ADDON_PACKS into a list of {type, packKey, qty, bestValue, stripePriceEnv}. */
+function getAllPacks() {
+  const result = [];
+  for (const [type, packs] of Object.entries(ADDON_PACKS)) {
+    for (const [packKey, pack] of Object.entries(packs)) {
+      result.push({ type, packKey, ...pack });
     }
+  }
+  return result;
+}
+
+function validateAddonPriceEnv() {
+  const missing = [];
+  for (const pack of getAllPacks()) {
+    if (!process.env[pack.stripePriceEnv]) missing.push(pack.stripePriceEnv);
   }
   if (missing.length === 0) return;
   const message = `[addons] missing Stripe price env vars: ${missing.join(", ")}`;
@@ -41,27 +62,14 @@ const validateAddonPriceEnv = () => {
     throw new Error(message);
   }
   console.warn(message);
-};
-
-const ADDON_PRICES = Object.fromEntries(
-  Object.entries(ADDONS).map(([addonType, addon]) => [
-    addonType,
-    Object.fromEntries(
-      Object.entries(addon.packs).map(([packKey, pack]) => [
-        packKey,
-        { ...pack, priceId: process.env[pack.priceEnv] || null },
-      ])
-    ),
-  ])
-);
-
-/** @type {AddonType | null} */
-const AddonType = null;
+}
 
 module.exports = {
-  ADDONS,
-  ADDON_PRICES,
+  ADDON_PACKS,
+  TYPE_TO_FIELD,
+  ALLOWED_ADDON_TYPES,
   getAddonPack,
+  getDbFieldForType,
+  getAllPacks,
   validateAddonPriceEnv,
-  AddonType,
 };

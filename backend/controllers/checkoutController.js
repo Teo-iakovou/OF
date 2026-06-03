@@ -5,7 +5,7 @@ const User = require("../models/user");
 const PackageInstance = require("../models/packageInstance");
 const WebhookEvent = require("../models/webhookEvent");
 const mongoose = require("mongoose");
-const { ADDON_PRICES, getAddonPack } = require("../config/addons");
+const { getAddonPack, getDbFieldForType, ALLOWED_ADDON_TYPES } = require("../config/addons");
 const { getAllAddonPrices } = require("../services/stripeAddonService");
 const { getQuotasForPlan } = require("../config/planQuotas");
 const { sendErr } = require("../utils/sendErr");
@@ -20,8 +20,6 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
 // ALLOWED_ORIGINS=http://localhost:3000,https://yourapp.com
 
 const PACKAGES = { lite: 500, pro: 1500, ultimate: 3000 }; // cents
-
-const ALLOWED_ADDON_TYPES = new Set(["uploads", "chat", "sadtalkerVideos"]);
 const SUPPORTED_LOCALES = new Set(["en", "el", "es", "it"]);
 
 function normalizeLocale(value) {
@@ -173,20 +171,20 @@ const createAddonCheckoutSession = async (req, res) => {
     if (!pack) {
       return res.status(400).json({ error: "INVALID_ADDON_PACK", requestId });
     }
-    const priceId = process.env[pack.priceEnv];
+    const priceId = process.env[pack.stripePriceEnv];
     if (!priceId) {
       try {
         console.warn("[addon-checkout:missing-price]", {
           requestId,
           addonType,
           packKey,
-          priceEnv: pack.priceEnv,
+          stripePriceEnv: pack.stripePriceEnv,
         });
       } catch {}
       return res.status(500).json({
         error: "ADDON_PRICE_NOT_CONFIGURED",
         requestId,
-        details: { addonType, packKey, priceEnv: pack.priceEnv },
+        details: { addonType, packKey, stripePriceEnv: pack.stripePriceEnv },
       });
     }
     if (!packageInstanceId || !mongoose.Types.ObjectId.isValid(packageInstanceId)) {
@@ -381,10 +379,11 @@ const handleStripeWebhook = async (req, res) => {
         return res.json({ received: true });
       }
 
-      const inc = {};
-      if (addonType === "uploads") inc["addons.uploads"] = addonQty;
-      if (addonType === "chat") inc["addons.chat"] = addonQty;
-      if (addonType === "sadtalkerVideos") inc["addons.sadtalkerVideos"] = addonQty;
+      const dbField = getDbFieldForType(addonType);
+      if (!dbField) {
+        return res.json({ received: true });
+      }
+      const inc = { [`addons.${dbField}`]: addonQty };
 
       const filter = hasUserId
         ? { _id: packageInstanceId, status: "active", userId }
@@ -503,8 +502,20 @@ const handleStripeWebhook = async (req, res) => {
           }
           throw err;
         }
-        user.activePackageInstanceId = legacyInstance._id;
-        await user.save();
+        // Only auto-activate if this is the user's first active package.
+        // For returning buyers who already have another active instance, leave
+        // activePackageInstanceId pointing to their current package — the client
+        // will detect the new instance and prompt them to switch.
+        const hasOtherActiveW1 = await PackageInstance.exists({
+          userId: user._id,
+          status: "active",
+          _id: { $ne: legacyInstance._id },
+        });
+        if (!hasOtherActiveW1) {
+          user.activePackageInstanceId = legacyInstance._id;
+          await user.save();
+          // purchasedPackage was already saved above; no other pending fields.
+        }
         return res.json({ received: true });
       }
       const { uploads: uploadLimit, tokensLimit, videos: sadtalkerLimit } = getQuotasForPlan(packageId);
@@ -529,8 +540,17 @@ const handleStripeWebhook = async (req, res) => {
         stripePaymentIntentId: paymentIntentId,
       });
       if (instance.userId && instance.userId.toString() === user._id.toString()) {
-        user.activePackageInstanceId = instance._id;
-        await user.save();
+        // Only auto-activate if this is the user's first active package.
+        const hasOtherActiveW2 = await PackageInstance.exists({
+          userId: user._id,
+          status: "active",
+          _id: { $ne: instance._id },
+        });
+        if (!hasOtherActiveW2) {
+          user.activePackageInstanceId = instance._id;
+          await user.save();
+          // purchasedPackage was already saved above; no other pending fields.
+        }
       }
       console.log("✅ Package instance created for:", {
         email,
@@ -689,8 +709,17 @@ const verifyCheckoutSession = async (req, res) => {
             legacyInstance.stripeCheckoutSessionId = sessionId;
             legacyInstance.stripePaymentIntentId = paymentIntentId || null;
             await legacyInstance.save();
-            user.activePackageInstanceId = legacyInstance._id;
-            await user.save();
+            // Only auto-activate if this is the user's first active package.
+            const hasOtherActiveV1 = await PackageInstance.exists({
+              userId: user._id,
+              status: "active",
+              _id: { $ne: legacyInstance._id },
+            });
+            if (!hasOtherActiveV1) {
+              user.activePackageInstanceId = legacyInstance._id;
+              await user.save();
+              // purchasedPackage was already saved above; no other pending fields.
+            }
             applied = true;
             activePackageInstanceId = legacyInstance._id.toString();
             try {
@@ -721,8 +750,17 @@ const verifyCheckoutSession = async (req, res) => {
               stripeCheckoutSessionId: sessionId,
               stripePaymentIntentId: paymentIntentId || null,
             });
-            user.activePackageInstanceId = instance._id;
-            await user.save();
+            // Only auto-activate if this is the user's first active package.
+            const hasOtherActiveV2 = await PackageInstance.exists({
+              userId: user._id,
+              status: "active",
+              _id: { $ne: instance._id },
+            });
+            if (!hasOtherActiveV2) {
+              user.activePackageInstanceId = instance._id;
+              await user.save();
+              // purchasedPackage was already saved above; no other pending fields.
+            }
             applied = true;
             activePackageInstanceId = instance._id.toString();
             try {
@@ -863,10 +901,8 @@ const verifyAddonSession = async (req, res) => {
           );
 
           if (upserted?.upsertedCount) {
-            const inc = {};
-            if (addonType === "uploads") inc["addons.uploads"] = Number(pack.qty);
-            if (addonType === "chat") inc["addons.chat"] = Number(pack.qty);
-            if (addonType === "sadtalkerVideos") inc["addons.sadtalkerVideos"] = Number(pack.qty);
+            const dbField = getDbFieldForType(addonType);
+            const inc = dbField ? { [`addons.${dbField}`]: Number(pack.qty) } : {};
 
             const filter = hasUserId
               ? { _id: packageInstanceId, status: "active", userId: meta.userId }

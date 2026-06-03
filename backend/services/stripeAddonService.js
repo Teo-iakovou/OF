@@ -3,65 +3,88 @@
 // Results are cached in-memory for 5 minutes to avoid hitting Stripe on every request.
 
 const Stripe = require("stripe");
+const { getAllPacks } = require("../config/addons");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-const ADDON_DEFINITIONS = {
-  uploads: [
-    { id: "upload_5",  envKey: "STRIPE_PRICE_UPLOADS_5",  credits: 5,      label: "+5 uploads" },
-    { id: "upload_20", envKey: "STRIPE_PRICE_UPLOADS_20", credits: 20,     label: "+20 uploads" },
-  ],
-  ai: [
-    { id: "ai_100k",   envKey: "STRIPE_PRICE_CHAT_100K",  credits: 100000, label: "+100k tokens" },
-  ],
-  videos: [
-    { id: "video_5",   envKey: "STRIPE_PRICE_VIDEOS_5",   credits: 5,      label: "+5 videos" },
-    { id: "video_15",  envKey: "STRIPE_PRICE_VIDEOS_15",  credits: 15,     label: "+15 videos" },
-    { id: "video_30",  envKey: "STRIPE_PRICE_VIDEOS_30",  credits: 30,     label: "+30 videos" },
-  ],
-};
 
 // In-memory cache (per process)
 let priceCache = null;
 let cacheExpiry = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-async function fetchPriceEntry(def) {
-  const stripePriceId = process.env[def.envKey];
+function formatCents(amount, currency) {
+  if (amount == null || !currency) return null;
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount / 100);
+  } catch {
+    return `${currency.toUpperCase()} ${(amount / 100).toFixed(2)}`;
+  }
+}
+
+async function fetchPackEntry(pack) {
+  const stripePriceId = process.env[pack.stripePriceEnv];
   if (!stripePriceId) {
-    console.warn("[stripeAddonService] missing env var:", def.envKey);
-    return null;
+    console.warn("[stripeAddonService] missing env var:", pack.stripePriceEnv);
+    return {
+      type:           pack.type,
+      packKey:        pack.packKey,
+      qty:            pack.qty,
+      bestValue:      pack.bestValue,
+      priceId:        null,
+      unitAmount:     null,
+      currency:       null,
+      formattedPrice: null,
+    };
   }
   try {
     const price = await stripe.prices.retrieve(stripePriceId);
     return {
-      id: def.id,
-      label: def.label,
-      credits: def.credits,
-      priceCents: price.unit_amount,
-      currency: price.currency,
-      stripePriceId,
+      type:           pack.type,
+      packKey:        pack.packKey,
+      qty:            pack.qty,
+      bestValue:      pack.bestValue,
+      priceId:        stripePriceId,
+      unitAmount:     price.unit_amount,
+      currency:       price.currency,
+      formattedPrice: formatCents(price.unit_amount, price.currency),
     };
   } catch (err) {
     console.error("[stripeAddonService] failed to fetch price", {
-      id: def.id,
-      envKey: def.envKey,
-      stripePriceId,
-      error: err?.message,
+      type:     pack.type,
+      packKey:  pack.packKey,
+      envKey:   pack.stripePriceEnv,
+      priceId:  stripePriceId,
+      error:    err?.message,
     });
-    return null;
+    return {
+      type:           pack.type,
+      packKey:        pack.packKey,
+      qty:            pack.qty,
+      bestValue:      pack.bestValue,
+      priceId:        null,
+      unitAmount:     null,
+      currency:       null,
+      formattedPrice: null,
+    };
   }
 }
 
 async function fetchAllAddonPricesFromStripe() {
-  const results = {};
+  const packs = getAllPacks();
+  const entries = await Promise.all(packs.map(fetchPackEntry));
 
-  for (const [group, defs] of Object.entries(ADDON_DEFINITIONS)) {
-    const entries = await Promise.all(defs.map(fetchPriceEntry));
-    results[group] = entries.filter(Boolean);
+  // Group by type: { uploads: [...], chat: [...], videos: [...] }
+  const grouped = {};
+  for (const entry of entries) {
+    if (!grouped[entry.type]) grouped[entry.type] = [];
+    grouped[entry.type].push(entry);
   }
-
-  return results;
+  return grouped;
 }
 
 async function getAllAddonPrices() {

@@ -35,6 +35,52 @@ type UpgradeInfo = {
   limit?: number | null;
 } | null;
 
+function TalkingHeadSkeleton() {
+  return (
+    <div className="space-y-8">
+      <section className="mx-auto w-full max-w-3xl rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 md:p-6">
+        <div className="animate-pulse space-y-5">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <div className="h-4 w-24 rounded bg-[var(--hg-surface-2)]" />
+              <div className="h-10 w-full rounded-lg bg-[var(--hg-surface-2)]" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 w-24 rounded bg-[var(--hg-surface-2)]" />
+              <div className="h-10 w-full rounded-lg bg-[var(--hg-surface-2)]" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="h-10 w-32 rounded-xl bg-[var(--hg-surface-2)]" />
+            <div className="h-10 w-20 rounded-xl bg-[var(--hg-surface-2)]" />
+          </div>
+        </div>
+      </section>
+
+      <section className="w-full pb-8 pt-1 md:pt-2">
+        <div className="animate-pulse border-b border-[var(--hg-border-2)] pb-4">
+          <div className="mb-1 h-3 w-16 rounded bg-[var(--hg-surface-2)]" />
+          <div className="h-7 w-40 rounded bg-[var(--hg-surface-2)]" />
+        </div>
+        <div className="mt-3 flex gap-3 overflow-hidden md:mt-4 md:gap-5">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="w-[230px] shrink-0 animate-pulse rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 sm:w-[270px]"
+            >
+              <div className="h-32 w-full rounded-xl bg-[var(--hg-surface-2)] sm:h-36" />
+              <div className="mt-3.5 space-y-1.5">
+                <div className="h-4 w-32 rounded bg-[var(--hg-surface-2)]" />
+                <div className="h-3 w-20 rounded bg-[var(--hg-surface-2)]" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 const statusClass: Record<TalkingHeadRecentItem["status"], string> = {
   queued: "bg-white/10 text-white/70 border border-white/15",
   processing: "bg-[#50C0F0]/15 text-[#9bdcf7] border border-[#50C0F0]/35",
@@ -47,7 +93,7 @@ export default function UploadTalkingHead() {
   const locale = useLocale();
   const t = useTranslations("dashboard.uploadTalkingHead");
   const tOOC = useTranslations("outOfCredits");
-  const { data: planData, refresh: refreshPlan, hasActiveInstance } = usePlanInfo();
+  const { data: planData, loading: planLoading, refresh: refreshPlan, hasActiveInstance } = usePlanInfo();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -63,6 +109,7 @@ export default function UploadTalkingHead() {
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioDurationError, setAudioDurationError] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
@@ -94,8 +141,26 @@ export default function UploadTalkingHead() {
   }, [isOutOfCredits]);
 
   const canGenerate = useMemo(() => {
-    return !!imageFile && !!audioFile && !heygenLoading;
-  }, [imageFile, audioFile, heygenLoading]);
+    return !!imageFile && !!audioFile && !heygenLoading && !audioDurationError;
+  }, [imageFile, audioFile, heygenLoading, audioDurationError]);
+
+  function handleAudioChange(file: File | null) {
+    setAudioDurationError(null);
+    setAudioFile(file);
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const audio = new Audio(url);
+    audio.addEventListener("loadedmetadata", () => {
+      URL.revokeObjectURL(url);
+      if (audio.duration > 60) {
+        setAudioDurationError(t("errors.audioDurationExceeded"));
+        setAudioFile(null);
+      }
+    });
+    audio.addEventListener("error", () => {
+      URL.revokeObjectURL(url);
+    });
+  }
 
   const loadHistory = useCallback(async () => {
     try {
@@ -206,6 +271,11 @@ export default function UploadTalkingHead() {
               ? data.code
               : "";
 
+        if (codeRaw === "VIDEO_DURATION_EXCEEDED") {
+          setHeygenError(t("errors.audioDurationExceeded"));
+          return;
+        }
+
         if (
           codeRaw === "ACTIVE_INSTANCE_REQUIRED" ||
           codeRaw === "FACE_ENROLLMENT_REQUIRED" ||
@@ -260,6 +330,7 @@ export default function UploadTalkingHead() {
     }
   }
 
+  if (planLoading || planData === null) return <TalkingHeadSkeleton />;
   if (!hasActiveInstance) return null;
 
   return (
@@ -310,9 +381,13 @@ export default function UploadTalkingHead() {
               <input
                 type="file"
                 accept="audio/mpeg,audio/wav"
-                onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => handleAudioChange(e.target.files?.[0] ?? null)}
                 className="block w-full text-sm hg-muted file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--hg-accent)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#04131d] hover:file:opacity-90"
               />
+              <p className="text-xs text-[var(--hg-muted-2)]">{t("audioMaxDurationHint")}</p>
+              {audioDurationError ? (
+                <p className="text-xs text-rose-300">{audioDurationError}</p>
+              ) : null}
             </div>
           </div>
 
@@ -336,6 +411,7 @@ export default function UploadTalkingHead() {
               onClick={() => {
                 setImageFile(null);
                 setAudioFile(null);
+                setAudioDurationError(null);
                 setError(null);
                 setErrorCode(null);
                 setErrorRequestId(null);

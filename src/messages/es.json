@@ -456,7 +456,7 @@
       "title": "Sin créditos de subida",
       "subtitle": "Has usado todos tus créditos de subida para este período."
     },
-    "ai": {
+    "chat": {
       "title": "Sin tokens de IA",
       "subtitle": "Has usado todos tus tokens de IA para este período."
     },
@@ -808,13 +808,8 @@
       "activeInstance": "Instancia activa: {id}",
       "supportId": "ID de soporte: {id}",
       "copy": "Copiar",
-      "addonLabel5Uploads": "5 cargas",
-      "addonLabel20Uploads": "20 cargas",
-      "addonLabel100kChat": "100k tokens de chat",
-      "addonLabel5Videos": "5 vídeos",
-      "addonLabel15Videos": "15 vídeos",
-      "addonLabel30Videos": "30 vídeos",
       "addonBadgeBestValue": "Mejor valor",
+      "buyButton": "Comprar",
       "statusActive": "Activo",
       "profileLabel": "Perfil {letter}",
       "remaining": "restante"
@@ -1149,6 +1144,7 @@
       "heading": "AI Video Avatar",
       "facePhotoLabel": "Foto del rostro (PNG/JPG)",
       "audioLabel": "Audio de voz (MP3/WAV)",
+      "audioMaxDurationHint": "Máx. 60 segundos",
       "generateButton": "Generar",
       "generatingButton": "Generando…",
       "resetButton": "Restablecer",
@@ -1166,7 +1162,8 @@
         "multipleFaces": "Se detectaron varios rostros. Sube una imagen con solo un rostro.",
         "faceVerificationFailed": "La verificación facial falló. Esta foto no coincide con tu rostro registrado.",
         "upgradeRequired": "Actualización requerida",
-        "videoGenerationFailed": "La generación del video falló."
+        "videoGenerationFailed": "La generación del video falló.",
+        "audioDurationExceeded": "El audio es demasiado largo. La duración máxima del vídeo es 60 segundos."
       },
       "errorCtas": {
         "enrollFace": "Registrar rostro",

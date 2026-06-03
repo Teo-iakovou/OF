@@ -596,7 +596,14 @@ export async function checkUserPackage(
   if (!force && pkgCache.value !== undefined && now - pkgCache.ts < TTL) {
     return pkgCache.value;
   }
-  if (!force && pkgCache.inFlight) return pkgCache.inFlight;
+  // Deduplicate concurrent calls regardless of force flag. When a forced refresh
+  // and a listener-triggered refresh race (e.g. handleSelectInstance starts
+  // refresh(true) then synchronously dispatches ai-auth-changed before awaiting),
+  // the second caller reuses the in-flight promise — one network request updates
+  // both state trees. For non-forced calls this was already the behaviour;
+  // extending it to forced calls is safe because the endpoint is idempotent and
+  // both callers want the same current state.
+  if (pkgCache.inFlight) return pkgCache.inFlight;
 
   pkgCache.inFlight = (async () => {
     try {
@@ -647,6 +654,8 @@ export type PackageInstanceSummary = {
   chatRemaining?: number | null;
   videoRemaining?: number | null;
   remaining: number;
+  faceEnrolled?: boolean;
+  personaBound?: boolean;
   createdAt: string;
   chatMonthlyLimit?: number;
   chatUsedThisCycle?: number;
@@ -655,8 +664,7 @@ export type PackageInstanceSummary = {
   quotas?: UserPackageResponse["quotas"];
 };
 
-export type AddonType = "uploads" | "chat" | "sadtalkerVideos";
-export type AddonPack = "pack_1" | "pack_5" | "pack_20" | "pack_50" | "pack_200";
+export type AddonType = "uploads" | "chat" | "videos";
 
 export async function fetchActivePackageInstances(): Promise<PackageInstanceSummary[]> {
   const r = await fetchJson(`${BASE_URL}/api/user/package-instances`, {
@@ -686,14 +694,6 @@ export async function createAddonCheckoutSession(params: {
   packageInstanceId: string;
   locale?: string | null;
 }): Promise<{ url: string; requestId?: string | null }> {
-  const qtyMap: Record<string, number> = {
-    pack_1: 1,
-    pack_5: 5,
-    pack_20: 20,
-    pack_50: 50,
-    pack_200: 200,
-  };
-  const addonQty = qtyMap[params.addonPack] ?? undefined;
   const USE_BFF = process.env.NEXT_PUBLIC_USE_BFF === "true";
   const url = USE_BFF
     ? `/api/checkout/create-addon-checkout-session`
@@ -702,7 +702,7 @@ export async function createAddonCheckoutSession(params: {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...params, addonQty }),
+    body: JSON.stringify(params),
   });
   if (!r.ok) {
     const err: Error & { payload?: unknown } = new Error("Failed to create addon checkout session");
@@ -747,6 +747,14 @@ export function clearApiCaches() {
   pkgCache.value = undefined;
   pkgCache.ts = 0;
   pkgCache.inFlight = null;
+}
+
+// Returns true when the cache has been deliberately wiped (e.g. after logout).
+// Used by PlanContext to distinguish logout-triggered ai-auth-changed events
+// (where the cache is empty) from package-switch / checkout events (where a
+// preceding refresh(true) has already populated the cache).
+export function isPkgCacheEmpty(): boolean {
+  return pkgCache.value === undefined && pkgCache.inFlight === null;
 }
 
 // -------------------------------
@@ -956,13 +964,14 @@ export async function deleteConversation(conversationId: string) {
 }
 
 export async function createEmptyConversation(
+  packageInstanceId?: string | null
 ): Promise<string | null> {
   try {
     const res = await fetch(`${BASE_URL}/api/conversations`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+      body: JSON.stringify(packageInstanceId ? { packageInstanceId } : {}),
     });
     const parsed = await readJsonOrText(res);
     const data = ensureOk<{ _id?: string; id?: string }>(
@@ -995,8 +1004,12 @@ export async function generateConversationTitle(
   return data.title || null;
 }
 
-export async function fetchConversations(): Promise<ConversationSummary[]> {
-  const url = `${BASE_URL}/api/conversations?ts=${Date.now()}`;
+export async function fetchConversations(params?: {
+  packageInstanceId?: string;
+}): Promise<ConversationSummary[]> {
+  const qs = new URLSearchParams({ ts: String(Date.now()) });
+  if (params?.packageInstanceId) qs.set("packageInstanceId", params.packageInstanceId);
+  const url = `${BASE_URL}/api/conversations?${qs.toString()}`;
   const r = await fetchJson(url, { method: "GET", cache: "no-store" });
   if (!r.ok) throw new Error("Fetch conversations failed");
   return r.data as ConversationSummary[];

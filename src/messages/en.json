@@ -456,7 +456,7 @@
       "title": "Out of upload credits",
       "subtitle": "You've used all your upload credits for this period."
     },
-    "ai": {
+    "chat": {
       "title": "Out of AI tokens",
       "subtitle": "You've used all your AI tokens for this period."
     },
@@ -837,13 +837,8 @@
       "activeInstance": "Active instance: {id}",
       "supportId": "Support ID: {id}",
       "copy": "Copy",
-      "addonLabel5Uploads": "5 Uploads",
-      "addonLabel20Uploads": "20 Uploads",
-      "addonLabel100kChat": "100k Chat Tokens",
-      "addonLabel5Videos": "5 Videos",
-      "addonLabel15Videos": "15 Videos",
-      "addonLabel30Videos": "30 Videos",
       "addonBadgeBestValue": "Best value",
+      "buyButton": "Buy",
       "statusActive": "Active",
       "profileLabel": "Profile {letter}",
       "remaining": "remaining"
@@ -1244,6 +1239,7 @@
       "heading": "AI Video Avatar",
       "facePhotoLabel": "Face photo (PNG/JPG)",
       "audioLabel": "Driven audio (MP3/WAV)",
+      "audioMaxDurationHint": "Max 60 seconds",
       "generateButton": "Generate",
       "generatingButton": "Generating…",
       "resetButton": "Reset",
@@ -1261,7 +1257,8 @@
         "multipleFaces": "Multiple faces detected. Upload an image with only one face.",
         "faceVerificationFailed": "Face verification failed. This photo does not match your enrolled face.",
         "upgradeRequired": "Upgrade required",
-        "videoGenerationFailed": "Video generation failed."
+        "videoGenerationFailed": "Video generation failed.",
+        "audioDurationExceeded": "Audio is too long. Maximum video duration is 60 seconds."
       },
       "errorCtas": {
         "enrollFace": "Enroll face",

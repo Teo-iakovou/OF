@@ -456,7 +456,7 @@
       "title": "Εξαντλήθηκαν τα credits ανεβάσματος",
       "subtitle": "Χρησιμοποιήσατε όλα τα credits ανεβάσματος για αυτήν την περίοδο."
     },
-    "ai": {
+    "chat": {
       "title": "Εξαντλήθηκαν τα tokens AI",
       "subtitle": "Χρησιμοποιήσατε όλα τα tokens AI για αυτήν την περίοδο."
     },
@@ -837,13 +837,8 @@
       "activeInstance": "Ενεργό instance: {id}",
       "supportId": "ID Υποστήριξης: {id}",
       "copy": "Αντιγραφή",
-      "addonLabel5Uploads": "5 Uploads",
-      "addonLabel20Uploads": "20 Uploads",
-      "addonLabel100kChat": "100k Chat Tokens",
-      "addonLabel5Videos": "5 βίντεο",
-      "addonLabel15Videos": "15 βίντεο",
-      "addonLabel30Videos": "30 βίντεο",
       "addonBadgeBestValue": "Καλύτερη αξία",
+      "buyButton": "Αγορά",
       "statusActive": "Ενεργό",
       "profileLabel": "Προφίλ {letter}",
       "remaining": "υπόλοιπο"
@@ -1244,6 +1239,7 @@
       "heading": "AI Video Avatar",
       "facePhotoLabel": "Φωτογραφία προσώπου (PNG/JPG)",
       "audioLabel": "Αρχείο φωνής (MP3/WAV)",
+      "audioMaxDurationHint": "Μέγ. 60 δευτερόλεπτα",
       "generateButton": "Δημιουργία",
       "generatingButton": "Δημιουργία…",
       "resetButton": "Επαναφορά",
@@ -1261,7 +1257,8 @@
         "multipleFaces": "Εντοπίστηκαν πολλά πρόσωπα. Ανέβασε μια εικόνα με ένα μόνο πρόσωπο.",
         "faceVerificationFailed": "Η επαλήθευση προσώπου απέτυχε. Αυτή η φωτογραφία δεν ταιριάζει με το καταχωρημένο πρόσωπο.",
         "upgradeRequired": "Απαιτείται αναβάθμιση",
-        "videoGenerationFailed": "Η δημιουργία βίντεο απέτυχε."
+        "videoGenerationFailed": "Η δημιουργία βίντεο απέτυχε.",
+        "audioDurationExceeded": "Το αρχείο ήχου είναι πολύ μεγάλο. Μέγιστη διάρκεια βίντεο: 60 δευτερόλεπτα."
       },
       "errorCtas": {
         "enrollFace": "Καταχώρηση προσώπου",

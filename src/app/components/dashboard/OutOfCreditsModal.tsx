@@ -7,52 +7,31 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import { createAddonCheckoutSession, type AddonType } from "@/app/utils/api";
 
-type ModalType = "uploads" | "ai" | "videos";
+type ModalType = "uploads" | "chat" | "videos";
 
 interface AddonPrice {
-  id: string;
-  label: string;
-  credits: number;
-  priceCents: number;
-  currency: string;
+  type: AddonType;
+  packKey: string;
+  qty: number;
+  bestValue: boolean;
+  priceId: string | null;
+  unitAmount: number | null;
+  currency: string | null;
+  formattedPrice: string | null;
 }
 
 interface AddonPriceResponse {
   uploads?: AddonPrice[];
-  ai?: AddonPrice[];
+  chat?: AddonPrice[];
   videos?: AddonPrice[];
 }
 
-// Maps API addon id → createAddonCheckoutSession params
-const CHECKOUT_MAP: Record<string, { addonType: AddonType; addonPack: string }> = {
-  upload_5:  { addonType: "uploads",         addonPack: "pack_5"    },
-  upload_20: { addonType: "uploads",         addonPack: "pack_20"   },
-  ai_100k:   { addonType: "chat",            addonPack: "pack_100k" },
-  video_5:   { addonType: "sadtalkerVideos", addonPack: "pack_5"    },
-  video_15:  { addonType: "sadtalkerVideos", addonPack: "pack_15"   },
-  video_30:  { addonType: "sadtalkerVideos", addonPack: "pack_30"   },
-};
-
-// Maps modal type → billing ?addon= param
+// Maps modal type → billing ?addon= param (identity — all types match param names)
 const BILLING_PARAM: Record<ModalType, string> = {
   uploads: "uploads",
-  ai: "chat",
+  chat: "chat",
   videos: "videos",
 };
-
-function formatPrice(priceCents: number, currency: string): string {
-  const amount = priceCents / 100;
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currency.toUpperCase(),
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${currency.toUpperCase()} ${amount.toFixed(2)}`;
-  }
-}
 
 interface Props {
   type: ModalType;
@@ -135,15 +114,13 @@ export default function OutOfCreditsModal({ type, open, onClose }: Props) {
   }, [open, onClose]);
 
   async function handleBuy(addon: AddonPrice) {
-    if (!packageInstanceId) return;
-    const mapping = CHECKOUT_MAP[addon.id];
-    if (!mapping) return;
-
-    setBuyingId(addon.id);
+    if (!packageInstanceId || !addon.priceId) return;
+    const buyKey = `${addon.type}:${addon.packKey}`;
+    setBuyingId(buyKey);
     try {
       const res = await createAddonCheckoutSession({
-        addonType: mapping.addonType,
-        addonPack: mapping.addonPack,
+        addonType: addon.type,
+        addonPack: addon.packKey,
         packageInstanceId,
         locale,
       });
@@ -212,27 +189,33 @@ export default function OutOfCreditsModal({ type, open, onClose }: Props) {
             </div>
           ) : addons.length === 0 ? null : (
             <div className="space-y-2">
-              {addons.map((addon) => (
-                <div
-                  key={addon.id}
-                  className="flex items-center justify-between rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{addon.label}</p>
-                    <p className="text-xs text-[var(--hg-muted)]">
-                      {formatPrice(addon.priceCents, addon.currency)}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleBuy(addon)}
-                    disabled={!packageInstanceId || buyingId !== null}
-                    className="rounded-lg bg-[var(--hg-accent)] px-3 py-1.5 text-xs font-semibold text-[#04131d] hover:opacity-90 disabled:opacity-50"
+              {addons.map((addon) => {
+                const buyKey = `${addon.type}:${addon.packKey}`;
+                const qtyLabel = addon.type === "chat"
+                  ? addon.qty >= 1_000_000 ? `${addon.qty / 1_000_000}M tokens` : `${addon.qty / 1_000}K tokens`
+                  : `${addon.qty} ${addon.type === "videos" ? "videos" : "uploads"}`;
+                return (
+                  <div
+                    key={buyKey}
+                    className="flex items-center justify-between rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-3"
                   >
-                    {buyingId === addon.id ? "…" : t("buy")}
-                  </button>
-                </div>
-              ))}
+                    <div>
+                      <p className="text-sm font-medium">{qtyLabel}</p>
+                      <p className="text-xs text-[var(--hg-muted)]">
+                        {addon.formattedPrice ?? "—"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleBuy(addon)}
+                      disabled={!packageInstanceId || !addon.priceId || buyingId !== null}
+                      className="rounded-lg bg-[var(--hg-accent)] px-3 py-1.5 text-xs font-semibold text-[#04131d] hover:opacity-90 disabled:opacity-50"
+                    >
+                      {buyingId === buyKey ? "…" : t("buy")}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

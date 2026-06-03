@@ -14,6 +14,7 @@ import {
   type AddonType,
   type PackageInstanceSummary,
 } from "@/app/utils/api";
+import { ADDON_PACKS as ADDON_PACK_DEFS, type AddonPackEntry } from "@/config/addons";
 import { resolveQuotaContract } from "@/app/utils/quotaContract";
 import { formatRemaining } from "@/app/utils/quotaDisplay";
 
@@ -57,48 +58,33 @@ const PURCHASABLE_PLANS = [
   { id: "ultimate", displayName: "Ultimate", price: "$399", description: "Power users and agency teams" },
 ] as const;
 
-const ADDON_PACKS: Array<{
-  labelKey: string;
-  type: AddonType;
-  pack: string;
-  badgeKey?: string;
-}> = [
-  { labelKey: "addonLabel5Uploads", type: "uploads", pack: "pack_5" },
-  { labelKey: "addonLabel20Uploads", type: "uploads", pack: "pack_20", badgeKey: "addonBadgeBestValue" },
-  { labelKey: "addonLabel100kChat", type: "chat", pack: "pack_100k" },
-  { labelKey: "addonLabel5Videos", type: "sadtalkerVideos", pack: "pack_5" },
-  { labelKey: "addonLabel15Videos", type: "sadtalkerVideos", pack: "pack_15" },
-  { labelKey: "addonLabel30Videos", type: "sadtalkerVideos", pack: "pack_30", badgeKey: "addonBadgeBestValue" },
-];
-
 // Pre-compute first index per type (module-level, constant)
-const FIRST_INDEX_BY_TYPE: Partial<Record<string, number>> = {};
-ADDON_PACKS.forEach((p, i) => {
+const FIRST_INDEX_BY_TYPE: Partial<Record<AddonType, number>> = {};
+ADDON_PACK_DEFS.forEach((p, i) => {
   if (!(p.type in FIRST_INDEX_BY_TYPE)) FIRST_INDEX_BY_TYPE[p.type] = i;
 });
 
 const ICON_FOR_TYPE: Record<AddonType, React.ComponentType<{ className?: string }>> = {
   uploads: ImagePlus,
   chat: MessageSquare,
-  sadtalkerVideos: Video,
+  videos: Video,
 };
 
 const CATEGORY_KEY_FOR_TYPE: Record<AddonType, string> = {
   uploads: "uploads",
   chat: "aiTokens",
-  sadtalkerVideos: "videos",
+  videos: "videos",
 };
 
 // Maps billing ?addon= param → AddonType for scroll/highlight
 const PARAM_TO_ADDON_TYPE: Record<string, AddonType> = {
   uploads: "uploads",
   chat: "chat",
-  videos: "sadtalkerVideos",
+  videos: "videos",
 };
 
 // Maps AddonType → addon section id
-const ADDON_SECTION_ID = (type: AddonType) =>
-  `addon-section-${type === "sadtalkerVideos" ? "videos" : type}`;
+const ADDON_SECTION_ID = (type: AddonType) => `addon-section-${type}`;
 
 type BillingPanelProps = {
   embedded?: boolean;
@@ -117,6 +103,7 @@ export default function BillingPanel({
     usePlanInfo();
   const [instances, setInstances] = useState<PackageInstanceSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [liveAddonPrices, setLiveAddonPrices] = useState<Record<string, Record<string, { formattedPrice: string | null }>> | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorRequestId, setErrorRequestId] = useState<string | null>(null);
   const [actionKey, setActionKey] = useState<string | null>(null);
@@ -179,6 +166,24 @@ export default function BillingPanel({
     } catch {
       setErrorMessage(t("unauthorized"));
     }
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/checkout/addon-prices", { cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return;
+        // data shape: { uploads: [{packKey, formattedPrice, ...}], chat: [...], videos: [...] }
+        const indexed: Record<string, Record<string, { formattedPrice: string | null }>> = {};
+        for (const [type, entries] of Object.entries(data) as [string, Array<{ packKey: string; formattedPrice: string | null }>][]) {
+          indexed[type] = {};
+          for (const entry of entries) {
+            indexed[type][entry.packKey] = { formattedPrice: entry.formattedPrice };
+          }
+        }
+        setLiveAddonPrices(indexed);
+      })
+      .catch(() => {/* non-critical */});
   }, []);
 
   useEffect(() => {
@@ -440,16 +445,20 @@ export default function BillingPanel({
                 <div className="border-t border-[var(--hg-border)] pt-5">
                   <p className="mb-4 text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)]">{t("buyAddons")}</p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {ADDON_PACKS.map((pack, packIndex) => {
-                      const key = `${instance.id}:${pack.type}:${pack.pack}`;
+                    {ADDON_PACK_DEFS.map((pack: AddonPackEntry, packIndex: number) => {
+                      const key = `${instance.id}:${pack.type}:${pack.packKey}`;
                       const busy = actionKey === key;
                       const isIncluded =
                         (pack.type === "chat" && isChatUnlimited) ||
                         (pack.type === "uploads" && isUploadUnlimited);
-                      const addonName = t(pack.labelKey as Parameters<typeof t>[0]);
-                      const isBestValue = Boolean(pack.badgeKey);
+                      const isBestValue = pack.bestValue;
                       const Icon = ICON_FOR_TYPE[pack.type];
                       const categoryLabel = t(CATEGORY_KEY_FOR_TYPE[pack.type] as Parameters<typeof t>[0]);
+                      const formattedPrice = liveAddonPrices?.[pack.type]?.[pack.packKey]?.formattedPrice ?? "—";
+
+                      const qtyLabel = pack.type === "chat"
+                        ? pack.qty >= 1_000_000 ? `${pack.qty / 1_000_000}M tokens` : `${pack.qty / 1_000}K tokens`
+                        : `${pack.qty} ${pack.type === "videos" ? "videos" : "uploads"}`;
 
                       // Attach scroll-target id to the first card of each type, for the active instance
                       const isFirstOfType = FIRST_INDEX_BY_TYPE[pack.type] === packIndex;
@@ -461,9 +470,7 @@ export default function BillingPanel({
                       const isHighlighted =
                         isActiveInstance &&
                         highlightAddon !== null &&
-                        ((highlightAddon === "uploads" && pack.type === "uploads") ||
-                         (highlightAddon === "chat" && pack.type === "chat") ||
-                         (highlightAddon === "videos" && pack.type === "sadtalkerVideos"));
+                        PARAM_TO_ADDON_TYPE[highlightAddon] === pack.type;
 
                       return (
                         <div
@@ -482,7 +489,7 @@ export default function BillingPanel({
                             <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-[var(--hg-accent-soft)] px-2 py-0.5">
                               <Sparkles className="h-2.5 w-2.5 text-[var(--hg-accent)]" />
                               <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--hg-accent)]">
-                                {t(pack.badgeKey as Parameters<typeof t>[0])}
+                                {t("addonBadgeBestValue")}
                               </span>
                             </div>
                           )}
@@ -510,8 +517,9 @@ export default function BillingPanel({
                               isBestValue ? "text-white" : "text-[var(--hg-text)]",
                             ].join(" ")}
                           >
-                            {addonName}
+                            {qtyLabel}
                           </p>
+                          <p className="text-lg font-bold text-white">{formattedPrice}</p>
                           <div className="mt-auto">
                             {isIncluded ? (
                               <div className="flex items-center gap-1.5 text-xs text-[var(--hg-muted)]">
@@ -522,7 +530,7 @@ export default function BillingPanel({
                               <button
                                 type="button"
                                 disabled={disabled || busy}
-                                onClick={() => handleAddonPurchase(instance.id, pack.type, pack.pack)}
+                                onClick={() => handleAddonPurchase(instance.id, pack.type, pack.packKey)}
                                 className={[
                                   "w-full rounded-xl py-2 text-xs font-semibold transition-all",
                                   isBestValue
@@ -537,7 +545,7 @@ export default function BillingPanel({
                                     <Loader2 className="h-3 w-3 animate-spin" />
                                     {t("redirecting")}
                                   </span>
-                                ) : addonName}
+                                ) : t("buyButton")}
                               </button>
                             )}
                           </div>
