@@ -4,16 +4,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   checkUserPackage,
   fetchActivePackageInstances,
-  fetchLatestResultForPackageInstance,
   type PackageInstanceSummary,
   type UserPackageResponse,
 } from "@/app/utils/api";
 import type { ResultDoc } from "@/app/types/analysis";
 
-const MIN_SKELETON_MS = 300;
-
 type UseOverviewModelOptions = {
   enabled: boolean;
+  planLoading?: boolean;
+  planData?: UserPackageResponse | null;
+  hasActiveInstance?: boolean;
+  isMissingActiveInstance?: boolean;
+  isNewUser?: boolean;
 };
 
 type OverviewModelState = {
@@ -46,8 +48,43 @@ const INITIAL_STATE: OverviewModelState = {
   latestLoading: false,
 };
 
-export function useOverviewModel({ enabled }: UseOverviewModelOptions) {
-  const [state, setState] = useState<OverviewModelState>(INITIAL_STATE);
+function getInitialState({
+  planLoading = true,
+  planData = null,
+  hasActiveInstance = false,
+  isMissingActiveInstance = false,
+  isNewUser = false,
+}: UseOverviewModelOptions): OverviewModelState {
+  if (planLoading) return INITIAL_STATE;
+  return {
+    ...INITIAL_STATE,
+    ready: true,
+    coreLoading: false,
+    planData,
+    hasActiveInstance,
+    isMissingActiveInstance,
+    isNewUser,
+  };
+}
+
+export function useOverviewModel({
+  enabled,
+  planLoading = true,
+  planData: contextPlanData = null,
+  hasActiveInstance: contextHasActiveInstance = false,
+  isMissingActiveInstance: contextIsMissingActiveInstance = false,
+  isNewUser: contextIsNewUser = false,
+}: UseOverviewModelOptions) {
+  const [state, setState] = useState<OverviewModelState>(() =>
+    getInitialState({
+      enabled,
+      planLoading,
+      planData: contextPlanData,
+      hasActiveInstance: contextHasActiveInstance,
+      isMissingActiveInstance: contextIsMissingActiveInstance,
+      isNewUser: contextIsNewUser,
+    })
+  );
   const requestSeq = useRef(0);
   const instancesSeq = useRef(0);
   const inFlightRef = useRef(false);
@@ -104,7 +141,6 @@ export function useOverviewModel({ enabled }: UseOverviewModelOptions) {
 
     inFlightRef.current = true;
     const seq = ++requestSeq.current;
-    const startedAt = Date.now();
 
     if (!silent) {
       setState((prev) => ({
@@ -147,11 +183,6 @@ export function useOverviewModel({ enabled }: UseOverviewModelOptions) {
         : false;
     const isNewUser = uploadsUsed === 0 || (uploadsUsed === null && within24h);
 
-    const elapsed = Date.now() - startedAt;
-    const wait = force ? 0 : Math.max(0, MIN_SKELETON_MS - elapsed);
-    if (wait > 0) {
-      await new Promise((resolve) => setTimeout(resolve, wait));
-    }
     if (seq !== requestSeq.current) return;
 
     setState((prev) => ({
@@ -165,37 +196,58 @@ export function useOverviewModel({ enabled }: UseOverviewModelOptions) {
       isNewUser,
       instancesError: prev.instancesError,
       latestResult: null,
-      latestLoading: hasActiveInstance && !coreError,
+      latestLoading: false,
     }));
-
-    if (coreError || !hasActiveInstance || !planData?.packageInstanceId) return;
-
-    try {
-      const latest = await fetchLatestResultForPackageInstance(planData.packageInstanceId);
-      if (seq !== requestSeq.current) return;
-      setState((prev) => ({
-        ...prev,
-        latestResult: latest,
-        latestLoading: false,
-      }));
-    } catch {
-      if (seq !== requestSeq.current) return;
-      setState((prev) => ({
-        ...prev,
-        latestResult: null,
-        latestLoading: false,
-      }));
-    }
   }, [enabled, safeCheckUserPackage]);
 
   useEffect(() => {
-    // Silent if planData is already populated — stale-while-revalidate, no
-    // skeleton flash on return from billing page.
-    const alreadyHasData = state.planData !== null;
-    void refresh(false, alreadyHasData);
-    // Run only on mount and when `refresh` identity changes (i.e. `enabled` flips).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refresh]);
+    if (!enabled) return;
+    if (planLoading) {
+      setState((prev) => {
+        if (prev.planData) {
+          return prev.coreLoading ? { ...prev, coreLoading: false } : prev;
+        }
+        return !prev.ready && prev.coreLoading
+          ? prev
+          : { ...prev, ready: false, coreLoading: true };
+      });
+      return;
+    }
+    setState((prev) => {
+      if (
+        prev.ready &&
+        !prev.coreLoading &&
+        prev.coreError === null &&
+        prev.planData === contextPlanData &&
+        prev.hasActiveInstance === contextHasActiveInstance &&
+        prev.isMissingActiveInstance === contextIsMissingActiveInstance &&
+        prev.isNewUser === contextIsNewUser &&
+        prev.latestResult === null &&
+        !prev.latestLoading
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        ready: true,
+        coreLoading: false,
+        coreError: null,
+        planData: contextPlanData,
+        hasActiveInstance: contextHasActiveInstance,
+        isMissingActiveInstance: contextIsMissingActiveInstance,
+        isNewUser: contextIsNewUser,
+        latestResult: null,
+        latestLoading: false,
+      };
+    });
+  }, [
+    enabled,
+    planLoading,
+    contextPlanData,
+    contextHasActiveInstance,
+    contextIsMissingActiveInstance,
+    contextIsNewUser,
+  ]);
 
   useEffect(() => {
     if (!enabled) {

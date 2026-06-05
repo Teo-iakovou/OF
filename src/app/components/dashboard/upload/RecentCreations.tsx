@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import CreationCard from "@/app/components/dashboard/upload/CreationCard";
 import { useRecentCreations } from "@/app/hooks/useRecentCreations";
@@ -21,10 +21,13 @@ export default function RecentCreations({
   const { items, loading, refresh } = useRecentCreations({
     packageInstanceId: packageInstanceId || null,
   });
+  const lastRefreshTokenRef = useRef(refreshToken);
 
   useEffect(() => {
     if (refreshToken === undefined) return;
-    refresh();
+    if (lastRefreshTokenRef.current === refreshToken) return;
+    lastRefreshTokenRef.current = refreshToken;
+    refresh(true);
   }, [refreshToken, refresh]);
 
   return (
@@ -104,7 +107,7 @@ export default function RecentCreations({
 
       <button
         type="button"
-        onClick={refresh}
+        onClick={() => refresh(true)}
         className="sr-only"
         aria-hidden
         tabIndex={-1}

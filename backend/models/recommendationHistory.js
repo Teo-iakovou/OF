@@ -26,10 +26,13 @@ const recommendationHistorySchema = new mongoose.Schema(
     csl: { type: Number, default: null },
     imageHash: { type: String, default: null },
     resultId: { type: mongoose.Schema.Types.ObjectId, default: null, index: true },
-    createdAt: { type: Date, default: Date.now, index: true },
+    createdAt: { type: Date, default: Date.now },
   },
   { minimize: true, versionKey: false }
 );
+
+// TTL: auto-delete after 365 days
+recommendationHistorySchema.index({ createdAt: 1 }, { expireAfterSeconds: 365 * 24 * 60 * 60, name: "createdAt_1_ttl" });
 
 recommendationHistorySchema.index({
   userId: 1,

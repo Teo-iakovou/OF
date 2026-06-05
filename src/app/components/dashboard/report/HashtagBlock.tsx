@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import type { HashtagPackMeta } from "@/app/types/analysis";
 
 const TIER_STYLES: Record<string, string> = {
@@ -46,6 +46,7 @@ export function HashtagBlock({
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [copiedTag, setCopiedTag] = useState<string | null>(null);
+  const [copiedAll, setCopiedAll] = useState(false);
 
   if (!tags.length) return null;
 
@@ -76,17 +77,23 @@ export function HashtagBlock({
     window.setTimeout(() => setCopiedTag((prev) => (prev === tag ? null : prev)), 1500);
   };
 
+  const handleCopyAll = () => {
+    onCopyAll(allText);
+    setCopiedAll(true);
+    window.setTimeout(() => setCopiedAll(false), 1500);
+  };
+
   return (
     <div className="mt-3">
       {(tierLabel || hashtagPack?.reasoning) && (
-        <div className="mb-2 flex flex-wrap items-center gap-2">
+        <div className="mb-2 flex items-start gap-2">
           {tierLabel && tierStyle && (
-            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tierStyle}`}>
+            <span className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tierStyle}`}>
               {tierLabel}
             </span>
           )}
           {hashtagPack?.reasoning && (
-            <p className="text-[11px] text-[var(--hg-muted)] leading-snug">{hashtagPack.reasoning}</p>
+            <p className="text-[11px] leading-snug text-[var(--hg-muted)]">{hashtagPack.reasoning}</p>
           )}
         </div>
       )}
@@ -105,7 +112,7 @@ export function HashtagBlock({
             }`}
           >
             {tag}
-            <Copy className="h-2.5 w-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
+            <Copy className="h-2.5 w-2.5 opacity-0 transition-opacity group-hover:opacity-60" />
           </button>
         ))}
       </div>
@@ -114,10 +121,19 @@ export function HashtagBlock({
         {allText && (
           <button
             type="button"
-            className="text-xs text-[var(--hg-muted)] hover:text-[var(--hg-accent)]"
-            onClick={() => onCopyAll(allText)}
+            onClick={handleCopyAll}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] transition-colors duration-150 ${
+              copiedAll
+                ? "border-[var(--hg-accent)]/40 bg-[var(--hg-accent)]/10 text-[var(--hg-accent)]"
+                : "border-[var(--hg-border)] text-[var(--hg-muted)] hover:border-[var(--hg-accent)] hover:text-[var(--hg-accent)]"
+            }`}
           >
-            {copyAllLabel}
+            {copiedAll ? (
+              <Check className="h-3 w-3" strokeWidth={1.5} />
+            ) : (
+              <Copy className="h-3 w-3" strokeWidth={1.5} />
+            )}
+            {copiedAll ? copiedLabel : copyAllLabel}
           </button>
         )}
         {hiddenCount > 0 && (

@@ -5,11 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Home, UploadCloud, Video, LayoutGrid, Clock, CreditCard, Settings, Gem } from "lucide-react";
+import type { SettingsSection } from "@/app/components/dashboard/sidebar/SettingsModal";
 
-const MORE_ROUTES = ["/dashboard/history", "/dashboard/billing"];
+const MORE_ROUTES = ["/dashboard/history"];
 
 type Props = {
-  onOpenSettings: () => void;
+  onOpenSettings: (section?: SettingsSection) => void;
   onOpenPackages: () => void;
 };
 
@@ -75,12 +76,8 @@ export default function MobileBottomBar({ onOpenSettings, onOpenPackages }: Prop
             {/* Billing */}
             <button
               type="button"
-              onClick={() => { setMoreOpen(false); router.push("/dashboard/billing"); }}
-              className={`flex flex-col items-center justify-center gap-1.5 rounded-xl py-4 text-sm font-medium transition ${
-                pathname?.startsWith("/dashboard/billing")
-                  ? "bg-[#50C0F0]/10 text-[#50C0F0]"
-                  : "bg-[var(--hg-surface-2)] text-[var(--hg-muted)] hover:text-white"
-              }`}
+              onClick={() => { setMoreOpen(false); onOpenSettings("billing"); }}
+              className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[var(--hg-surface-2)] py-4 text-sm font-medium text-[var(--hg-muted)] transition hover:text-white"
             >
               <CreditCard className="w-5 h-5" />
               <span>{tMobile("sheetBilling")}</span>

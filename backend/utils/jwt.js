@@ -8,7 +8,7 @@ function getEnv(name, fallback = undefined) {
 const JWT_SECRET = getEnv("JWT_SECRET", "dev-insecure-secret-change-me");
 const JWT_ISSUER = getEnv("JWT_ISSUER", "ai-platform");
 const JWT_AUDIENCE = getEnv("JWT_AUDIENCE", "ai-platform-users");
-const TOKEN_TTL_MIN = Number(getEnv("TOKEN_TTL_MIN", "30"));
+const TOKEN_TTL_MIN = Number(getEnv("TOKEN_TTL_MIN", "43200")); // 30 days to match cookie maxAge
 const SESSION_COOKIE_NAME = getEnv("SESSION_COOKIE_NAME", "ai_session");
 
 function signToken(payload = {}) {

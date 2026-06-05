@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { checkUserPackage, type UserPackageResponse } from "@/app/utils/api";
+import { checkUserPackage, isPkgCacheEmpty, type UserPackageResponse } from "@/app/utils/api";
 import { toast } from "sonner";
 import { markToasted, shouldToastOnce } from "@/lib/toastDedupe";
 import { PACKAGES_URL } from "@/app/utils/urls";
@@ -35,7 +35,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async (resetState = false) => {
     const seq = ++requestSeq.current;
     if (resetState) {
-      setState((prev) => ({ ...prev, loading: true, data: null, isNewUser: false }));
+      setState((prev) => ({ ...prev, loading: true }));
     }
     try {
       const res = await checkUserPackage({ force: resetState });
@@ -139,19 +139,23 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     cancelled.current = false;
     refresh(false);
-
-    const handleAuthChanged = () => {
-      void refresh(true);
-    };
-    if (typeof window !== "undefined") {
-      window.addEventListener("ai-auth-changed", handleAuthChanged);
-    }
     return () => {
       cancelled.current = true;
-      if (typeof window !== "undefined") {
-        window.removeEventListener("ai-auth-changed", handleAuthChanged);
-      }
     };
+  }, [refresh]);
+
+  useEffect(() => {
+    const onAuthChanged = () => {
+      // Skip refresh when the cache is empty — that signals a logout (logoutClient
+      // calls clearApiCaches() before dispatching ai-auth-changed). All legitimate
+      // dispatches (package switch, checkout, enrollment) pre-populate the cache
+      // via refresh(true) before firing the event, so isPkgCacheEmpty() is false
+      // for those and refresh proceeds normally.
+      if (isPkgCacheEmpty()) return;
+      void refresh(true);
+    };
+    window.addEventListener("ai-auth-changed", onAuthChanged);
+    return () => window.removeEventListener("ai-auth-changed", onAuthChanged);
   }, [refresh]);
 
   return (

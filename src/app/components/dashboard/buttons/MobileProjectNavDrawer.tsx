@@ -33,7 +33,7 @@ export default function MobileProjectNavDrawer({ open, onClose, onOpenSettings }
         aria-hidden
       />
 
-      <div className="fixed left-4 right-4 top-[calc(env(safe-area-inset-top,0px)+4.2rem)] z-[2147483649] md:hidden">
+      <div className="fixed left-4 right-4 top-[calc(env(safe-area-inset-top,0px)+3.25rem)] z-[2147483649] md:hidden">
         <div className="rounded-2xl border border-[var(--hg-border)] bg-[color:color-mix(in_oklab,var(--hg-surface)_90%,transparent)] px-4 py-3 shadow-lg shadow-black/20 backdrop-blur-md">
           <div className="mb-2 flex items-center justify-between border-b border-[var(--hg-border)]/35 pb-2">
             <Image

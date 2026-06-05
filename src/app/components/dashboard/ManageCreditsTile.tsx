@@ -24,7 +24,7 @@ export default function ManageCreditsTile({ locale, className }: ManageCreditsTi
         {t("body")}
       </p>
       <Link
-        href={`/${locale}/dashboard/billing`}
+        href={`/${locale}/dashboard?settings=1&tab=billing`}
         className="mt-3 text-[13px] font-medium text-[#50C0F0] hover:opacity-80 transition-opacity"
       >
         {t("cta")}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useUser } from "@/app/hooks/useUser";
+import { toast } from "sonner";
 import ActivePackageCard from "@/app/components/dashboard/ActivePackageCard";
 import LastUploadCard from "@/app/components/dashboard/LastUploadCard";
 import QuotaRingTile from "@/app/components/dashboard/QuotaRingTile";
@@ -11,9 +11,10 @@ import QuickActions from "@/app/components/dashboard/QuickActions";
 import ProfileSwitcherModal from "@/app/components/dashboard/ProfileSwitcherModal";
 import NewPackageModal from "@/app/components/dashboard/NewPackageModal";
 import { useCart } from "@/app/components/cart/CartContext";
-import { checkUserPackage, clearApiCaches, fetchActivePackageInstances, selectPackageInstance, verifySession, type DashboardQuotaResponse, type PackageInstanceSummary } from "@/app/utils/api";
+import { checkUserPackage, clearApiCaches, fetchActivePackageInstances, selectPackageInstance, verifyAddonSession, verifySession, type DashboardQuotaResponse, type PackageInstanceSummary } from "@/app/utils/api";
 import { resolveQuotaContract } from "@/app/utils/quotaContract";
 import { useOverviewModel } from "@/app/dashboard/useOverviewModel";
+import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import { useRouter } from "@/i18n/navigation";
 import NoPlanDashboard from "@/app/components/dashboard/NoPlanDashboard";
 import { useTranslations, useLocale } from "next-intl";
@@ -55,10 +56,12 @@ export default function DashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { clearCart } = useCart();
-  const { user, loading } = useUser({ required: true, redirectTo: "/login" });
+  const planInfo = usePlanInfo();
   const handledCheckoutRef = useRef(false);
+  const handledAddonCheckoutRef = useRef(false);
   const checkoutStatus = searchParams.get("status");
   const checkoutSessionId = searchParams.get("session_id");
+  const checkoutKind = searchParams.get("kind");
   const {
     ready,
     coreLoading,
@@ -71,7 +74,14 @@ export default function DashboardPage() {
     instancesError: modelInstancesError,
     refresh,
     loadInstances,
-  } = useOverviewModel({ enabled: !loading && !!user });
+  } = useOverviewModel({
+    enabled: !planInfo.loading,
+    planLoading: planInfo.loading,
+    planData: planInfo.data,
+    hasActiveInstance: planInfo.hasActiveInstance,
+    isMissingActiveInstance: planInfo.isMissingActiveInstance,
+    isNewUser: planInfo.isNewUser,
+  });
 
   const [instancesError, setInstancesError] = useState<string | null>(null);
   const [selectingId, setSelectingId] = useState<string | null>(null);
@@ -102,6 +112,10 @@ export default function DashboardPage() {
   const videoRemaining = quotas.videos.remaining;
   const videoUnlimited = quotas.videos.isUnlimited;
 
+  const t = useTranslations("dashboard.home");
+  const tActivation = useTranslations("dashboard.home.checkoutActivation");
+  const tBillingPage = useTranslations("dashboard.billingPage");
+  const locale = useLocale();
 
   useEffect(() => {
     setInstancesError(modelInstancesError);
@@ -109,6 +123,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (checkoutStatus !== "success") return;
+    if (checkoutKind === "addon") return;
     if (handledCheckoutRef.current) return;
 
     let cancelled = false;
@@ -284,7 +299,80 @@ export default function DashboardPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkoutStatus]);
+  }, [checkoutStatus, checkoutKind]);
+
+  useEffect(() => {
+    if (checkoutKind !== "addon") return;
+    if (!checkoutStatus) return;
+    if (handledAddonCheckoutRef.current) return;
+    handledAddonCheckoutRef.current = true;
+
+    if (checkoutStatus === "cancel") {
+      toast.info(tBillingPage("toasts.checkoutCancelled"));
+      router.replace("/dashboard?settings=1&tab=billing", { scroll: false });
+      return;
+    }
+
+    if (checkoutStatus !== "success" || !checkoutSessionId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      const verifyingToastId = toast.custom(
+        () => (
+          <div className="flex w-[320px] items-center gap-3 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-3 shadow-xl">
+            <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-cyan-400/30 border-t-cyan-400" />
+            <p className="text-sm text-[var(--hg-text)]">{tBillingPage("toasts.verifyingPurchase")}</p>
+          </div>
+        ),
+        { duration: Infinity }
+      );
+
+      const backoff = [2000, 3000, 5000, 5000, 5000];
+      let applied = false;
+
+      for (const delay of backoff) {
+        await new Promise<void>((resolve) => setTimeout(resolve, delay));
+        if (cancelled) break;
+        try {
+          const res = await verifyAddonSession(checkoutSessionId);
+          if (res?.applied) {
+            applied = true;
+            break;
+          }
+        } catch {
+          // Keep polling; webhook delivery can lag behind the redirect.
+        }
+      }
+
+      toast.dismiss(verifyingToastId);
+      if (cancelled) return;
+
+      if (applied) {
+        clearApiCaches();
+        await planInfo.refresh(true);
+        await refresh(true, true);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("dashboard:addon-purchase-applied"));
+          window.dispatchEvent(new Event("ai-auth-changed"));
+        }
+        toast.success(tBillingPage("toasts.creditsAdded"));
+        router.replace("/dashboard?settings=1&tab=billing", { scroll: false });
+        return;
+      }
+
+      toast(tBillingPage("toasts.creditsPending"), {
+        description: tBillingPage("toasts.creditsPendingDesc"),
+        duration: 10000,
+      });
+      router.replace("/dashboard?settings=1&tab=billing", { scroll: false });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkoutKind, checkoutStatus, checkoutSessionId]);
 
   useEffect(() => {
     if (!switcherOpen) return;
@@ -336,12 +424,9 @@ export default function DashboardPage() {
     if (ok) setNewPackage(null);
   };
 
-  const t = useTranslations("dashboard.home");
-  const tActivation = useTranslations("dashboard.home.checkoutActivation");
-  const locale = useLocale();
-  const showSkeleton = !loading && coreLoading && !ready && planData === null;
+  const showSkeleton = coreLoading && !ready && planData === null;
   const showGetStarted =
-    !loading && ready && !coreError && (isMissingActiveInstance || !hasActiveInstance);
+    ready && !coreError && (isMissingActiveInstance || !hasActiveInstance);
 
   const activatingOverlay = activating ? (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -422,7 +507,7 @@ export default function DashboardPage() {
               used={uploadsUsed}
               effectiveLimit={uploadsLimit}
               isUnlimited={uploadsUnlimited}
-              topUpHref={`/${locale}/dashboard/billing?addon=uploads`}
+              topUpHref={`/${locale}/dashboard?settings=1&tab=billing&addon=uploads`}
               topUpLabel={t("quota.topUp")}
             />
             <QuotaRingTile
@@ -430,7 +515,7 @@ export default function DashboardPage() {
               used={chatUsed}
               effectiveLimit={chatLimit}
               isUnlimited={chatUnlimited}
-              topUpHref={`/${locale}/dashboard/billing?addon=chat`}
+              topUpHref={`/${locale}/dashboard?settings=1&tab=billing&addon=chat`}
               topUpLabel={t("quota.topUp")}
             />
             <QuotaRingTile
@@ -438,7 +523,7 @@ export default function DashboardPage() {
               used={videoUsed}
               effectiveLimit={videoLimit}
               isUnlimited={videoUnlimited}
-              topUpHref={`/${locale}/dashboard/billing?addon=videos`}
+              topUpHref={`/${locale}/dashboard?settings=1&tab=billing&addon=videos`}
               topUpLabel={t("quota.topUp")}
               topUpDisabled={!VIDEO_ADDONS_ENABLED}
               comingSoonLabel={t("quota.comingSoon")}

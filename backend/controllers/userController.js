@@ -79,7 +79,7 @@ const toInstanceSummary = (instance) => {
         : 0;
   const addonsVideos = typeof addons.sadtalkerVideos === "number" ? addons.sadtalkerVideos : 0;
 
-  const planQuotas = getQuotasForPlan(instance.planKey);
+  const planQuotas = (() => { try { return getQuotasForPlan(instance.planKey); } catch { return { uploads: 0, tokensLimit: 0, videos: 0 }; } })();
   const baseUploadLimit = planQuotas.uploads;
   const effectiveUploadLimit = baseUploadLimit === 0 ? 0 : baseUploadLimit + addonsUploads;
   const uploadsRemaining =
@@ -170,7 +170,7 @@ const buildCheckPackagePayload = (instance) => {
         : 0;
   const addonsVideos = typeof addons.sadtalkerVideos === "number" ? addons.sadtalkerVideos : 0;
 
-  const planQuotas = getQuotasForPlan(instance.planKey);
+  const planQuotas = (() => { try { return getQuotasForPlan(instance.planKey); } catch { return { uploads: 0, tokensLimit: 0, videos: 0 }; } })();
   const baseUploadLimit = planQuotas.uploads;
   const effectiveUploadLimit = baseUploadLimit === 0 ? 0 : baseUploadLimit + addonsUploads;
   const uploadsRemaining =
@@ -781,7 +781,7 @@ const consumeSadtalkerCredit = async (req, res) => {
     }
 
     const plan = instance.planKey || "lite";
-    const baseLimit = getQuotasForPlan(plan).videos;
+    const baseLimit = (() => { try { return getQuotasForPlan(plan).videos; } catch { return 0; } })();
     const addonsVideos =
       typeof instance.addons?.sadtalkerVideos === "number" ? instance.addons.sadtalkerVideos : 0;
     const effectiveLimit = baseLimit === 0 ? 0 : baseLimit + addonsVideos;
@@ -1000,7 +1000,7 @@ const consumeHeygenCredit = async (req, res) => {
       : 1;
 
     const plan = instance.planKey || "lite";
-    const baseLimit = getQuotasForPlan(plan).videos;
+    const baseLimit = (() => { try { return getQuotasForPlan(plan).videos; } catch { return 0; } })();
     const addonsVideos =
       typeof instance.addons?.sadtalkerVideos === "number" ? instance.addons.sadtalkerVideos : 0;
     const effectiveLimit = baseLimit === 0 ? 0 : baseLimit + addonsVideos;

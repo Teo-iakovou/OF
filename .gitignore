@@ -4,3 +4,4 @@ backend/.env
 .env.local
 .next/
 tsconfig.tsbuildinfo
+backend-cleanup-backups/

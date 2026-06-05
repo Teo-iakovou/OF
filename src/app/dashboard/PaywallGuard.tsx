@@ -9,7 +9,7 @@ import { usePlanInfo } from "@/app/dashboard/PlanContext";
 const REQUIRES_PACKAGE = "/dashboard";
 
 export default function PaywallGuard({ children }: { children: React.ReactNode }) {
-  const { loading, hasActiveInstance } = usePlanInfo();
+  const { loading, hasActiveInstance, data } = usePlanInfo();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -26,7 +26,7 @@ export default function PaywallGuard({ children }: { children: React.ReactNode }
   }, [loading, hasActiveInstance, isLockedRoute, isPostPurchase, router]);
 
   // While plan is loading on a locked route, show a skeleton to prevent flash
-  if (loading && isLockedRoute) {
+  if (loading && isLockedRoute && data === null) {
     return (
       <div className="min-h-screen animate-pulse rounded-2xl bg-[var(--hg-surface)]/40" />
     );

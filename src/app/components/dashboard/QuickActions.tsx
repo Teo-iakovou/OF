@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { UploadCloud, MessageCircle, Video } from "lucide-react";
+import { useFloatingChat } from "@/app/components/AIchat/FloatingChatContext";
 
 type QuickActionsProps = {
   uploadsRemaining?: number | null;
@@ -12,7 +13,7 @@ type QuickActionsProps = {
 };
 
 type ActionButtonProps = {
-  href: string;
+  href?: string;
   icon: React.ReactNode;
   label: string;
   sublabel: string;
@@ -41,7 +42,7 @@ function ActionButton({
       onClick={() => {
         if (disabled) return;
         onClick?.();
-        router.push(href);
+        if (href) router.push(href);
       }}
       disabled={disabled}
       className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
@@ -80,6 +81,7 @@ export default function QuickActions({
   className,
 }: QuickActionsProps) {
   const t = useTranslations("dashboard.home.quickActions");
+  const { open: openChat } = useFloatingChat();
 
   return (
     <div className={`h-full flex flex-col justify-between rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 shadow-sm shadow-black/20${className ? ` ${className}` : ""}`}>
@@ -94,11 +96,11 @@ export default function QuickActions({
           disabled={isExhausted(uploadsRemaining)}
         />
         <ActionButton
-          href="/dashboard/ai-chat"
           icon={<MessageCircle className="h-5 w-5" />}
           label={t("aiChat")}
           sublabel={t("chatSublabel")}
           disabled={isExhausted(chatRemaining)}
+          onClick={openChat}
         />
         <ActionButton
           href="/dashboard/talking-head"

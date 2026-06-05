@@ -11,6 +11,7 @@ type Props = {
   onSelect: (id: string) => void;
   selectedId?: string;
   refreshKey: number;
+  packageInstanceId?: string | null;
 
   /** When true, render the header row with title + “+ New” */
   showHeader?: boolean;
@@ -27,6 +28,7 @@ export default function CoachChatHistory({
   onSelect,
   selectedId,
   refreshKey,
+  packageInstanceId,
   showHeader = false,
   onNew,
   className,
@@ -54,9 +56,9 @@ export default function CoachChatHistory({
 
   useEffect(() => {
     setLoading(true);
-    dbg("history:load:start", { refreshKey });
+    dbg("history:load:start", { refreshKey, packageInstanceId });
 
-    fetchConversations()
+    fetchConversations(packageInstanceId ? { packageInstanceId } : undefined)
       .then((list) => {
         dbg("history:load:success", {
           count: list.length,
@@ -66,7 +68,7 @@ export default function CoachChatHistory({
       })
       .catch((e) => dbg("history:load:error", e))
       .finally(() => setLoading(false));
-  }, [refreshKey]);
+  }, [refreshKey, packageInstanceId]);
 
   return (
     <div

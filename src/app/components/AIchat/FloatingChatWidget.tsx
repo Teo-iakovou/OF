@@ -123,6 +123,18 @@ export default function FloatingChatWidget() {
     } catch {}
   }, [selectedConvoId]);
 
+  // On package switch: clear active conversation and refresh history
+  const prevPackageIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevPackageIdRef.current;
+    prevPackageIdRef.current = activePackageInstanceId;
+    if (prev !== null && prev !== activePackageInstanceId) {
+      setSelectedConvoId(undefined);
+      setConversationTitle(undefined);
+      setRefreshKey((k) => k + 1);
+    }
+  }, [activePackageInstanceId]);
+
   // Fetch latest content info for AI context
   useEffect(() => {
     if (!activePackageInstanceId) return;
@@ -283,7 +295,7 @@ export default function FloatingChatWidget() {
 
   // "+ New" from history dropdown — clear persisted id so next message creates fresh
   async function handleNewChat() {
-    const newId = await createEmptyConversation();
+    const newId = await createEmptyConversation(activePackageInstanceId);
     setSelectedConvoId(newId || undefined);
     setConversationTitle(undefined);
     setRefreshKey((k) => k + 1);
@@ -356,15 +368,16 @@ export default function FloatingChatWidget() {
               className="bg-black/30 backdrop-blur-sm"
             />
 
-            {/* Panel — full screen on mobile, bottom-right fixed on desktop */}
+            {/* Panel wrapper keeps desktop centering separate from Framer transforms. */}
+            <div className="fixed inset-0 z-[2147483646] flex items-stretch justify-stretch md:items-center md:justify-center md:p-6">
               <motion.div
                 ref={panelRef}
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                style={{ zIndex: 2147483646, willChange: "transform" }}
-                className="fixed inset-0 rounded-none md:inset-auto md:bottom-24 md:right-6 md:w-[380px] md:h-[520px] md:rounded-2xl shadow-2xl border-0 md:border border-[#232B36] bg-[#0f1520] overflow-hidden flex flex-col"
+                style={{ willChange: "transform" }}
+                className="h-full w-full rounded-none shadow-2xl border-0 border-[#232B36] bg-[#0f1520] overflow-hidden flex flex-col md:h-[620px] md:w-[520px] md:rounded-2xl md:border"
               >
               {/* Header with History dropdown */}
               <div className="relative px-4 py-2 border-b border-[#232B36] bg-[#121A24] text-gray-200 flex items-center justify-between">
@@ -404,6 +417,7 @@ export default function FloatingChatWidget() {
                       }}
                       selectedId={selectedConvoId}
                       refreshKey={refreshKey}
+                      packageInstanceId={activePackageInstanceId}
                       showHeader
                       onNew={handleNewChat}
                       maxHeight={420}
@@ -424,6 +438,7 @@ export default function FloatingChatWidget() {
                   />
                 </div>
               </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>

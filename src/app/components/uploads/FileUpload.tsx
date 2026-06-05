@@ -371,8 +371,8 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
   const showDebug = process.env.NODE_ENV !== "production";
 
   return (
-    <div className="w-full max-w-none">
-      <div className="rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 backdrop-blur">
+    <div className="dashboard-mobile-container w-full max-w-none">
+      <div className="dashboard-mobile-card rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 backdrop-blur">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <h3 className="text-base font-semibold tracking-tight text-white">{t("heading")}</h3>
@@ -402,6 +402,7 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
             ref={inputRef}
             type="file"
             accept={ACCEPT.join(",")}
+            className="dashboard-native-file"
             hidden
             onChange={(e) => handleFiles(e.target.files)}
           />
@@ -625,4 +626,3 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
     </div>
   );
 }
-

@@ -36,8 +36,11 @@ const apiUsageSchema = new mongoose.Schema({
   errorMessage: { type: String },
   latencyMs: { type: Number },
 
-  createdAt: { type: Date, default: Date.now, index: true },
+  createdAt: { type: Date, default: Date.now },
 });
+
+// TTL: auto-delete after 180 days
+apiUsageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 180 * 24 * 60 * 60, name: "createdAt_1_ttl" });
 
 // Compound indexes for cost analysis queries
 apiUsageSchema.index({ userId: 1, createdAt: -1 });

@@ -11,7 +11,7 @@ import { usePlanInfo } from "@/app/dashboard/PlanContext";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { toast } from "sonner";
 import { PACKAGES_URL } from "@/app/utils/urls";
-import ReportDrawer from "@/app/components/dashboard/report/ReportDrawer";
+import RecommendationsDrawer from "@/app/components/dashboard/recommendations/RecommendationsDrawer";
 import { Play, Video } from "lucide-react";
 
 type VideoHistoryItem = {
@@ -369,7 +369,7 @@ export default function HistoryPanel({ embedded = false }: HistoryPanelProps) {
         </div>
       </main>
 
-      <ReportDrawer
+      <RecommendationsDrawer
         open={reportOpen}
         onOpenChange={setReportOpen}
         resultId={reportResultId}

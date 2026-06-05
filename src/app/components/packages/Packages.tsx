@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { Check, Crown, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { Outfit } from "next/font/google";
 import { useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
+import { buildLoginHref } from "@/app/utils/authRedirect";
 
 const priceFont = Outfit({
   subsets: ["latin"],
@@ -117,6 +119,7 @@ function isPlanCopy(value: unknown): value is PlanCopy {
 
 export default function Packages() {
   const t = useTranslations("pricing");
+  const pathname = usePathname();
   const fallbackPlans: Record<string, PlanCopy> = {
     lite: {
       title: "Lite",
@@ -285,7 +288,7 @@ export default function Packages() {
                 </div>
 
                 {/* CTA Button */}
-                <Link href={`/${pkg.id}`} className="mt-auto">
+                <Link href={buildLoginHref(pathname, `/${pkg.id}`, "checkout")} className="mt-auto">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.97 }}

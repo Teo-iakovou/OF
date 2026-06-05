@@ -21,6 +21,7 @@ type SettingsModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialSection?: SettingsSection;
+  initialBillingAddon?: "uploads" | "chat" | "videos";
 };
 
 const SECTION_ICONS: Record<SettingsSection, ComponentType<{ className?: string }>> = {
@@ -87,7 +88,12 @@ function UsageBar({
   );
 }
 
-export default function SettingsModal({ open, onOpenChange, initialSection = "account" }: SettingsModalProps) {
+export default function SettingsModal({
+  open,
+  onOpenChange,
+  initialSection = "account",
+  initialBillingAddon,
+}: SettingsModalProps) {
   const t = useTranslations("dashboard.settings");
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -106,6 +112,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
   const [initialLastName, setInitialLastName] = useState("");
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [billingRefreshToken, setBillingRefreshToken] = useState(0);
   const [saveError, setSaveError] = useState<{ message: string; requestId?: string | null } | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saveSupportId, setSaveSupportId] = useState<string | null>(null);
@@ -156,6 +163,12 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
     window.addEventListener("dashboard:close-settings", onCloseEvent);
     return () => window.removeEventListener("dashboard:close-settings", onCloseEvent);
   }, [onOpenChange]);
+
+  useEffect(() => {
+    const onAddonApplied = () => setBillingRefreshToken((prev) => prev + 1);
+    window.addEventListener("dashboard:addon-purchase-applied", onAddonApplied);
+    return () => window.removeEventListener("dashboard:addon-purchase-applied", onAddonApplied);
+  }, []);
 
   const sections: Array<{ key: SettingsSection; label: string; icon: ComponentType<{ className?: string }> }> = [
     { key: "account", label: t("tabAccount"), icon: SECTION_ICONS.account },
@@ -270,13 +283,6 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
             <div className="mt-4 hidden border-t border-[var(--hg-border-2)] pt-3 md:block">
               <button
                 type="button"
-                onClick={() => { onOpenChange(false); router.push("/"); }}
-                className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm text-[var(--hg-muted)] transition hover:bg-[var(--hg-surface-2)] hover:text-white"
-              >
-                {t("exitDashboard")}
-              </button>
-              <button
-                type="button"
                 onClick={async () => {
                   if (loggingOut) return;
                   setLoggingOut(true);
@@ -289,7 +295,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                   }
                 }}
                 disabled={loggingOut}
-                className="mt-1 flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-60"
+                className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-60"
               >
                 {loggingOut ? t("signingOut") : t("signOut")}
               </button>
@@ -491,7 +497,11 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
             ) : null}
 
             {activeSection === "billing" ? (
-              <BillingPanel embedded />
+              <BillingPanel
+                embedded
+                refreshToken={billingRefreshToken}
+                initialAddon={initialBillingAddon}
+              />
             ) : null}
 
             {activeSection === "history" ? (
@@ -505,14 +515,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
           <div className="mb-3">
             <FeedbackWidget variant="inline" />
           </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => { onOpenChange(false); router.push("/"); }}
-              className="flex flex-1 items-center justify-center rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-3 py-2.5 text-sm text-[var(--hg-muted)] transition hover:text-white"
-            >
-              {t("exitDashboard")}
-            </button>
+          <div>
             <button
               type="button"
               onClick={async () => {
@@ -527,7 +530,7 @@ export default function SettingsModal({ open, onOpenChange, initialSection = "ac
                 }
               }}
               disabled={loggingOut}
-              className="flex flex-1 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2.5 text-sm text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-60"
+              className="flex w-full items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2.5 text-sm text-rose-300 transition hover:bg-rose-500/20 disabled:opacity-60"
             >
               {loggingOut ? t("signingOut") : t("signOut")}
             </button>

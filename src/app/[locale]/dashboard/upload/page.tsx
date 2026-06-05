@@ -16,7 +16,7 @@ import type { ResultDoc } from "@/app/types/analysis";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import UploadStage from "@/app/components/upload/UploadStage";
 import RecentCreations from "@/app/components/dashboard/upload/RecentCreations";
-import ReportDrawer from "@/app/components/dashboard/report/ReportDrawer";
+import RecommendationsDrawer from "@/app/components/dashboard/recommendations/RecommendationsDrawer";
 import { useReportDrawer } from "@/app/components/dashboard/upload/useReportDrawer";
 import SpotlightTour from "@/app/components/onboarding/SpotlightTour";
 import { useTour } from "@/app/components/onboarding/useTour";
@@ -41,7 +41,6 @@ export default function UploadPage() {
     openDrawerFromQuery,
   } = useReportDrawer();
 
-  const [uploadsLeft, setUploadsLeft] = useState<number | null>(null);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
   const { data: planData, loading: planLoading, refresh: refreshPlan } = usePlanInfo();
   const activePackageInstanceId = planData?.packageInstanceId ?? null;
@@ -49,10 +48,6 @@ export default function UploadPage() {
   const needsSelection = Boolean(planData?.needsInstanceSelection);
 
   const uploadsRemaining = resolveQuotaContract(planData).uploads.remaining;
-
-  useEffect(() => {
-    setUploadsLeft(typeof planData?.uploadsRemaining === "number" ? planData.uploadsRemaining : null);
-  }, [planData]);
 
   useEffect(() => {
     if (!planLoading && uploadsRemaining !== null && uploadsRemaining <= 0 && hasAccess) {
@@ -67,11 +62,7 @@ export default function UploadPage() {
   
 
   const handleUploadSuccess = (doc: ResultDoc, info?: { duplicate?: boolean; requestId?: string }) => {
-    // update local usage UI
-    setUploadsLeft((prev) => {
-      if (prev === null) return prev;
-      return info?.duplicate ? prev : Math.max(prev - 1, 0);
-    });
+    if (!info?.duplicate) void refreshPlan();
 
     // 🔔 broadcast “new analysis” (cross-tab + same-tab)
     try {
@@ -80,6 +71,9 @@ export default function UploadPage() {
         window.dispatchEvent(new Event("analysis:changed"));          // same-tab listeners
       }
     } catch {}
+    // Auto-open the recommendations modal immediately after analysis completes.
+    // analyzeImageMultipart blocks until the backend returns a fully-processed
+    // result, so the modal always opens with ready data — no polling needed.
     if (doc?._id) {
       openDrawer(doc._id);
     }
@@ -87,9 +81,9 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col text-white">
+    <div className="dashboard-mobile-page relative flex flex-col text-white">
       <main>
-        <div className="relative w-full px-4 pb-20 pt-1 md:pt-10">
+        <div className="dashboard-mobile-container relative w-full px-4 pb-20 pt-1 md:pt-10">
           <div className="mx-auto w-full max-w-[980px] space-y-7 md:space-y-9">
             <section className="mx-auto max-w-2xl text-center">
               <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted-2)] md:text-xs">{t("eyebrow")}</p>
@@ -104,7 +98,7 @@ export default function UploadPage() {
               <Reveal
                 as="section"
                 id="upload-card"
-                className="mx-auto w-full max-w-xl rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5"
+                className="dashboard-mobile-card mx-auto w-full max-w-xl rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5"
               >
                 <Skeleton className="h-6 w-40 mb-3" />
                 <Skeleton className="h-4 w-64 mb-6" />
@@ -120,7 +114,7 @@ export default function UploadPage() {
               <Reveal
                 as="section"
                 id="upload-card"
-                className="mx-auto w-full max-w-xl rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5"
+                className="dashboard-mobile-card mx-auto w-full max-w-xl rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5"
               >
                 <h2 className="text-xl font-semibold text-white">{t("noAccessHeading")}</h2>
                 <div className="mt-3 rounded-xl hg-surface-soft px-3 py-2 text-sm hg-muted">
@@ -133,11 +127,11 @@ export default function UploadPage() {
                   {t("noAccessCta")}
                 </Link>
               </Reveal>
-            ) : (uploadsLeft ?? 0) <= 0 ? (
+            ) : (uploadsRemaining ?? 1) <= 0 ? (
               <Reveal
                 as="section"
                 id="upload-card"
-                className="mx-auto w-full max-w-xl rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5"
+                className="dashboard-mobile-card mx-auto w-full max-w-xl rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5"
               >
                 <h2 className="text-xl font-semibold text-white">{t("noUploadsHeading")}</h2>
                 <div className="mt-3 rounded-xl hg-surface-soft px-3 py-2 text-sm hg-muted">
@@ -161,7 +155,7 @@ export default function UploadPage() {
               </Reveal>
             ) : (
               <div className="space-y-7 md:space-y-8">
-                <div id="upload-panel" className="mx-auto w-full max-w-xl">
+                <div id="upload-panel" className="dashboard-mobile-card mx-auto w-full max-w-xl">
                   <div id="upload-stage">
                     <UploadStage
                       title={t("uploadStageTitle")}
@@ -174,7 +168,7 @@ export default function UploadPage() {
                           Upload quota
                         </span>
                         <span className="text-sm font-semibold text-white">
-                          {formatRemaining(uploadsLeft)}
+                          {formatRemaining(uploadsRemaining)}
                         </span>
                       </div>
                       <div className="mt-4">
@@ -196,7 +190,7 @@ export default function UploadPage() {
           </div>
         </div>
       </main>
-      <ReportDrawer
+      <RecommendationsDrawer
         open={reportOpen}
         onOpenChange={(next) => {
           setReportOpen(next);

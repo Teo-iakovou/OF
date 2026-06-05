@@ -4,6 +4,91 @@ const { bestTimesV1 } = require("./bestTimes");
 const { normalizePlatformName, performanceKey } = require("./recommendationKeys");
 const { pickNiche } = require("./pickNiche");
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const ALL_PLATFORMS = ["Instagram", "TikTok", "Twitter", "Reddit", "Telegram", "OnlyFans"];
+
+// ─── Niche × platform affinity boosts ────────────────────────────────────────
+// Values represent how well a niche's typical content performs on each platform.
+// Keep these additive and bounded — they combine with the CSL base score in calculateFitScore.
+const NICHE_AFFINITY = {
+  // Spec-provided (mainstream)
+  fitness:   { Instagram: 25, TikTok: 30, Twitter: 10, Reddit: 15, Telegram:  5, OnlyFans: 10 },
+  fashion:   { Instagram: 30, TikTok: 25, Twitter:  5, Reddit:  5, Telegram:  5, OnlyFans: 15 },
+  beauty:    { Instagram: 30, TikTok: 28, Twitter:  5, Reddit:  8, Telegram:  5, OnlyFans: 12 },
+  travel:    { Instagram: 28, TikTok: 22, Twitter: 12, Reddit: 18, Telegram:  5, OnlyFans:  0 },
+  food:      { Instagram: 28, TikTok: 26, Twitter:  8, Reddit: 20, Telegram:  5, OnlyFans:  0 },
+  pets:      { Instagram: 25, TikTok: 28, Twitter: 12, Reddit: 22, Telegram:  5, OnlyFans:  0 },
+  lifestyle: { Instagram: 22, TikTok: 18, Twitter: 10, Reddit:  8, Telegram:  8, OnlyFans:  8 },
+
+  // Adult-adjacent niches — higher affinity for Telegram/OnlyFans/Twitter
+  model:     { Instagram: 30, TikTok: 22, Twitter: 12, Reddit: 10, Telegram: 12, OnlyFans: 22 },
+  bikini:    { Instagram: 28, TikTok: 24, Twitter: 14, Reddit: 18, Telegram: 15, OnlyFans: 25 },
+  lingerie:  { Instagram: 12, TikTok:  8, Twitter: 18, Reddit: 22, Telegram: 22, OnlyFans: 30 },
+  cosplay:   { Instagram: 24, TikTok: 30, Twitter: 20, Reddit: 25, Telegram: 10, OnlyFans: 15 },
+  alt:       { Instagram: 20, TikTok: 22, Twitter: 20, Reddit: 22, Telegram: 10, OnlyFans: 15 },
+  curvy:     { Instagram: 18, TikTok: 22, Twitter: 15, Reddit: 22, Telegram: 15, OnlyFans: 25 },
+  petite:    { Instagram: 20, TikTok: 22, Twitter: 12, Reddit: 18, Telegram: 12, OnlyFans: 22 },
+  mature:    { Instagram: 12, TikTok: 10, Twitter: 18, Reddit: 20, Telegram: 20, OnlyFans: 28 },
+
+  // Mainstream additional (full taxonomy coverage)
+  wellness:  { Instagram: 28, TikTok: 25, Twitter: 10, Reddit: 18, Telegram:  8, OnlyFans:  0 },
+  art:       { Instagram: 28, TikTok: 25, Twitter: 22, Reddit: 25, Telegram:  8, OnlyFans:  0 },
+  music:     { Instagram: 20, TikTok: 30, Twitter: 22, Reddit: 25, Telegram: 10, OnlyFans:  0 },
+  couples:   { Instagram: 25, TikTok: 28, Twitter: 12, Reddit: 18, Telegram:  8, OnlyFans: 10 },
+  city:      { Instagram: 25, TikTok: 18, Twitter: 15, Reddit: 20, Telegram:  5, OnlyFans:  0 },
+};
+const DEFAULT_AFFINITY = { Instagram: 10, TikTok: 10, Twitter: 10, Reddit: 10, Telegram: 10, OnlyFans: 10 };
+
+// ─── Fit score ────────────────────────────────────────────────────────────────
+
+function calculateFitScore(platform, niche, csl, cmood, hasFace) {
+  // Base score: platform × CSL compatibility
+  let base = 0;
+  if (platform === "Instagram" || platform === "TikTok") {
+    base = csl <= 1 ? 60 : csl === 2 ? 40 : 10;
+  } else if (platform === "Twitter") {
+    base = csl <= 2 ? 55 : 30;
+  } else if (platform === "Reddit") {
+    base = csl <= 2 ? 50 : 25;
+  } else if (platform === "Telegram") {
+    base = csl <= 1 ? 35 : 60;
+  } else if (platform === "OnlyFans") {
+    base = csl <= 1 ? 5 : 65;
+  }
+
+  // Niche affinity
+  const affinityMap = NICHE_AFFINITY[niche] || DEFAULT_AFFINITY;
+  const affinity = affinityMap[platform] ?? 10;
+
+  // Visual signals
+  let visual = 0;
+  if (cmood.brightness === "bright" && platform === "Instagram") visual += 5;
+  if (cmood.brightness === "dark" && platform === "Twitter") visual += 3;
+  if (hasFace && (platform === "Instagram" || platform === "TikTok")) visual += 5;
+
+  const score = Math.min(100, base + affinity + visual);
+  const tier = score >= 75 ? "great" : score >= 55 ? "good" : "limited";
+  return { score, tier };
+}
+
+// ─── Skip reasons ─────────────────────────────────────────────────────────────
+
+function derivePlatformSkipReason(platform, niche, csl, hasFace) {
+  if (csl <= 1 && platform === "OnlyFans") {
+    return "Your content appears SFW — OnlyFans audiences expect adult-oriented posts.";
+  }
+  if (csl <= 1 && platform === "Telegram") {
+    return "Telegram is most effective for adult-oriented audiences. Your current content fits mainstream platforms better.";
+  }
+  if (csl >= 3 && (platform === "Instagram" || platform === "TikTok")) {
+    return `This content level may exceed ${platform}'s community guidelines.`;
+  }
+  return null;
+}
+
+// ─── Existing helpers ─────────────────────────────────────────────────────────
+
 const HASHTAG_TIER_REASONING = {
   reach: {
     Instagram: "Broad-reach tags maximize discoverability on the Explore page.",
@@ -49,9 +134,7 @@ function generateHashtagReasoning(tier, niche, platform) {
 }
 
 const scoreOf = (likelihood) =>
-  ({ VERY_UNLIKELY: 0, UNLIKELY: 1, POSSIBLE: 2, LIKELY: 3, VERY_LIKELY: 4 }[
-    likelihood
-  ] ?? 0);
+  ({ VERY_UNLIKELY: 0, UNLIKELY: 1, POSSIBLE: 2, LIKELY: 3, VERY_LIKELY: 4 }[likelihood] ?? 0);
 
 function cslFromSafeSearch(safe = {}) {
   const a = scoreOf(safe.adult);
@@ -61,29 +144,19 @@ function cslFromSafeSearch(safe = {}) {
 }
 
 function rgbToHsl(r, g, b) {
-  r /= 255;
-  g /= 255;
-  b /= 255;
+  r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0;
-  let s = 0;
+  let h = 0, s = 0;
   const l = (max + min) / 2;
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
-      case r:
-        h = (g - b) / d + (g < b ? 6 : 0);
-        break;
-      case g:
-        h = (b - r) / d + 2;
-        break;
-      case b:
-        h = (r - g) / d + 4;
-        break;
-      default:
-        h = 0;
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+      default: h = 0;
     }
     h *= 60;
   }
@@ -91,31 +164,20 @@ function rgbToHsl(r, g, b) {
 }
 
 function colorMood(dominantColors = []) {
-  if (!dominantColors.length) {
-    return { mood: "neutral", brightness: "mid", warmth: "neutral" };
-  }
-  let wSum = 0;
-  let H = 0;
-  let S = 0;
-  let L = 0;
+  if (!dominantColors.length) return { mood: "neutral", brightness: "mid", warmth: "neutral" };
+  let wSum = 0, H = 0, S = 0, L = 0;
   for (const c of dominantColors) {
     const w = c.pixelFraction || c.score || 1;
     const { h, s, l } = rgbToHsl(c.r || 0, c.g || 0, c.b || 0);
-    H += h * w;
-    S += s * w;
-    L += l * w;
-    wSum += w;
+    H += h * w; S += s * w; L += l * w; wSum += w;
   }
   if (!wSum) return { mood: "neutral", brightness: "mid", warmth: "neutral" };
-  H /= wSum;
-  S /= wSum;
-  L /= wSum;
+  H /= wSum; S /= wSum; L /= wSum;
   const brightness = L > 0.7 ? "bright" : L < 0.3 ? "dark" : "mid";
   const warmth = H < 60 || H > 300 ? "warm" : H > 180 && H < 300 ? "cool" : "neutral";
   const mood = S > 0.5 ? "vivid" : "muted";
   return { mood, brightness, warmth };
 }
-
 
 const clampHashtags = (platform, list) => {
   const limit = platform === "Instagram" ? 10 : platform === "TikTok" ? 5 : 8;
@@ -128,12 +190,7 @@ function stableHash(input) {
   let h = 2166136261;
   for (let i = 0; i < str.length; i += 1) {
     h ^= str.charCodeAt(i);
-    h +=
-      (h << 1) +
-      (h << 4) +
-      (h << 7) +
-      (h << 8) +
-      (h << 24);
+    h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
   }
   return Math.abs(h >>> 0);
 }
@@ -199,9 +256,7 @@ function pickVariant(candidates = [], recentVariantIds = [], seed = "", options 
     selectionStats.totalPicks = (selectionStats.totalPicks || 0) + 1;
     selectionStats.byScope = selectionStats.byScope || {};
     selectionStats.byScope[scope] = selectionStats.byScope[scope] || {
-      picks: 0,
-      exploitPicks: 0,
-      feedbackPosts: 0,
+      picks: 0, exploitPicks: 0, feedbackPosts: 0,
     };
     selectionStats.byScope[scope].picks += 1;
     selectionStats.byScope[scope].feedbackPosts += feedbackPostsTotal;
@@ -233,8 +288,6 @@ function pickVariant(candidates = [], recentVariantIds = [], seed = "", options 
     return picked;
   }
 
-  // Explore path:
-  // 1) unseen variants
   const unseen = scored.filter((item) => !item.perf);
   if (unseen.length > 0) {
     const unseenNonRecent = unseen.filter((item) => !recentSet.has(item.variant.id));
@@ -243,22 +296,15 @@ function pickVariant(candidates = [], recentVariantIds = [], seed = "", options 
     return source[idx]?.variant || null;
   }
 
-  // 2) least recently used
   const lastSeenIndex = new Map();
-  recent.forEach((id, idx) => {
-    if (!lastSeenIndex.has(id)) lastSeenIndex.set(id, idx); // recent is newest-first
-  });
+  recent.forEach((id, idx) => { if (!lastSeenIndex.has(id)) lastSeenIndex.set(id, idx); });
   let best = candidates[0] || null;
   let bestAge = -1;
   for (const candidate of candidates) {
     const idx = lastSeenIndex.has(candidate.id) ? lastSeenIndex.get(candidate.id) : Number.MAX_SAFE_INTEGER;
-    if (idx > bestAge) {
-      best = candidate;
-      bestAge = idx;
-    }
+    if (idx > bestAge) { best = candidate; bestAge = idx; }
   }
 
-  // Priority 4: deterministic fallback.
   if (best) return best;
   const idx = stableHash(`${seed}:fallback:${candidates.map((x) => x?.id || "").join("|")}`) % candidates.length;
   return candidates[idx] || null;
@@ -292,7 +338,7 @@ function getSeedHashtags(niches, nicheName, emotionName, moodObj) {
     Surprise: ["#unexpected", "#reaction"],
     Neutral: ["#daily", "#creator"],
   }[emotionName] || ["#creator"];
-  const nicheMap = niches.niches || niches; // support both wrapped and legacy flat format
+  const nicheMap = niches.niches || niches;
   const nicheSeeds = nicheMap[nicheName]?.seeds || nicheMap.general?.seeds || [];
   const colorSeeds =
     moodObj.warmth === "warm"
@@ -310,9 +356,7 @@ function getTimeWindowStrings(platform, timezone, dateNow, selectedTimePack) {
     const windows = isWeekend
       ? selectedTimePack.weekend || selectedTimePack.weekday || []
       : selectedTimePack.weekday || selectedTimePack.weekend || [];
-    if (Array.isArray(windows) && windows.length > 0) {
-      return windows.slice(0, 3);
-    }
+    if (Array.isArray(windows) && windows.length > 0) return windows.slice(0, 3);
   }
   return bestTimesV1(platform, timezone, dateNow).map(([s, e]) => `${s}-${e}`);
 }
@@ -327,15 +371,8 @@ function findSourcePolicy(platformName, sources = {}) {
   );
 }
 
-function buildPolicyHints(platformName, sources) {
-  const policy = findSourcePolicy(platformName, sources);
-  if (!policy) return { hints: [], why: null };
-  const doHint = Array.isArray(policy.do) ? policy.do[0] : null;
-  const dontHint = Array.isArray(policy.dont) ? policy.dont[0] : null;
-  const ruleHint = Array.isArray(policy.rules) ? policy.rules[0] : null;
-  const hints = [doHint, dontHint, ruleHint].filter(Boolean).slice(0, 3);
-  return { hints, why: policy.why || null };
-}
+
+// ─── Main blueprint builder ───────────────────────────────────────────────────
 
 function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
   const {
@@ -368,7 +405,7 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
     minFeedbackPosts: options?.variantSelection?.minFeedbackPosts ?? 10,
     selectionStats: options?.selectionStats || null,
   };
-  const engineVersion = "promo-blueprint-v2";
+  const engineVersion = "promo-blueprint-v3";
 
   const csl = cslFromSafeSearch(safeSearch);
   const niche = pickNiche(labels, webEntities);
@@ -393,6 +430,7 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
     ? ["Twitter", "Reddit", "Instagram", "TikTok"]
     : ["Instagram", "TikTok", "Twitter"];
 
+  // platformOrder is used for sorting (mix-preferred platforms come first)
   const platformOrder =
     selectedMix?.platforms && selectedMix.platforms.length
       ? selectedMix.platforms
@@ -406,8 +444,20 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
   const baseSeedHashtags = getSeedHashtags(niches, niche, emotion, cmood);
   const ctaPool = recommendationPools?.ctaVariants?.[goal] || [];
 
-  const recs = platformOrder.map((platformNameRaw) => {
+  // ── Iterate ALL 6 platforms, skip where appropriate ──────────────────────
+  const recsRaw = [];
+
+  for (const platformNameRaw of ALL_PLATFORMS) {
     const platformName = normalizePlatformName(platformNameRaw);
+    const fitScore = calculateFitScore(platformName, niche, csl, cmood, hasFace);
+    const skipReason = derivePlatformSkipReason(platformName, niche, csl, hasFace);
+
+    if (skipReason) {
+      recsRaw.push({ platform: platformName, skipReason, fitScore });
+      continue;
+    }
+
+    // ── Full recommendation for non-skipped platform ──────────────────────
     const rawHashtagPool = recommendationPools?.hashtagPacks?.[niche] || recommendationPools?.hashtagPacks?.general || [];
     const hashtagPoolForNiche = Array.isArray(rawHashtagPool)
       ? rawHashtagPool
@@ -453,8 +503,6 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
         ...selectionOptions,
       }
     );
-    const policyHints = buildPolicyHints(platformName, sources);
-
     const platformCtaPool = ctaPool.filter((c) => c.platform === platformName);
     const ctaPoolForPlatform = platformCtaPool.length
       ? platformCtaPool
@@ -479,32 +527,12 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
       )
     );
 
-    const notes = [];
-    if (platformName === "Instagram") {
-      notes.push("Lead with a one-line hook.");
-      if (csl >= 2) notes.push("Keep preview SFW and move explicit intent to profile funnel.");
-    }
-    if (platformName === "TikTok") {
-      notes.push("Use motion or quick cuts in the first 2 seconds.");
-      if (csl >= 2) notes.push("Avoid direct adult platform mentions in caption.");
-    }
-    if (platformName === "Twitter") {
-      notes.push("Pin the top performer for 24 hours.");
-    }
-    if (platformName === "Reddit") {
-      notes.push("Follow subreddit-specific posting rules.");
-    }
-
-    return {
+    recsRaw.push({
       platform: platformName,
+      fitScore,
       preview: {
         type: csl >= 2 && ["Instagram", "TikTok"].includes(platformName) ? "SFW" : "contextual",
-        crop:
-          platformName === "TikTok"
-            ? "9:16"
-            : platformName === "Instagram"
-              ? "4:5"
-              : "4:5",
+        crop: platformName === "TikTok" ? "9:16" : "4:5",
         watermark: true,
       },
       caption: "",
@@ -514,15 +542,12 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
         placement: platformName === "Instagram" || platformName === "TikTok" ? "bio" : "caption",
       },
       bestTimesLocal: getTimeWindowStrings(platformName, timezone, now, timePack),
-      notes,
       selectedIds: {
         timePackId: timePack?.id || null,
         hashtagPackId: hashtagPack?.id || null,
         captionStyleId: captionStyle?.id || null,
         ctaId: selectedCta?.id || null,
       },
-      policyHints: policyHints.hints,
-      policyWhy: policyHints.why,
       hashtagPack: hashtagPack
         ? {
             id: hashtagPack.id || null,
@@ -530,41 +555,49 @@ function buildPromotionBlueprint(visionData = {}, ctx = {}, options = {}) {
             reasoning: generateHashtagReasoning(hashtagPack.tier || "balanced", niche, platformName),
           }
         : null,
-    };
+    });
+  }
+
+  // ── Sort: mix-preferred platforms first ──────────────────────────────────
+  const platformOrderNorm = platformOrder.map(normalizePlatformName);
+  const recs = [...recsRaw].sort((a, b) => {
+    const ai = platformOrderNorm.indexOf(a.platform);
+    const bi = platformOrderNorm.indexOf(b.platform);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
   });
 
+  // ── Promotion object ─────────────────────────────────────────────────────
   const reasons = [];
   if (safeSearch?.adult) reasons.push(`adult:${safeSearch.adult}`);
   if (safeSearch?.racy) reasons.push(`racy:${safeSearch.racy}`);
   if (hasFace) reasons.push("hasFace:true");
   reasons.push(`niche:${niche}`);
 
-  const firstRecCtaId = recs[0]?.selectedIds?.ctaId || null;
+  const firstRecCtaId = recs.find(r => !r.skipReason)?.selectedIds?.ctaId || null;
   const firstRecCtaText = firstRecCtaId
     ? ctaPool.find((c) => c.id === firstRecCtaId)?.text || null
     : null;
   const ctaVariants = firstRecCtaText
     ? [firstRecCtaText]
     : goal === "ppv"
-      ? ["Tonight’s PPV is live. DM \"PPV\"."]
+      ? ["Tonight's PPV is live. DM \"PPV\"."]
       : goal === "customs"
         ? ["DM \"CUSTOM\" for a personalized video."]
         : ["Full set just dropped. Link in bio."];
 
-  const riskFlags = [];
-  if (csl >= 2) riskFlags.push("IG/TikTok: use SFW previews only");
-  riskFlags.push("Avoid explicit links in IG/TikTok captions");
-  riskFlags.push("Watermark all previews");
-  riskFlags.push("Strip EXIF before posting");
+  // Convenience array of skipped platforms for the frontend recommendations panel
+  const skippedPlatforms = recs
+    .filter(r => r.skipReason)
+    .map(r => ({ platform: r.platform, skipReason: r.skipReason }));
 
   const promotion = {
-    version: "v2",
+    version: "v3",
     contentSafety: { csl, reasons },
     niche,
     hasFace,
     recommendedPlatforms: recs,
+    skippedPlatforms,
     ctaVariants,
-    riskFlags,
     selectedIds: {
       platformMixId: selectedMix?.id || null,
       ctaId: firstRecCtaId,

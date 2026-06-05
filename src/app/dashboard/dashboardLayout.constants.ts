@@ -4,7 +4,7 @@ export const DASHBOARD_LAYOUT = {
   sidebarTopOffset: "top-4",
   sidebarLeftOffset: "left-4",
   mobileTopBarTopOffset: "top-0",
-  mobileMainTopPaddingClass: "pt-[calc(env(safe-area-inset-top,0px)+4.85rem)]",
+  mobileMainTopPaddingClass: "pt-[calc(env(safe-area-inset-top,0px)+3.5rem)]",
   desktopMainTopPaddingClass: "md:pt-3",
   desktopExpandedMarginClass: "md:ml-64",
   desktopCollapsedMarginClass: "md:ml-16",

@@ -109,15 +109,15 @@ export default function BillingPanel({
   const [actionKey, setActionKey] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [highlightAddon, setHighlightAddon] = useState<string | null>(null);
-  const scrolledRef = useRef(false);
+  const scrolledRef = useRef<string | null>(null);
 
   const planInstanceId = planData?.packageInstanceId ?? null;
   const needsSelection = Boolean(planData?.needsInstanceSelection);
 
   // Scroll to and briefly highlight the addon section matching initialAddon
   useEffect(() => {
-    if (!initialAddon || scrolledRef.current) return;
-    scrolledRef.current = true;
+    if (!initialAddon || scrolledRef.current === initialAddon) return;
+    scrolledRef.current = initialAddon;
     setHighlightAddon(initialAddon);
 
     const scrollTimer = setTimeout(() => {
@@ -133,7 +133,7 @@ export default function BillingPanel({
       clearTimeout(scrollTimer);
       clearTimeout(clearTimer);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialAddon]);
 
   const profileLabelById = useMemo(() => {
     const grouped = new Map<string, PackageInstanceSummary[]>();
@@ -260,6 +260,15 @@ export default function BillingPanel({
     () => instances.find((instance) => instance.id === planInstanceId),
     [instances, planInstanceId],
   );
+  const orderedInstances = useMemo(() => {
+    if (!planInstanceId) return instances;
+    const selected = instances.find((instance) => instance.id === planInstanceId);
+    if (!selected) return instances;
+    return [
+      selected,
+      ...instances.filter((instance) => instance.id !== planInstanceId),
+    ];
+  }, [instances, planInstanceId]);
 
   if (!planLoading && !hasActiveInstance && !embedded) {
     return (
@@ -309,7 +318,7 @@ export default function BillingPanel({
         </section>
       ) : (
         <div className="space-y-4">
-          {instances.map((instance) => {
+          {orderedInstances.map((instance) => {
             const quotas = resolveQuotaContract(instance, "billing.panel.instance");
             const isSelected = instance.id === planInstanceId;
             const isActiveInstance = instance.id === planInstanceId;

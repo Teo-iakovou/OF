@@ -95,8 +95,9 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     key: "billing",
     label: "Plan & Billing",
     icon: CreditCard,
-    type: "route",
-    href: "/dashboard/billing",
+    type: "action",
+    action: "openSettings",
+    actionSection: "billing",
     showDesktop: false,
     showMobile: false,
     topLevel: false,
@@ -110,4 +111,3 @@ export function getTopLevelDashboardNavItems(placement: DashboardNavPlacement) {
     return placement === "desktop" ? item.showDesktop : item.showMobile;
   });
 }
-

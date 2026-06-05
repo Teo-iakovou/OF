@@ -18,8 +18,8 @@ export default function TalkingHeadPage() {
   const { isDone: tourDone, markDone: markTourDone } = useTour("avt");
 
   return (
-    <div className="relative min-h-screen text-white">
-      <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-3 md:px-8 md:pt-16">
+    <div className="dashboard-mobile-page relative text-white">
+      <div className="dashboard-mobile-container mx-auto w-full max-w-5xl px-4 pb-16 pt-3 md:px-8 md:pt-16">
         <header className="mx-auto max-w-3xl text-center">
           <h1 data-tour="avt-heading" className="text-3xl font-semibold tracking-tight md:text-4xl">{t("heading")}</h1>
           <p className="mt-2 text-sm text-[var(--hg-muted)]">

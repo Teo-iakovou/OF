@@ -33,6 +33,7 @@ export default function LayoutClient({
   const [hasMounted, setHasMounted] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("account");
+  const [settingsBillingAddon, setSettingsBillingAddon] = useState<"uploads" | "chat" | "videos" | undefined>();
   const [packagesOpen, setPackagesOpen] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const redirectingRef = useRef(false);
@@ -89,6 +90,7 @@ export default function LayoutClient({
     const modal = searchParams.get("modal");
     const settings = searchParams.get("settings");
     const tab = searchParams.get("tab");
+    const addon = searchParams.get("addon");
     const shouldOpen = modal === "settings" || settings === "1";
     if (!shouldOpen) return;
 
@@ -97,12 +99,16 @@ export default function LayoutClient({
         ? tab
         : "account";
     setSettingsSection(nextSection);
+    setSettingsBillingAddon(
+      addon === "uploads" || addon === "chat" || addon === "videos" ? addon : undefined
+    );
     setSettingsOpen(true);
 
     const next = new URLSearchParams(searchParams.toString());
     next.delete("modal");
     next.delete("settings");
     next.delete("tab");
+    next.delete("addon");
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [pathname, router, searchParams]);
@@ -111,6 +117,7 @@ export default function LayoutClient({
     ? DASHBOARD_LAYOUT.sidebarExpandedWidth
     : DASHBOARD_LAYOUT.sidebarCollapsedWidth;
   const openSettings = (section: SettingsSection = "account") => {
+    setSettingsBillingAddon(undefined);
     setSettingsSection(section);
     setSettingsOpen(true);
   };
@@ -176,7 +183,7 @@ export default function LayoutClient({
           </div>
 
           {/* Content column */}
-          <div className={`flex-1 flex flex-col md:transition-[margin-left] md:duration-200 ${expanded ? DASHBOARD_LAYOUT.desktopExpandedMarginClass : DASHBOARD_LAYOUT.desktopCollapsedMarginClass}`}>
+          <div className={`flex-1 flex flex-col ${expanded ? DASHBOARD_LAYOUT.desktopExpandedMarginClass : DASHBOARD_LAYOUT.desktopCollapsedMarginClass}`}>
             <main className={`px-3 ${DASHBOARD_LAYOUT.mobileMainTopPaddingClass} sm:px-5 md:px-7 ${DASHBOARD_LAYOUT.desktopMainTopPaddingClass} pb-20 md:pb-0`}>
               {children}
             </main>
@@ -205,7 +212,7 @@ export default function LayoutClient({
           />
 
           <MobileBottomBar
-            onOpenSettings={() => openSettings()}
+            onOpenSettings={openSettings}
             onOpenPackages={() => setPackagesOpen(true)}
           />
         </div>
@@ -228,6 +235,7 @@ export default function LayoutClient({
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
           initialSection={settingsSection}
+          initialBillingAddon={settingsBillingAddon}
         />
         <PackagesModal
           open={packagesOpen}

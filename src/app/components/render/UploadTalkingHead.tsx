@@ -26,6 +26,15 @@ type HistoryItem = {
   } | null;
 };
 
+type HistoryCacheEntry = {
+  ts: number;
+  items?: HistoryItem[];
+  inFlight?: Promise<HistoryItem[]>;
+};
+
+const HISTORY_CACHE_TTL_MS = 5_000;
+const talkingHeadHistoryCache = new Map<string, HistoryCacheEntry>();
+
 type UpgradeInfo = {
   code?: string;
   error?: string;
@@ -38,7 +47,7 @@ type UpgradeInfo = {
 function TalkingHeadSkeleton() {
   return (
     <div className="space-y-8">
-      <section className="mx-auto w-full max-w-3xl rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 md:p-6">
+      <section className="dashboard-mobile-card mx-auto w-full max-w-3xl rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 md:p-6">
         <div className="animate-pulse space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -57,16 +66,16 @@ function TalkingHeadSkeleton() {
         </div>
       </section>
 
-      <section className="w-full pb-8 pt-1 md:pt-2">
+      <section className="dashboard-mobile-container w-full pb-8 pt-1 md:pt-2">
         <div className="animate-pulse border-b border-[var(--hg-border-2)] pb-4">
           <div className="mb-1 h-3 w-16 rounded bg-[var(--hg-surface-2)]" />
           <div className="h-7 w-40 rounded bg-[var(--hg-surface-2)]" />
         </div>
-        <div className="mt-3 flex gap-3 overflow-hidden md:mt-4 md:gap-5">
+        <div className="dashboard-scroll-row mt-3 flex gap-3 overflow-hidden md:mt-4 md:gap-5">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="w-[230px] shrink-0 animate-pulse rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 sm:w-[270px]"
+              className="w-[min(230px,calc(100vw-2rem))] shrink-0 animate-pulse rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 sm:w-[270px]"
             >
               <div className="h-32 w-full rounded-xl bg-[var(--hg-surface-2)] sm:h-36" />
               <div className="mt-3.5 space-y-1.5">
@@ -162,18 +171,52 @@ export default function UploadTalkingHead() {
     });
   }
 
-  const loadHistory = useCallback(async () => {
+  const loadHistory = useCallback(async (force = false) => {
+    if (!packageInstanceId) {
+      setHistory([]);
+      setHistoryLoading(false);
+      return;
+    }
+
+    const cacheKey = `sadtalker:${packageInstanceId}`;
+    const cached = talkingHeadHistoryCache.get(cacheKey);
+    const now = Date.now();
+
+    if (!force && cached?.items && now - cached.ts < HISTORY_CACHE_TTL_MS) {
+      setHistory(cached.items);
+      setHistoryLoading(false);
+      return;
+    }
+
+    const request =
+      !force && cached?.inFlight
+        ? cached.inFlight
+        : (async () => {
+            const res = await fetch(`/api/sadtalker/history`, {
+              method: "GET",
+              cache: "no-store",
+            });
+            if (!res.ok) {
+              throw new Error(`History request failed (${res.status})`);
+            }
+            const data = await res.json();
+            return Array.isArray(data.items) ? (data.items as HistoryItem[]) : [];
+          })();
+
+    talkingHeadHistoryCache.set(cacheKey, {
+      ts: cached?.ts ?? 0,
+      items: cached?.items,
+      inFlight: request,
+    });
+
     try {
-      setHistoryLoading(true);
-      const res = await fetch(`/api/sadtalker/history`, {
-        method: "GET",
-        cache: "no-store",
+      if (!cached?.items) setHistoryLoading(true);
+      const nextItems = await request;
+      talkingHeadHistoryCache.set(cacheKey, {
+        ts: Date.now(),
+        items: nextItems,
       });
-      if (!res.ok) {
-        throw new Error(`History request failed (${res.status})`);
-      }
-      const data = await res.json();
-      setHistory(Array.isArray(data.items) ? data.items : []);
+      setHistory(nextItems);
     } catch (err) {
       console.warn("[heygen-ui] history error", err);
     } finally {
@@ -321,7 +364,7 @@ export default function UploadTalkingHead() {
       setHeygenVideoUrl(data.videoUrl ?? null);
       setHeygenWarning(null);
       setHeygenProgress(100);
-      await loadHistory();
+      await loadHistory(true);
       await new Promise((r) => setTimeout(r, 600));
     } catch (err: unknown) {
       setHeygenError(err instanceof Error ? err.message : t("errors.videoGenerationFailed"));
@@ -342,7 +385,7 @@ export default function UploadTalkingHead() {
       />
 
       {isOutOfCredits ? (
-        <section className="mx-auto w-full max-w-3xl rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 text-white">
+        <section className="dashboard-mobile-card mx-auto w-full max-w-3xl rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 text-white">
           <h2 className="text-xl font-semibold">{t("heading")}</h2>
           <div className="mt-3 rounded-xl hg-surface-soft px-3 py-2 text-sm hg-muted">
             {tOOC("videos.inlineMessage")}
@@ -364,7 +407,7 @@ export default function UploadTalkingHead() {
           </div>
         </section>
       ) : (
-      <section className="mx-auto w-full max-w-3xl rounded-2xl hg-surface p-5 md:p-6 text-white">
+      <section className="dashboard-mobile-card mx-auto w-full max-w-3xl rounded-2xl hg-surface p-5 md:p-6 text-white">
         <div className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div data-tour="avt-image" className="space-y-2">
@@ -373,7 +416,7 @@ export default function UploadTalkingHead() {
                 type="file"
                 accept="image/png,image/jpeg"
                 onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm hg-muted file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--hg-accent)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#04131d] hover:file:opacity-90"
+                className="dashboard-native-file block w-full text-sm hg-muted file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--hg-accent)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#04131d] hover:file:opacity-90"
               />
             </div>
             <div data-tour="avt-audio" className="space-y-2">
@@ -382,7 +425,7 @@ export default function UploadTalkingHead() {
                 type="file"
                 accept="audio/mpeg,audio/wav"
                 onChange={(e) => handleAudioChange(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm hg-muted file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--hg-accent)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#04131d] hover:file:opacity-90"
+                className="dashboard-native-file block w-full text-sm hg-muted file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--hg-accent)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#04131d] hover:file:opacity-90"
               />
               <p className="text-xs text-[var(--hg-muted-2)]">{t("audioMaxDurationHint")}</p>
               {audioDurationError ? (
@@ -556,7 +599,7 @@ export default function UploadTalkingHead() {
       </section>
       )}
 
-      {!isOutOfCredits && <section data-tour="avt-history" className="w-full pb-8 pt-1 md:pt-2">
+      {!isOutOfCredits && <section data-tour="avt-history" className="dashboard-mobile-container w-full pb-8 pt-1 md:pt-2">
         <div className="flex items-baseline justify-between border-b border-[var(--hg-border-2)] pb-4">
           <div className="space-y-1">
             <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--hg-muted-2)]">{t("results.eyebrow")}</p>
@@ -565,11 +608,11 @@ export default function UploadTalkingHead() {
         </div>
 
         {historyLoading && recentItems.length === 0 ? (
-          <div className="mt-3 flex gap-3 overflow-x-auto pb-2 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
+          <div className="dashboard-scroll-row mt-3 flex gap-3 overflow-x-auto pb-2 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
             {Array.from({ length: 3 }).map((_, idx) => (
               <div
                 key={`recent-video-skeleton-${idx}`}
-                className="w-[230px] shrink-0 rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 sm:w-[270px]"
+                className="w-[min(230px,calc(100vw-2rem))] shrink-0 rounded-3xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-4 sm:w-[270px]"
               >
                 <div className="h-32 w-full rounded-lg bg-[var(--hg-surface-2)]" />
                 <div className="mt-3 space-y-2">
@@ -602,7 +645,7 @@ export default function UploadTalkingHead() {
         ) : null}
 
         {recentItems.length > 0 ? (
-          <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
+          <div className="dashboard-scroll-row mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scroll-px-4 md:mt-4 md:gap-5 md:pr-6 md:scroll-px-6">
             {recentItems.map((item) => {
               const createdAt = item.createdAt
                 ? new Intl.DateTimeFormat(undefined, {
@@ -616,7 +659,7 @@ export default function UploadTalkingHead() {
                 : "—";
 
               return (
-                <div key={item.id} className="w-[230px] shrink-0 snap-start sm:w-[270px]">
+                <div key={item.id} className="w-[min(230px,calc(100vw-2rem))] shrink-0 snap-start sm:w-[270px]">
                   <button
                     type="button"
                     onClick={() => {

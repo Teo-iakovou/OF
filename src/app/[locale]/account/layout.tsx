@@ -14,7 +14,7 @@ export default async function AccountLayout({
   const { locale } = await params;
 
   if (!initialUser) {
-    redirect({ href: "/login?next=/account/plans", locale });
+    redirect({ href: "/login", locale });
   }
 
   return (

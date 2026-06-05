@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MessageCircle, X } from "lucide-react";
+import { MessageSquare, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { sendFeedback } from "@/app/utils/api";
 import { toast } from "sonner";
@@ -40,7 +40,7 @@ export function FeedbackWidget({ variant = "floating" }: FeedbackWidgetProps) {
         onClick={() => setOpen(true)}
         className="flex items-center gap-2 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface)] px-3 py-2 text-sm text-[var(--hg-muted)] transition hover:border-[var(--hg-accent)] hover:text-white"
       >
-        <MessageCircle className="w-4 h-4 shrink-0" />
+        <MessageSquare className="w-4 h-4 shrink-0" />
         <span>{t("button")}</span>
       </button>
     ) : variant === "inline" ? (
@@ -49,7 +49,7 @@ export function FeedbackWidget({ variant = "floating" }: FeedbackWidgetProps) {
         onClick={() => setOpen(true)}
         className="flex w-full items-center gap-3 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-3 text-sm text-white transition hover:border-[var(--hg-accent)]"
       >
-        <MessageCircle className="w-4 h-4 text-[var(--hg-accent)] shrink-0" />
+        <MessageSquare className="w-4 h-4 text-[var(--hg-accent)] shrink-0" />
         <span>{t("button")}</span>
       </button>
     ) : (
@@ -60,7 +60,7 @@ export function FeedbackWidget({ variant = "floating" }: FeedbackWidgetProps) {
         aria-label={t("button")}
         className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-slate-400 transition hover:border-[var(--hg-border)] hover:text-[#50C0F0]"
       >
-        <MessageCircle size={22} />
+        <MessageSquare size={22} />
       </button>
     );
 

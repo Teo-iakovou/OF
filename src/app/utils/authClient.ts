@@ -22,6 +22,9 @@ export async function logoutClient() {
     sessionStorage.removeItem("justLoggedIn");
   } catch {}
   try {
+    localStorage.removeItem("_auth");
+  } catch {}
+  try {
     clearUserCache();
   } catch {}
   try {

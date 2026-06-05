@@ -222,8 +222,8 @@ const createAddonCheckoutSession = async (req, res) => {
       line_items: [{ price: priceId, quantity: 1 }],
       metadata,
       client_reference_id: email,
-      success_url: `${withLocalePath(safeOrigin, locale, "/dashboard/billing")}?status=success&kind=addon&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${withLocalePath(safeOrigin, locale, "/dashboard/billing")}?status=cancel&kind=addon`,
+      success_url: `${withLocalePath(safeOrigin, locale, "/dashboard")}?settings=1&tab=billing&status=success&kind=addon&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${withLocalePath(safeOrigin, locale, "/dashboard")}?settings=1&tab=billing&status=cancel&kind=addon`,
     });
 
     return res.json({ url: session.url, requestId });

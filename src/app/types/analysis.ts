@@ -40,8 +40,10 @@ export interface ColorMood {
 }
 
 export interface CaptionVariant {
-  angle: string;   // "hook" | "aspirational" | "cta" | "default" | string
+  angle: "hook" | "aspirational" | "cta" | "default" | string;
   text: string;
+  originalText?: string | null;
+  reasoning?: string;
 }
 
 export interface HashtagPackMeta {
@@ -69,6 +71,8 @@ export interface RecommendedPlatform {
     ctaId?: string | null;
   };
   hashtagPack?: HashtagPackMeta | null;
+  fitScore?: { score: number; tier: "great" | "good" | "limited" };
+  skipReason?: string | null;
 }
 
 export interface Promotion {
@@ -81,7 +85,8 @@ export interface Promotion {
     platformMixId?: string | null;
     ctaId?: string | null;
   };
-  riskFlags: string[];
+  riskFlags?: string[];
+  skippedPlatforms?: Array<{ platform: string; skipReason: string }>;
 }
 
 export interface PromotionMeta {

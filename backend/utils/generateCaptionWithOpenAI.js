@@ -4,6 +4,25 @@ const { calculateOpenAICost } = require("./cost");
 
 const MODEL = process.env.OPENAI_CHAT_MODEL || "gpt-4-turbo";
 
+// ─── 429/503 retry helper ────────────────────────────────────────────────────
+async function callWithRetry(fn, maxAttempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      const status = err?.status || err?.response?.status;
+      if (status !== 429 && status !== 503) throw err;
+      if (attempt === maxAttempts) break;
+      const delay = 1000 * Math.pow(2, attempt - 1);
+      console.warn(`[caption-gpt] retry ${attempt}/${maxAttempts} after ${delay}ms (status ${status})`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw lastError;
+}
+
 function getPlatformToneGuide(platform) {
   const guides = {
     Instagram: `Aspirational, polished, lifestyle-driven. Allow longer captions with storytelling. Emoji used purposefully, never random. Hashtags fine in body or grouped at end. Audience: visual aesthetes.`,
@@ -92,23 +111,24 @@ Each caption must:
 OUTPUT FORMAT
 Return ONLY valid JSON, no markdown, no commentary:
 [
-  {"angle": "hook", "text": "..."},
-  {"angle": "aspirational", "text": "..."},
-  {"angle": "cta", "text": "..."}
-]`;
+  {"angle": "hook", "text": "...", "reasoning": "..."},
+  {"angle": "aspirational", "text": "...", "reasoning": "..."},
+  {"angle": "cta", "text": "...","reasoning": "..."}
+]
+
+The "reasoning" field must be one short sentence (≤ 20 words) explaining WHY this caption variant works strategically for this platform and content. Examples: "Sensory opener creates pattern interrupt." or "POV format drives algorithmic preference on TikTok." Do NOT explain the caption literally — explain the strategic choice.`;
 
   const payload = {
     model: MODEL,
     messages: [{ role: "user", content: prompt }],
     temperature,
-    max_tokens: 400,
+    max_tokens: 550,
   };
 
-  let lastErr;
-  for (let i = 1; i <= attempts; i++) {
-    const t0Caption = Date.now();
-    try {
-      const { data } = await axios.post(
+  const t0Caption = Date.now();
+  try {
+    const data = await callWithRetry(async () => {
+      const response = await axios.post(
         "https://api.openai.com/v1/chat/completions",
         payload,
         {
@@ -119,71 +139,72 @@ Return ONLY valid JSON, no markdown, no commentary:
           timeout: timeoutMs,
         }
       );
-      const raw = data.choices?.[0]?.message?.content?.trim() || "";
-      const usageData = data.usage || {};
-      const promptTokens     = usageData.prompt_tokens     || 0;
-      const completionTokens = usageData.completion_tokens || 0;
-      const totalTokens      = usageData.total_tokens      || promptTokens + completionTokens;
+      return response.data;
+    });
 
-      let variants = [];
-      try {
-        const cleaned = raw
-          .replace(/^```json\s*/i, "")
-          .replace(/^```\s*/i, "")
-          .replace(/```\s*$/, "")
-          .trim();
-        const parsed = JSON.parse(cleaned);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          variants = parsed
-            .filter(v => v && typeof v.text === "string" && v.text.trim().length > 0)
-            .map(v => ({
-              angle: String(v.angle || "default").trim(),
-              text: String(v.text).trim(),
-            }))
-            .slice(0, 3);
-        }
-      } catch (parseErr) {
-        console.error(JSON.stringify({
-          requestId, stage: "caption_parse_failed", raw: raw.slice(0, 200), error: parseErr.message,
-        }));
+    const raw = data.choices?.[0]?.message?.content?.trim() || "";
+    const usageData = data.usage || {};
+    const promptTokens     = usageData.prompt_tokens     || 0;
+    const completionTokens = usageData.completion_tokens || 0;
+    const totalTokens      = usageData.total_tokens      || promptTokens + completionTokens;
+
+    let variants = [];
+    try {
+      const cleaned = raw
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/```\s*$/, "")
+        .trim();
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        variants = parsed
+          .filter(v => v && typeof v.text === "string" && v.text.trim().length > 0)
+          .map(v => ({
+            angle: String(v.angle || "default").trim(),
+            text: String(v.text).trim(),
+            ...(typeof v.reasoning === "string" && v.reasoning.trim()
+              ? { reasoning: v.reasoning.trim() }
+              : {}),
+          }))
+          .slice(0, 3);
       }
-
-      if (variants.length === 0 && raw) {
-        variants = [{ angle: "default", text: raw }];
-      }
-
-      if (userId) {
-        ApiUsage.create({
-          userId,
-          email: email || null,
-          packageInstanceId: packageInstanceId || null,
-          provider: "openai",
-          endpoint: "caption",
-          model: MODEL,
-          promptTokens,
-          completionTokens,
-          totalTokens,
-          costUsd: calculateOpenAICost({ model: MODEL, promptTokens, completionTokens }),
-          requestId: requestId || null,
-          success: true,
-          latencyMs: Date.now() - t0Caption,
-        }).catch((err) => {
-          console.error("[caption] api_usage_log_failed:", err?.message);
-        });
-      }
-
-      return { variants, raw };
-    } catch (err) {
-      lastErr = err;
-      const wait = 300 * Math.pow(2, i - 1);
+    } catch (parseErr) {
       console.error(JSON.stringify({
-        requestId, stage: "openai_caption", attempt: i, error: err?.response?.data || err?.message,
+        requestId, stage: "caption_parse_failed", raw: raw.slice(0, 200), error: parseErr.message,
       }));
-      if (i < attempts) await new Promise(r => setTimeout(r, wait));
     }
-  }
 
-  return { variants: [], raw: "" };
+    if (variants.length === 0 && raw) {
+      variants = [{ angle: "default", text: raw }];
+    }
+
+    if (userId) {
+      ApiUsage.create({
+        userId,
+        email: email || null,
+        packageInstanceId: packageInstanceId || null,
+        provider: "openai",
+        endpoint: "caption",
+        model: MODEL,
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        costUsd: calculateOpenAICost({ model: MODEL, promptTokens, completionTokens }),
+        requestId: requestId || null,
+        success: true,
+        latencyMs: Date.now() - t0Caption,
+      }).catch((err) => {
+        console.error("[caption] api_usage_log_failed:", err?.message);
+      });
+    }
+
+    return { variants, raw };
+  } catch (err) {
+    console.error(JSON.stringify({
+      requestId, stage: "openai_caption", error: err?.response?.data || err?.message,
+    }));
+    return { variants: [], raw: "" };
+  }
 }
 
 // Backward-compat wrapper: returns single string like the old function did.

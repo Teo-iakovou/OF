@@ -85,6 +85,44 @@ a:hover {
   .landing-border {
     border-color: var(--hg-border);
   }
+
+  .dashboard-mobile-page {
+    min-height: 100svh;
+    overflow-x: hidden;
+  }
+
+  .dashboard-mobile-container {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-mobile-card {
+    width: 100%;
+    max-width: calc(100vw - 2rem);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-scroll-row {
+    max-width: 100%;
+    overscroll-behavior-x: contain;
+  }
+
+  .dashboard-native-file {
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard-native-file {
+    font-size: 16px;
+  }
+
+  .dashboard-native-file::file-selector-button {
+    font-size: 14px;
+  }
 }
 html {
   scroll-behavior: smooth;
@@ -265,6 +303,21 @@ html {
 .wave-line { fill: none; stroke: #50C0F0; stroke-width: 1.5; opacity: .4; }
 @keyframes waveSlide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .wave-track { animation: none !important; } }
+
+/* ---- Modal scrollbar ---- */
+.modal-scroll::-webkit-scrollbar { width: 4px; }
+.modal-scroll::-webkit-scrollbar-track { background: transparent; }
+.modal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+}
+.modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.modal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
 
 /* Loading dots – keep as is */
 .dot-wave {

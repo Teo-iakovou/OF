@@ -133,7 +133,7 @@ export default function OutOfCreditsModal({ type, open, onClose }: Props) {
   function handleGoToBilling() {
     onClose();
     const addonParam = BILLING_PARAM[type];
-    router.push(`/${locale}/dashboard/billing?addon=${addonParam}`);
+    router.push(`/${locale}/dashboard?settings=1&tab=billing&addon=${addonParam}`);
   }
 
   if (!mounted || !open) return null;

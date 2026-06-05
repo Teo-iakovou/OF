@@ -9,9 +9,10 @@ import {
   LifeBuoy,
   Mail,
   ShoppingBag,
+  UserCircle2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { FiMenu, FiX, FiUser } from "react-icons/fi";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { FiMenu, FiX } from "react-icons/fi";
 import { FaTwitter, FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
 import Image from "next/image";
 import { useCart } from "../cart/CartContext"; // Make sure the path is correct!
@@ -33,8 +34,27 @@ export default function Navbar({ onCartClick }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { cartCount } = useCart();
-  const { user } = useUser({ required: false });
+  const { user, loading: userLoading } = useUser({ required: false });
   const router = useRouter();
+
+  // Seed from localStorage so the icon shows the correct state instantly on hard
+  // reload, before the /me fetch resolves (avoids a flash to "not logged in").
+  const [presumedLoggedIn, setPresumedLoggedIn] = useState(false);
+  useLayoutEffect(() => {
+    setPresumedLoggedIn(localStorage.getItem("_auth") === "1");
+  }, []);
+  useEffect(() => {
+    if (userLoading) return;
+    if (user) {
+      localStorage.setItem("_auth", "1");
+      setPresumedLoggedIn(true);
+    } else {
+      localStorage.removeItem("_auth");
+      setPresumedLoggedIn(false);
+    }
+  }, [userLoading, user]);
+
+  const isLoggedIn = userLoading ? presumedLoggedIn : !!user;
   const navItems = [
     { id: "packages", label: "Products", icon: Package },
     { id: "features", label: "Features", icon: Star },
@@ -79,18 +99,16 @@ export default function Navbar({ onCartClick }: NavbarProps) {
           </Link>
 
           <div className="flex items-center gap-4 ml-auto">
-            {!user && (
+            <Link
+              href={isLoggedIn ? "/account/plans" : "/login?next=/account/plans"}
+              aria-label={isLoggedIn ? "My account" : "Sign in"}
+              className="flex items-center justify-center rounded-full border border-cyan-500/40 bg-[#0d1a2b] hover:border-cyan-400 hover:bg-cyan-950/60 text-cyan-300 transition-all shadow-sm w-9 h-9"
+            >
+              <UserCircle2 size={22} />
+            </Link>
+            {!isLoggedIn && (
               <Link
-                href="/login"
-                aria-label="Sign in"
-                className="p-2 rounded-md border border-gray-700 bg-[#1f2937] hover:bg-[#374151] text-white transition-all shadow-sm"
-              >
-                <FiUser size={20} />
-              </Link>
-            )}
-            {!user && (
-              <Link
-                href="/signup"
+                href="/signup?next=/account/plans"
                 className="hidden md:inline-flex items-center rounded-md border border-cyan-600 text-cyan-300 px-3 py-1 text-sm hover:bg-cyan-600/10"
               >
                 Sign Up
@@ -212,7 +230,7 @@ export default function Navbar({ onCartClick }: NavbarProps) {
                   className="flex items-center gap-2 text-gray-400 hover:text-white transition"
                   aria-label="Log out"
                 >
-                  <FiUser size={20} />
+                  <UserCircle2 size={20} />
                   <span>Log out</span>
                 </button>
               </div>

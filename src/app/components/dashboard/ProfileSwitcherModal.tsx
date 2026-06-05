@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
+import { X, Layers, Check, AlertTriangle, Loader2 } from "lucide-react";
 import type { PackageInstanceSummary } from "@/app/utils/api";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -15,41 +15,20 @@ type ProfileSwitcherModalProps = {
   onSelect: (instanceId: string) => Promise<void> | void;
 };
 
-const formatPlanLabel = (value: string | null) => {
-  if (!value) return "—";
-  return value.charAt(0).toUpperCase() + value.slice(1);
+const PLAN_LABELS: Record<string, string> = {
+  pro: "Pro Plan",
+  ultimate: "Ultimate Plan",
+  lite: "Lite Plan",
 };
 
-const shortId = (value: string) => {
-  if (value.length <= 12) return value;
-  return `${value.slice(0, 6)}…${value.slice(-4)}`;
+const formatPlanName = (planKey: string | null): string => {
+  if (!planKey) return "Package";
+  return PLAN_LABELS[planKey.toLowerCase()] ?? (planKey.charAt(0).toUpperCase() + planKey.slice(1));
 };
 
-const formatStatus = (value?: string | null) => {
-  if (!value) return "Active";
-  return value.charAt(0).toUpperCase() + value.slice(1);
-};
-
-const profileNameKey = (id: string) => `profileName:${id}`;
-
-const getProfileName = (id: string) => {
+const getStoredProfileName = (id: string): string => {
   if (typeof window === "undefined") return "";
-  try {
-    return localStorage.getItem(profileNameKey(id)) || "";
-  } catch {
-    return "";
-  }
-};
-
-const setProfileName = (id: string, name: string) => {
-  if (typeof window === "undefined") return;
-  try {
-    if (name) {
-      localStorage.setItem(profileNameKey(id), name);
-    } else {
-      localStorage.removeItem(profileNameKey(id));
-    }
-  } catch {}
+  try { return localStorage.getItem(`profileName:${id}`) || ""; } catch { return ""; }
 };
 
 export default function ProfileSwitcherModal({
@@ -61,175 +40,260 @@ export default function ProfileSwitcherModal({
   onClose,
   onSelect,
 }: ProfileSwitcherModalProps) {
-  const t = useTranslations("dashboard.home.switcher");
+  const t = useTranslations("dashboard.packageSwitcher");
   const locale = useLocale();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftName, setDraftName] = useState("");
-  const [profileNames, setProfileNames] = useState<Record<string, string>>({});
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onClose, open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const prevOverflow = document.body.style.overflow;
+    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevOverflow;
-    };
+    return () => { document.body.style.overflow = prev; };
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    const next: Record<string, string> = {};
-    instances.forEach((instance) => {
-      const name = getProfileName(instance.id);
-      if (name) next[instance.id] = name;
-    });
-    setProfileNames(next);
-  }, [instances, open]);
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const getFocusable = () =>
+      Array.from(container.querySelectorAll<HTMLElement>(
+        'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])'
+      ));
+    const initial = getFocusable();
+    if (initial.length > 0) initial[0].focus();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
 
   if (!open) return null;
 
+  // Build display names: custom localStorage name > plan name + duplicate counter
+  const planCounts: Record<string, number> = {};
+  instances.forEach((inst) => {
+    const k = (inst.planKey ?? "").toLowerCase();
+    planCounts[k] = (planCounts[k] || 0) + 1;
+  });
+  const planSeen: Record<string, number> = {};
+  const displayNames = instances.map((inst) => {
+    const custom = getStoredProfileName(inst.id);
+    if (custom) return custom;
+    const k = (inst.planKey ?? "").toLowerCase();
+    const base = formatPlanName(inst.planKey ?? null);
+    if (planCounts[k] <= 1) return base;
+    planSeen[k] = (planSeen[k] || 0) + 1;
+    return `${base} · #${planSeen[k]}`;
+  });
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center px-4 pb-4 sm:pb-0"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pkg-switcher-title"
+    >
+      {/* Backdrop */}
       <button
         type="button"
         onClick={onClose}
-        className="absolute inset-0 bg-black/30 backdrop-blur-md"
+        className="absolute inset-0"
+        style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}
         aria-label={t("closeAriaLabel")}
+        tabIndex={-1}
       />
+
+      {/* Card */}
       <div
-        className="relative w-full max-w-[560px] max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-xl"
-        onClick={(event) => event.stopPropagation()}
+        ref={containerRef}
+        className="relative w-full max-w-[480px] overflow-hidden rounded-[14px] sm:rounded-[18px] border border-[var(--hg-border)]"
+        style={{
+          background: "var(--hg-surface)",
+          boxShadow:
+            "0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(80,192,240,0.08)",
+        }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">{t("heading")}</h2>
-            <p className="mt-1 text-sm text-gray-500">{t("description")}</p>
+        {/* Header */}
+        <div
+          className="flex items-start gap-3 px-5 pt-5 pb-4 border-b border-[var(--hg-border)]"
+        >
+          <div
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl"
+            style={{ background: "rgba(80,192,240,0.14)" }}
+          >
+            <Layers className="h-5 w-5 text-[var(--hg-accent)]" strokeWidth={1.5} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2
+              id="pkg-switcher-title"
+              className="text-[17px] font-medium text-[var(--hg-text)]"
+            >
+              {t("title")}
+            </h2>
+            <p className="mt-0.5 text-[13px] text-[var(--hg-muted)]">
+              {t("subtitle")}
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:border-gray-300"
+            className="flex-shrink-0 rounded-lg p-1.5 text-[var(--hg-muted)] transition-colors hover:text-[var(--hg-text)]"
+            aria-label={t("closeAriaLabel")}
           >
-            {t("close")}
+            <X className="h-4 w-4" strokeWidth={1.5} />
           </button>
         </div>
-        <div className="max-h-[calc(80vh-140px)] overflow-y-auto px-6 py-4">
+
+        {/* Body */}
+        <div className="max-h-[56vh] overflow-y-auto px-4 py-3 space-y-2">
           {loading ? (
-            <p className="text-sm text-gray-500">{t("loading")}</p>
-          ) : instances.length === 0 ? (
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600">{t("noInstances")}</p>
-              <Link
-                href="/#packages"
-                className="inline-flex items-center rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700 hover:border-gray-300"
-              >
-                {t("goToPackages")}
-              </Link>
+            <div className="flex items-center justify-center py-8">
+              <Loader2
+                className="h-5 w-5 animate-spin text-[var(--hg-accent)]"
+                strokeWidth={1.5}
+              />
             </div>
+          ) : instances.length === 0 ? (
+            <p className="py-6 text-center text-sm text-[var(--hg-muted)]">
+              {t("noInstances")}
+            </p>
           ) : (
-            <div className="space-y-3">
-              {instances.map((instance, index) => {
-                const isActive = instance.id === activeInstanceId;
-                const createdAt = instance.createdAt
-                  ? new Date(instance.createdAt).toLocaleDateString(locale)
-                  : "—";
-                const profileLabel = `Profile ${String.fromCharCode(65 + index)}`;
-                const customName = profileNames[instance.id] || "";
-                const displayName = customName || profileLabel;
-                const showEditor = editingId === instance.id;
-                const statusLabel = isActive ? t("statusActive") : t("statusInactive");
-                return (
-                  <div
-                    key={instance.id}
-                    className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm opacity-0 translate-y-1 transition-all duration-200"
-                    style={{
-                      transitionDelay: `${index * 60}ms`,
-                      opacity: 1,
-                      transform: "translateY(0)",
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900">{displayName}</div>
-                        <div className="text-xs text-gray-500">
-                          {formatPlanLabel(instance.planKey || null)} · {profileLabel}
+            instances.map((instance, index) => {
+              const isActive = instance.id === activeInstanceId;
+              const isSwitching = selectingId === instance.id;
+              const displayName = displayNames[index];
+              const createdAt = instance.createdAt
+                ? new Date(instance.createdAt).toLocaleDateString(locale)
+                : null;
+
+              const isUnlimited = instance.uploadsRemaining === null;
+              const uploadsLeftCount =
+                typeof instance.uploadsRemaining === "number"
+                  ? instance.uploadsRemaining
+                  : Math.max(
+                      0,
+                      (instance.uploadLimit ?? 0) - (instance.uploadsUsed ?? 0)
+                    );
+
+              const faceEnrolled = instance.faceEnrolled;
+
+              return (
+                <div
+                  key={instance.id}
+                  className="rounded-xl border p-3.5 transition-colors"
+                  style={{
+                    borderColor: isActive
+                      ? "rgba(80,192,240,0.3)"
+                      : "var(--hg-border)",
+                    background: isActive
+                      ? "rgba(80,192,240,0.07)"
+                      : "rgba(255,255,255,0.03)",
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-medium text-[var(--hg-text)] truncate">
+                        {displayName}
+                      </p>
+                      <p className="mt-0.5 text-[12px] text-[var(--hg-muted)]">
+                        {isUnlimited
+                          ? t("unlimited")
+                          : t("uploadsLeft", { count: uploadsLeftCount })}
+                        {createdAt ? ` · ${createdAt}` : ""}
+                      </p>
+
+                      {/* Face enrollment indicator */}
+                      {faceEnrolled !== undefined && (
+                        <div className="mt-1.5 flex items-center gap-1">
+                          {faceEnrolled ? (
+                            <>
+                              <Check
+                                className="h-3 w-3"
+                                strokeWidth={2}
+                                style={{ color: "#4ade80" }}
+                              />
+                              <span
+                                className="text-[11px]"
+                                style={{ color: "#4ade80" }}
+                              >
+                                {t("faceVerified")}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertTriangle
+                                className="h-3 w-3"
+                                strokeWidth={2}
+                                style={{ color: "#fbbf24" }}
+                              />
+                              <span
+                                className="text-[11px]"
+                                style={{ color: "#fbbf24" }}
+                              >
+                                {t("faceSetupNeeded")}
+                              </span>
+                            </>
+                          )}
                         </div>
-                        <div className="text-xs text-gray-500">{t("createdAt", { date: createdAt })}</div>
-                        <div className="text-xs text-gray-500">{t("idPrefix", { id: shortId(instance.id) })}</div>
-                        {showEditor ? (
-                          <input
-                            value={draftName}
-                            onChange={(event) => setDraftName(event.target.value)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter") {
-                                const next = draftName.trim();
-                                setProfileName(instance.id, next);
-                                setProfileNames((prev) => ({ ...prev, [instance.id]: next }));
-                                setEditingId(null);
-                              }
-                              if (event.key === "Escape") {
-                                setEditingId(null);
-                                setDraftName("");
-                              }
-                            }}
-                            onBlur={() => {
-                              const next = draftName.trim();
-                              setProfileName(instance.id, next);
-                              setProfileNames((prev) => ({ ...prev, [instance.id]: next }));
-                              setEditingId(null);
-                            }}
-                            className="mt-2 w-full rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700"
-                            placeholder={t("renamePlaceholder")}
-                            autoFocus
-                          />
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setDraftName(displayName);
-                              setEditingId(instance.id);
-                            }}
-                            className="mt-2 inline-flex items-center rounded-full border border-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-600 hover:border-gray-300"
-                          >
-                            {t("rename")}
-                          </button>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
+                      )}
+                    </div>
+
+                    {/* Action */}
+                    <div className="flex-shrink-0 self-center">
+                      {isActive ? (
                         <span
-                          className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                            isActive
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                              : "border-gray-200 bg-gray-100 text-gray-600"
-                          }`}
+                          className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium"
+                          style={{
+                            background: "rgba(80,192,240,0.14)",
+                            color: "var(--hg-accent)",
+                            border: "1px solid rgba(80,192,240,0.25)",
+                          }}
                         >
-                          {statusLabel}
+                          {t("active")}
                         </span>
+                      ) : (
                         <button
                           type="button"
-                          disabled={isActive || selectingId === instance.id}
-                          onClick={() => onSelect(instance.id)}
-                          className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700 hover:border-gray-300 disabled:opacity-60"
+                          disabled={!!selectingId}
+                          onClick={() => void onSelect(instance.id)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--hg-border)] px-2.5 py-1 text-[11px] font-medium text-[var(--hg-text)] transition-colors hover:border-[var(--hg-accent)] hover:text-[var(--hg-accent)] disabled:opacity-50"
                         >
-                          {isActive ? t("statusActive") : t("setActive")}
+                          {isSwitching ? (
+                            <>
+                              <Loader2
+                                className="h-3 w-3 animate-spin"
+                                strokeWidth={2}
+                              />
+                              {t("switching")}
+                            </>
+                          ) : (
+                            t("setActive")
+                          )}
                         </button>
-                      </div>
+                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>

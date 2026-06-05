@@ -48,18 +48,20 @@ export function useUser(opts: { redirectTo?: string; required?: boolean; initial
   useEffect(() => {
     let cancelled = false;
     function handleAuthChanged() {
+      // Only refresh state — do NOT redirect here. Explicit logout redirects
+      // via the button handler; session-expiry redirects via SESSION_EXPIRED_EVENT
+      // in LayoutClient. Redirecting here races against the button's router.replace
+      // and appends an unwanted ?next= param after intentional logouts.
       (async () => {
         try {
           const u = await fetchUserOnce();
           if (cancelled) return;
           setUser(u);
           setLoading(false);
-          if (!u && required) router.replace(redirectTo);
         } catch {
           if (cancelled) return;
           setUser(null);
           setLoading(false);
-          if (required) router.replace(redirectTo);
         }
       })();
     }

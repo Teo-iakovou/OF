@@ -128,18 +128,28 @@ const redeemPromoCode = async (req, res) => {
     return res.status(500).json({ error: "PROMO_REDEEM_FAILED", requestId });
   }
 
-  // Set active pointer — same two-step sequence as Stripe path.
+  // Set active pointer — same conditional pattern as the Stripe webhook path.
+  // Only auto-activate if the user has no other currently-active package;
+  // returning users keep their current active instance and the frontend will
+  // prompt them to switch via /api/user/select-package-instance.
   try {
-    user.activePackageInstanceId = instance._id;
-    await user.save();
-    try {
-      console.log("[promo:pointer-set]", {
-        requestId,
-        userId,
-        instanceId: instance._id.toString(),
-        planKey: promo.planKey,
-      });
-    } catch {}
+    const hasOtherActive = await PackageInstance.exists({
+      userId: user._id,
+      status: "active",
+      _id: { $ne: instance._id },
+    });
+    if (!hasOtherActive) {
+      user.activePackageInstanceId = instance._id;
+      await user.save();
+      try {
+        console.log("[promo:pointer-set]", {
+          requestId,
+          userId,
+          instanceId: instance._id.toString(),
+          planKey: promo.planKey,
+        });
+      } catch {}
+    }
   } catch (err) {
     // Instance exists but pointer was not updated.
     // Log with instanceId so diagnoseUserPackages.js can detect and repair it.
