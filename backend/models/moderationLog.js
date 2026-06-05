@@ -8,8 +8,8 @@ const moderationLogSchema = new mongoose.Schema({
   },
   email: { type: String, lowercase: true, trim: true, index: true },
 
-  // What was flagged
-  inputText: { type: String, required: true },
+  // What was flagged (or attempted; empty string for system-failure entries)
+  inputText: { type: String, default: "" },
   inputLength: { type: Number },
 
   // Moderation result
@@ -23,6 +23,11 @@ const moderationLogSchema = new mongoose.Schema({
   // Which blocking categories specifically fired
   blockedCategories: [{ type: String }],
 
+  // System-failure reason ("API_ERROR" | "MALFORMED_RESPONSE" | null)
+  reason: { type: String, default: null },
+  // Error message from a system failure, truncated to 500 chars
+  errorMessage: { type: String, default: null },
+
   // Context
   conversationId: { type: mongoose.Schema.Types.ObjectId, ref: "Conversation" },
   requestId: { type: String },
@@ -33,5 +38,7 @@ const moderationLogSchema = new mongoose.Schema({
 
 // Compound index for admin queries: "show me all blocked messages last 7 days"
 moderationLogSchema.index({ blocked: 1, createdAt: -1 });
+// Index for ops: "show me all system failures"
+moderationLogSchema.index({ reason: 1, createdAt: -1 }, { sparse: true });
 
 module.exports = mongoose.model("ModerationLog", moderationLogSchema);

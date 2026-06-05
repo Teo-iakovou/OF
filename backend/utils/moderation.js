@@ -3,6 +3,8 @@ const ModerationLog = require("../models/moderationLog");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+const MODERATION_TIMEOUT_MS = 5000;
+
 /**
  * Categories that BLOCK the message entirely.
  * These represent legal liability or universal harm.
@@ -18,11 +20,34 @@ const BLOCKING_CATEGORIES = [
 ];
 
 /**
+ * Fire-and-forget: log a moderation system failure to ModerationLog so ops
+ * can grep for MODERATION_UNAVAILABLE / API_ERROR in the same collection.
+ */
+function logModerationFailure({ error, text, reason }) {
+  try {
+    ModerationLog.create({
+      inputText: typeof text === "string" ? text.slice(0, 2000) : "",
+      inputLength: typeof text === "string" ? text.length : 0,
+      flagged: false,
+      blocked: true,
+      blockedCategories: [],
+      reason,
+      errorMessage: error?.message?.slice(0, 500) ?? null,
+    }).catch(() => {});
+  } catch {
+    // Never let logging failure mask the moderation failure.
+  }
+  console.error(`[moderation] ${reason}:`, error?.message ?? "(no message)");
+}
+
+/**
  * Run OpenAI moderation on text.
- * Fails open: if the moderation API is down, returns allowed=true so legitimate users aren't blocked.
+ * Fails CLOSED: on API error, timeout, or malformed response the message is
+ * blocked so unscreened content never reaches chat completion.
  *
  * Returns:
  *   { allowed, blocked, blockedCategories, flagged, categories, categoryScores }
+ *   On failure also includes { failureReason: "MODERATION_UNAVAILABLE" }
  */
 async function moderateText(text) {
   if (!text || typeof text !== "string" || text.trim().length === 0) {
@@ -37,16 +62,26 @@ async function moderateText(text) {
   }
 
   try {
-    const response = await openai.moderations.create({
-      model: "omni-moderation-latest",
-      input: text,
-    });
+    const response = await Promise.race([
+      openai.moderations.create({
+        model: "omni-moderation-latest",
+        input: text,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("MODERATION_TIMEOUT")),
+          MODERATION_TIMEOUT_MS
+        )
+      ),
+    ]);
 
-    const result = response.results?.[0];
+    const result = response?.results?.[0];
     if (!result) {
+      logModerationFailure({ text, reason: "MALFORMED_RESPONSE" });
       return {
-        allowed: true,
-        blocked: false,
+        allowed: false,
+        blocked: true,
+        failureReason: "MODERATION_UNAVAILABLE",
         blockedCategories: [],
         flagged: false,
         categories: {},
@@ -68,15 +103,15 @@ async function moderateText(text) {
       categoryScores: result.category_scores || {},
     };
   } catch (err) {
-    console.error("[moderation] API call failed:", err?.message);
+    logModerationFailure({ error: err, text, reason: "API_ERROR" });
     return {
-      allowed: true,
-      blocked: false,
+      allowed: false,
+      blocked: true,
+      failureReason: "MODERATION_UNAVAILABLE",
       blockedCategories: [],
       flagged: false,
       categories: {},
       categoryScores: {},
-      error: err?.message,
     };
   }
 }
@@ -99,6 +134,7 @@ async function logModeration({ userId, email, inputText, result, conversationId,
       categories: result.categories,
       categoryScores: result.categoryScores,
       blockedCategories: result.blockedCategories,
+      reason: result.failureReason ?? null,
       conversationId: conversationId || null,
       requestId: requestId || null,
       locale: locale || null,

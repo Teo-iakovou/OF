@@ -162,6 +162,13 @@ const coachChatHandler = async (req, res) => {
       locale,
     }).catch(() => {});
     if (moderationResult.blocked) {
+      if (moderationResult.failureReason === "MODERATION_UNAVAILABLE") {
+        log(rid, "chat_moderation_unavailable", {});
+        return res.status(400).json({
+          error: "MODERATION_UNAVAILABLE",
+          message: "We couldn't process your message right now. Please try again in a moment.",
+        });
+      }
       log(rid, "chat_moderation_blocked", { blockedCategories: moderationResult.blockedCategories });
       return res.status(400).json({
         error: "CONTENT_BLOCKED",
