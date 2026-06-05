@@ -5,7 +5,6 @@ const Result = require("../models/result");
 const PackageInstance = require("../models/packageInstance");
 const mongoose = require("mongoose");
 const { sendQuotaError } = require("../utils/quotaError");
-const { planLimit } = require("../middleware/chatLimits");
 const { getQuotasForPlan } = require("../config/planQuotas");
 const { sendErr } = require("../utils/sendErr");
 const { signUrl, objectExists } = require("../utils/s3");
@@ -68,27 +67,6 @@ const toLegacyTokenValue = (value, fallback = 0) => {
   return raw > 5000 ? raw : raw * TOKENS_PER_LEGACY_CHAT_UNIT;
 };
 
-const resolveTokenBaseLimit = (instance) => {
-  const planDefault = planLimit(instance?.planKey || "lite");
-  if (typeof instance?.tokensLimit === "number" && instance.tokensLimit >= 0) {
-    const tokensLimit = Number(instance.tokensLimit);
-    if (tokensLimit > 0 || planDefault === 0) return tokensLimit;
-  }
-  if (typeof instance?.chatMonthlyLimit === "number" && instance.chatMonthlyLimit >= 0) {
-    const legacyLimit = toLegacyTokenValue(instance.chatMonthlyLimit, 0);
-    if (legacyLimit > 0 || planDefault === 0) return legacyLimit;
-  }
-  return planDefault;
-};
-
-const resolveVideoBaseLimit = (instance) => {
-  const planDefault = getSadTalkerPlanLimit(instance?.planKey || null);
-  if (typeof instance?.sadtalkerVideoLimit === "number") {
-    const value = Number(instance.sadtalkerVideoLimit);
-    if (value > 0 || planDefault === 0) return value;
-  }
-  return planDefault;
-};
 
 const toInstanceSummary = (instance) => {
   const addons = instance.addons || {};
@@ -101,13 +79,13 @@ const toInstanceSummary = (instance) => {
         : 0;
   const addonsVideos = typeof addons.sadtalkerVideos === "number" ? addons.sadtalkerVideos : 0;
 
-  const baseUploadLimit = typeof instance.uploadLimit === "number" ? instance.uploadLimit : 0;
+  const planQuotas = getQuotasForPlan(instance.planKey);
+  const baseUploadLimit = planQuotas.uploads;
   const effectiveUploadLimit = baseUploadLimit === 0 ? 0 : baseUploadLimit + addonsUploads;
   const uploadsRemaining =
     effectiveUploadLimit === 0 ? null : Math.max(0, effectiveUploadLimit - (instance.uploadsUsed || 0));
 
-  const tokensLimitBase =
-    resolveTokenBaseLimit(instance);
+  const tokensLimitBase = planQuotas.tokensLimit;
   const tokensUsed =
     typeof instance?.tokensUsed === "number"
       ? Number(instance.tokensUsed)
@@ -116,7 +94,7 @@ const toInstanceSummary = (instance) => {
   const isChatUnlimited = effectiveChatLimit === 0;
   const chatRemaining = isChatUnlimited ? null : Math.max(0, effectiveChatLimit - tokensUsed);
 
-  const baseVideoLimit = resolveVideoBaseLimit(instance);
+  const baseVideoLimit = planQuotas.videos;
   const effectiveVideoLimit = baseVideoLimit === 0 ? 0 : baseVideoLimit + addonsVideos;
   const videoRemaining =
     effectiveVideoLimit === 0
@@ -164,6 +142,7 @@ const toInstanceSummary = (instance) => {
     sadtalkerVideoLimit: baseVideoLimit,
     sadtalkerPrimaryImageHash: instance.sadtalkerPrimaryImageHash,
     personaBound: instance.personaBound,
+    faceEnrolled: Boolean(instance.faceEnrolled),
     createdAt: instance.createdAt,
     quotas,
     // Deprecated compatibility aliases (derived from `quotas`).
@@ -191,7 +170,8 @@ const buildCheckPackagePayload = (instance) => {
         : 0;
   const addonsVideos = typeof addons.sadtalkerVideos === "number" ? addons.sadtalkerVideos : 0;
 
-  const baseUploadLimit = typeof instance.uploadLimit === "number" ? instance.uploadLimit : 0;
+  const planQuotas = getQuotasForPlan(instance.planKey);
+  const baseUploadLimit = planQuotas.uploads;
   const effectiveUploadLimit = baseUploadLimit === 0 ? 0 : baseUploadLimit + addonsUploads;
   const uploadsRemaining =
     effectiveUploadLimit === 0
@@ -199,8 +179,7 @@ const buildCheckPackagePayload = (instance) => {
       : Math.max(0, effectiveUploadLimit - (instance.uploadsUsed || 0));
 
   const chatCycleEndsAt = instance?.chatCycleEndsAt ?? null;
-  const baseChatLimit =
-    resolveTokenBaseLimit(instance);
+  const baseChatLimit = planQuotas.tokensLimit;
   const usedChat =
     typeof instance?.tokensUsed === "number"
       ? Number(instance.tokensUsed)
@@ -209,7 +188,7 @@ const buildCheckPackagePayload = (instance) => {
   const isChatUnlimited = baseChatLimit === 0;
   const chatRemaining = isChatUnlimited ? null : Math.max(0, effectiveChatLimit - usedChat);
 
-  const baseVideoLimit = resolveVideoBaseLimit(instance);
+  const baseVideoLimit = planQuotas.videos;
   const effectiveVideoLimit = baseVideoLimit === 0 ? 0 : baseVideoLimit + addonsVideos;
   const videosUsed = instance.sadtalkerVideosUsed || 0;
   const videosRemaining =
@@ -413,15 +392,6 @@ const updateUserProfile = async (req, res) => {
     });
   }
 };
-
-function getSadTalkerPlanLimit(plan) {
-  if (!plan) return 0;
-  try {
-    return getQuotasForPlan(plan).videos;
-  } catch {
-    return 0;
-  }
-}
 
 const purchasePackage = async (req, res) => {
   const requestId = req.requestId || null;
@@ -811,7 +781,7 @@ const consumeSadtalkerCredit = async (req, res) => {
     }
 
     const plan = instance.planKey || "lite";
-    const baseLimit = resolveVideoBaseLimit(instance);
+    const baseLimit = getQuotasForPlan(plan).videos;
     const addonsVideos =
       typeof instance.addons?.sadtalkerVideos === "number" ? instance.addons.sadtalkerVideos : 0;
     const effectiveLimit = baseLimit === 0 ? 0 : baseLimit + addonsVideos;
@@ -1030,7 +1000,7 @@ const consumeHeygenCredit = async (req, res) => {
       : 1;
 
     const plan = instance.planKey || "lite";
-    const baseLimit = resolveVideoBaseLimit(instance);
+    const baseLimit = getQuotasForPlan(plan).videos;
     const addonsVideos =
       typeof instance.addons?.sadtalkerVideos === "number" ? instance.addons.sadtalkerVideos : 0;
     const effectiveLimit = baseLimit === 0 ? 0 : baseLimit + addonsVideos;
@@ -1215,5 +1185,4 @@ module.exports = {
   grantAddons,
   consumeSadtalkerCredit,
   consumeHeygenCredit,
-  getSadTalkerPlanLimit,
 };
