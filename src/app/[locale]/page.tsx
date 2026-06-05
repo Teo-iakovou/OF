@@ -1,19 +1,13 @@
-import { redirect } from "@/i18n/navigation";
-import { serverGetUser, serverGetActivePackage } from "@/app/utils/serverFetch";
 import LandingPage from "./LandingPage";
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
-  const user = await serverGetUser();
-
-  if (user) {
-    const hasPackage = await serverGetActivePackage();
-    if (hasPackage) {
-      redirect({ href: "/dashboard", locale });
-    } else {
-      redirect({ href: "/account/plans", locale });
-    }
-  }
-
+  await params; // Locale is handled by next-intl middleware/layout.
   return <LandingPage />;
+}
+
+// Hint Next.js that this page can be statically generated per locale.
+export const dynamic = "force-static";
+
+export function generateStaticParams() {
+  return [{ locale: "en" }, { locale: "el" }, { locale: "es" }, { locale: "it" }];
 }

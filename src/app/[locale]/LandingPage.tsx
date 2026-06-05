@@ -3,7 +3,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Bot,
@@ -74,7 +75,10 @@ function isRawSection(value: unknown): value is RawSection {
 }
 
 export default function LandingPage() {
+  const router = useRouter();
+  const locale = useLocale();
   const t = useTranslations("landing");
+  const [authChecked, setAuthChecked] = useState(false);
   const [showLanding, setShowLanding] = useState(false);
   const [shouldPlayIntro, setShouldPlayIntro] = useState<boolean | null>(null);
   const [faqOpen, setFaqOpen] = useState<number | null>(0);
@@ -113,6 +117,43 @@ export default function LandingPage() {
     body:     livePreviewSections[i]?.body     ?? "",
     ctaLabel: livePreviewSections[i]?.cta      ?? "",
   }));
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkAuthAndMaybeRedirect() {
+      try {
+        const meRes = await fetch("/api/auth/me", { credentials: "include" });
+        if (!meRes.ok) {
+          if (!cancelled) setAuthChecked(true);
+          return;
+        }
+
+        const me = await meRes.json();
+        if (!me?.user) {
+          if (!cancelled) setAuthChecked(true);
+          return;
+        }
+
+        const pkgRes = await fetch("/api/user/check-package", { credentials: "include" });
+        const pkg = pkgRes.ok ? await pkgRes.json() : null;
+        const hasActivePackage = Boolean(
+          pkg?.hasPackage || (pkg?.hasAccess && pkg?.packageInstanceId)
+        );
+        const target = hasActivePackage ? "/dashboard" : "/account/plans";
+
+        if (!cancelled) router.replace(target as "/", { locale });
+      } catch {
+        if (!cancelled) setAuthChecked(true);
+      }
+    }
+
+    void checkAuthAndMaybeRedirect();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router, locale]);
 
   useEffect(() => {
     const publishIntroState = (playing: boolean) => {
