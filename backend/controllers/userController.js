@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // controllers/userController.js
 const User = require("../models/user");
+const { deleteUserAccount } = require("../services/accountDeletion");
 const Result = require("../models/result");
 const PackageInstance = require("../models/packageInstance");
 const mongoose = require("mongoose");
@@ -1173,6 +1174,39 @@ const consumeHeygenCredit = async (req, res) => {
   }
 };
 
+const { signToken, getCookieOptions, SESSION_COOKIE_NAME } = require("../utils/jwt");
+
+const deleteAccount = async (req, res) => {
+  if (!req.user || !req.user.id) {
+    return sendErr(req, res, 401, "Unauthorized");
+  }
+
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("DELETION_TIMEOUT")), 25000)
+  );
+
+  try {
+    const result = await Promise.race([
+      deleteUserAccount(req.user.id),
+      timeoutPromise,
+    ]);
+
+    res.clearCookie(SESSION_COOKIE_NAME, { ...getCookieOptions(), maxAge: 0 });
+
+    return res.status(200).json({
+      success: true,
+      partial: !result.ok,
+      logId: result.logId,
+    });
+  } catch (err) {
+    console.error("[deleteAccount] error:", err?.message);
+    return sendErr(req, res, 500, "Account deletion failed", {
+      errorCode: "DELETION_FAILED",
+      message: "Account deletion failed. Please contact support.",
+    });
+  }
+};
+
 module.exports = {
   purchasePackage,
   checkUserPackage,
@@ -1185,4 +1219,5 @@ module.exports = {
   grantAddons,
   consumeSadtalkerCredit,
   consumeHeygenCredit,
+  deleteAccount,
 };

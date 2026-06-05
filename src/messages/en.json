@@ -399,7 +399,10 @@
     "talkingHead": "AI Video Avatar"
   },
   "account": {
-    "tabs": { "plans": "Plans", "profile": "Profile" },
+    "tabs": {
+      "plans": "Plans",
+      "profile": "Profile"
+    },
     "plans": {
       "noPlanHeading": "Choose a plan to get started",
       "noPlanSubheading": "Unlock AI uploads, video generation, and content strategy",
@@ -644,15 +647,33 @@
       "stepsHeading": "Get started in 3 steps",
       "stepLabel": "Step {num}",
       "steps": [
-        { "title": "Choose a plan", "detail": "Pick Lite or Pro based on your workflow." },
-        { "title": "Upload your first content", "detail": "Drop in a photo or promo image to analyze instantly." },
-        { "title": "Get your strategy", "detail": "Receive captions, posting times, and platform guidance." }
+        {
+          "title": "Choose a plan",
+          "detail": "Pick Lite or Pro based on your workflow."
+        },
+        {
+          "title": "Upload your first content",
+          "detail": "Drop in a photo or promo image to analyze instantly."
+        },
+        {
+          "title": "Get your strategy",
+          "detail": "Receive captions, posting times, and platform guidance."
+        }
       ],
       "lockedBadge": "Locked Preview",
       "lockedCards": [
-        { "title": "AI Uploads", "desc": "Turn raw photos into cross-platform plans with instant insights." },
-        { "title": "AI Coach Chat", "desc": "Ask strategic questions and fine-tune campaigns in plain language." },
-        { "title": "Talking Head Studio", "desc": "Generate SadTalker videos for promos and personalized shoutouts." }
+        {
+          "title": "AI Uploads",
+          "desc": "Turn raw photos into cross-platform plans with instant insights."
+        },
+        {
+          "title": "AI Coach Chat",
+          "desc": "Ask strategic questions and fine-tune campaigns in plain language."
+        },
+        {
+          "title": "Talking Head Studio",
+          "desc": "Generate SadTalker videos for promos and personalized shoutouts."
+        }
       ],
       "demoHeading": "Strategy Summary Demo",
       "demoLine1": "Post on Instagram at 18:00 for best engagement.",
@@ -875,7 +896,25 @@
       "usageAvatarVideos": "Avatar Videos",
       "usageUnlimited": "Unlimited",
       "usageRemaining": "{n} left",
-      "usageUsed": "used"
+      "usageUsed": "used",
+      "dangerZone": {
+        "title": "Danger zone",
+        "description": "Permanently delete your account and all associated data.",
+        "deleteButton": "Delete account"
+      },
+      "deleteAccount": {
+        "title": "Delete your account?",
+        "warning": "This action is permanent and cannot be undone.",
+        "bulletPhotos": "All uploaded photos will be deleted",
+        "bulletConversations": "All AI Chat conversations will be deleted",
+        "bulletAvatars": "Your AI video avatar will be removed",
+        "bulletIrreversible": "Your account cannot be recovered",
+        "typeToConfirm": "Type DELETE to confirm:",
+        "cancel": "Cancel",
+        "confirmDelete": "Delete account permanently",
+        "deleting": "Deleting…",
+        "errorGeneric": "Something went wrong. Please try again or contact support."
+      }
     },
     "packagesModal": {
       "heading": "Plans that fit your scale",
@@ -913,9 +952,21 @@
         "Talking Head video credits included",
         "Highest priority processing and premium support"
       ],
-      "liteHighlights": ["Uploads included", "Fast results", "Basic email support"],
-      "proHighlights": ["Most popular", "Deeper recommendations", "Faster pipeline"],
-      "ultimateHighlights": ["Best value for teams", "Maximum quotas", "Priority support"]
+      "liteHighlights": [
+        "Uploads included",
+        "Fast results",
+        "Basic email support"
+      ],
+      "proHighlights": [
+        "Most popular",
+        "Deeper recommendations",
+        "Faster pipeline"
+      ],
+      "ultimateHighlights": [
+        "Best value for teams",
+        "Maximum quotas",
+        "Priority support"
+      ]
     },
     "faceEnroll": {
       "title": {
@@ -1024,10 +1075,22 @@
       "uploadStageStatusLabel": "Ready to upload",
       "aiWorkspaceEyebrow": "AI Workspace",
       "tour": {
-        "step1": { "title": "Welcome to Uploads", "body": "This is where you upload content for AI analysis." },
-        "step2": { "title": "Your quota", "body": "Each upload uses one credit. Top up anytime from Billing." },
-        "step3": { "title": "Drop or browse", "body": "Drag a file here or click to choose from your device." },
-        "step4": { "title": "Your recent uploads", "body": "Past uploads and their reports appear here." },
+        "step1": {
+          "title": "Welcome to Uploads",
+          "body": "This is where you upload content for AI analysis."
+        },
+        "step2": {
+          "title": "Your quota",
+          "body": "Each upload uses one credit. Top up anytime from Billing."
+        },
+        "step3": {
+          "title": "Drop or browse",
+          "body": "Drag a file here or click to choose from your device."
+        },
+        "step4": {
+          "title": "Your recent uploads",
+          "body": "Past uploads and their reports appear here."
+        },
         "next": "Next",
         "gotIt": "Got it",
         "skip": "Skip tour",
@@ -1126,11 +1189,26 @@
       "subtitle": "Upload a face photo + voice audio and we'll generate a talking video.",
       "uploadQuotaLabel": "Upload quota",
       "tour": {
-        "step1": { "title": "AI Video Avatar", "body": "Generate talking-head videos from a photo and an audio file." },
-        "step2": { "title": "Upload your portrait", "body": "A clear, front-facing photo works best." },
-        "step3": { "title": "Add voice audio", "body": "Upload an mp3 or wav of the voice you want." },
-        "step4": { "title": "Generate", "body": "Click here once both files are ready. Generation takes about a minute." },
-        "step5": { "title": "Past generations", "body": "Your previous videos appear here, ready to download or share." },
+        "step1": {
+          "title": "AI Video Avatar",
+          "body": "Generate talking-head videos from a photo and an audio file."
+        },
+        "step2": {
+          "title": "Upload your portrait",
+          "body": "A clear, front-facing photo works best."
+        },
+        "step3": {
+          "title": "Add voice audio",
+          "body": "Upload an mp3 or wav of the voice you want."
+        },
+        "step4": {
+          "title": "Generate",
+          "body": "Click here once both files are ready. Generation takes about a minute."
+        },
+        "step5": {
+          "title": "Past generations",
+          "body": "Your previous videos appear here, ready to download or share."
+        },
         "next": "Next",
         "gotIt": "Got it",
         "skip": "Skip tour",

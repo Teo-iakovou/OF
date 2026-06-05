@@ -13,6 +13,7 @@ const {
   grantAddons,
   consumeSadtalkerCredit,
   consumeHeygenCredit,
+  deleteAccount,
 } = require("../controllers/userController");
 const { verifyPersonaFace } = require("../middleware/verifyPersonaFace");
 const { guardActiveInstanceAndFace } = require("../middleware/guardActiveInstanceAndFace");
@@ -37,6 +38,7 @@ router.get(
 );
 router.post("/addons", requireAuth, requireAdmin, grantAddons);
 router.post("/select-package-instance", selectPackageInstance);
+router.delete("/account", requireAuth, deleteAccount);
 router.post(
   "/sadtalker/consume",
   guardActiveInstanceAndFace({ requireFaceEnrolled: true }),

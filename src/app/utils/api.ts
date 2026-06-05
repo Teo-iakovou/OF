@@ -1354,6 +1354,15 @@ export async function fetchCoachChatPrompts(): Promise<SuggestPromptsResponse> {
   return r.data as SuggestPromptsResponse;
 }
 
+export async function deleteAccount(): Promise<{ success: boolean; partial: boolean }> {
+  const res = await fetch(`${BASE_URL}/api/user/account`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`DELETE_ACCOUNT_FAILED:${res.status}`);
+  return res.json();
+}
+
 // --- Analytics ---
 // Thin wrapper: fires gtag if available, falls back to console.debug in dev.
 export function trackEvent(name: string, props?: Record<string, unknown>): void {

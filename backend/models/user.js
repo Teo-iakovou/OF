@@ -44,6 +44,7 @@ const userSchema = new mongoose.Schema({
   totalChatMessages: { type: Number, default: 0 },
   passwordHash: { type: String, select: false, required: function() { return !this.googleId; } },
   emailVerified: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null, index: { sparse: true } },
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);

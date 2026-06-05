@@ -399,7 +399,10 @@
     "talkingHead": "AI Video Avatar"
   },
   "account": {
-    "tabs": { "plans": "Planes", "profile": "Perfil" },
+    "tabs": {
+      "plans": "Planes",
+      "profile": "Perfil"
+    },
     "plans": {
       "noPlanHeading": "Elige un plan para empezar",
       "noPlanSubheading": "Desbloquea uploads con IA, generación de vídeo y estrategia de contenido",
@@ -644,15 +647,33 @@
       "stepsHeading": "Empieza en 3 pasos",
       "stepLabel": "Paso {num}",
       "steps": [
-        { "title": "Elige un plan", "detail": "Elige Lite o Pro según tu flujo de trabajo." },
-        { "title": "Sube tu primer contenido", "detail": "Añade una foto o imagen promocional para analizarla al instante." },
-        { "title": "Obtén tu estrategia", "detail": "Recibe captions, horarios de publicación y guía por plataforma." }
+        {
+          "title": "Elige un plan",
+          "detail": "Elige Lite o Pro según tu flujo de trabajo."
+        },
+        {
+          "title": "Sube tu primer contenido",
+          "detail": "Añade una foto o imagen promocional para analizarla al instante."
+        },
+        {
+          "title": "Obtén tu estrategia",
+          "detail": "Recibe captions, horarios de publicación y guía por plataforma."
+        }
       ],
       "lockedBadge": "Vista previa bloqueada",
       "lockedCards": [
-        { "title": "AI Uploads", "desc": "Convierte fotos en bruto en planes multiplataforma con insights instantáneos." },
-        { "title": "AI Coach Chat", "desc": "Haz preguntas estratégicas y ajusta campañas en lenguaje natural." },
-        { "title": "Talking Head Studio", "desc": "Genera vídeos SadTalker para promos y saludos personalizados." }
+        {
+          "title": "AI Uploads",
+          "desc": "Convierte fotos en bruto en planes multiplataforma con insights instantáneos."
+        },
+        {
+          "title": "AI Coach Chat",
+          "desc": "Haz preguntas estratégicas y ajusta campañas en lenguaje natural."
+        },
+        {
+          "title": "Talking Head Studio",
+          "desc": "Genera vídeos SadTalker para promos y saludos personalizados."
+        }
       ],
       "demoHeading": "Demo de resumen de estrategia",
       "demoLine1": "Publica en Instagram a las 18:00 para mayor engagement.",
@@ -846,7 +867,25 @@
       "usageAvatarVideos": "Avatar Videos",
       "usageUnlimited": "Ilimitado",
       "usageRemaining": "{n} restantes",
-      "usageUsed": "usados"
+      "usageUsed": "usados",
+      "dangerZone": {
+        "title": "Zona de peligro",
+        "description": "Elimina permanentemente tu cuenta y todos los datos asociados.",
+        "deleteButton": "Eliminar cuenta"
+      },
+      "deleteAccount": {
+        "title": "¿Eliminar tu cuenta?",
+        "warning": "Esta acción es permanente e irreversible.",
+        "bulletPhotos": "Todas las fotos subidas serán eliminadas",
+        "bulletConversations": "Todas las conversaciones de AI Chat serán eliminadas",
+        "bulletAvatars": "Tu avatar de video con IA será eliminado",
+        "bulletIrreversible": "Tu cuenta no podrá ser recuperada",
+        "typeToConfirm": "Escribe DELETE para confirmar:",
+        "cancel": "Cancelar",
+        "confirmDelete": "Eliminar cuenta permanentemente",
+        "deleting": "Eliminando…",
+        "errorGeneric": "Algo salió mal. Inténtalo de nuevo o contacta con soporte."
+      }
     },
     "packagesModal": {
       "heading": "Planes que se adaptan a tu escala",
@@ -884,9 +923,21 @@
         "Créditos de vídeo Talking Head incluidos",
         "Máxima prioridad y soporte premium"
       ],
-      "liteHighlights": ["Cargas incluidas", "Resultados rápidos", "Soporte básico por email"],
-      "proHighlights": ["Más popular", "Recomendaciones más profundas", "Pipeline más rápido"],
-      "ultimateHighlights": ["Mejor valor para equipos", "Cuotas máximas", "Soporte prioritario"]
+      "liteHighlights": [
+        "Cargas incluidas",
+        "Resultados rápidos",
+        "Soporte básico por email"
+      ],
+      "proHighlights": [
+        "Más popular",
+        "Recomendaciones más profundas",
+        "Pipeline más rápido"
+      ],
+      "ultimateHighlights": [
+        "Mejor valor para equipos",
+        "Cuotas máximas",
+        "Soporte prioritario"
+      ]
     },
     "faceEnroll": {
       "heading": "Se requiere registro facial",
@@ -936,10 +987,22 @@
       "uploadStageStatusLabel": "Listo para subir",
       "aiWorkspaceEyebrow": "AI Workspace",
       "tour": {
-        "step1": { "title": "Bienvenido a Subidas", "body": "Aquí puedes subir contenido para análisis con IA." },
-        "step2": { "title": "Tu cuota", "body": "Cada subida usa un crédito. Recarga cuando quieras desde Facturación." },
-        "step3": { "title": "Arrastra o explora", "body": "Arrastra un archivo aquí o haz clic para elegir desde tu dispositivo." },
-        "step4": { "title": "Subidas recientes", "body": "Las subidas anteriores y sus informes aparecen aquí." },
+        "step1": {
+          "title": "Bienvenido a Subidas",
+          "body": "Aquí puedes subir contenido para análisis con IA."
+        },
+        "step2": {
+          "title": "Tu cuota",
+          "body": "Cada subida usa un crédito. Recarga cuando quieras desde Facturación."
+        },
+        "step3": {
+          "title": "Arrastra o explora",
+          "body": "Arrastra un archivo aquí o haz clic para elegir desde tu dispositivo."
+        },
+        "step4": {
+          "title": "Subidas recientes",
+          "body": "Las subidas anteriores y sus informes aparecen aquí."
+        },
         "next": "Siguiente",
         "gotIt": "Entendido",
         "skip": "Omitir tour",
@@ -1033,11 +1096,26 @@
       "subtitle": "Sube una foto de rostro + audio de voz y generaremos un video hablando.",
       "uploadQuotaLabel": "Cuota de subida",
       "tour": {
-        "step1": { "title": "AI Video Avatar", "body": "Genera videos con cabeza parlante a partir de una foto y un audio." },
-        "step2": { "title": "Sube tu retrato", "body": "Una foto frontal y nítida funciona mejor." },
-        "step3": { "title": "Añade audio de voz", "body": "Sube un mp3 o wav con la voz que deseas." },
-        "step4": { "title": "Generar", "body": "Haz clic aquí cuando ambos archivos estén listos. La generación tarda alrededor de un minuto." },
-        "step5": { "title": "Generaciones anteriores", "body": "Tus videos anteriores aparecen aquí, listos para descargar o compartir." },
+        "step1": {
+          "title": "AI Video Avatar",
+          "body": "Genera videos con cabeza parlante a partir de una foto y un audio."
+        },
+        "step2": {
+          "title": "Sube tu retrato",
+          "body": "Una foto frontal y nítida funciona mejor."
+        },
+        "step3": {
+          "title": "Añade audio de voz",
+          "body": "Sube un mp3 o wav con la voz que deseas."
+        },
+        "step4": {
+          "title": "Generar",
+          "body": "Haz clic aquí cuando ambos archivos estén listos. La generación tarda alrededor de un minuto."
+        },
+        "step5": {
+          "title": "Generaciones anteriores",
+          "body": "Tus videos anteriores aparecen aquí, listos para descargar o compartir."
+        },
         "next": "Siguiente",
         "gotIt": "Entendido",
         "skip": "Omitir tour",

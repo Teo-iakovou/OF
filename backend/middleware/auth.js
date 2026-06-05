@@ -2,7 +2,7 @@ const cookie = require("cookie");
 const { verifyToken, SESSION_COOKIE_NAME } = require("../utils/jwt");
 const User = require("../models/user");
 
-async function authMiddleware(req, _res, next) {
+async function authMiddleware(req, res, next) {
   try {
     const header = req.headers["cookie"] || "";
     const cookies = header ? cookie.parse(header) : {};
@@ -23,7 +23,13 @@ async function authMiddleware(req, _res, next) {
     try {
       if (req.user.id) {
         const doc = await User.findById(req.user.id);
-        if (doc) req._user = doc; // some middlewares expect this
+        if (doc) {
+          if (doc.deletedAt) {
+            req.user = null;
+            return res.status(401).json({ error: "AUTH_ACCOUNT_DELETED" });
+          }
+          req._user = doc; // some middlewares expect this
+        }
       }
     } catch {}
 

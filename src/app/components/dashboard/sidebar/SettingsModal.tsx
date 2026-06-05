@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { updateUserProfile } from "@/app/utils/api";
 import { FeedbackWidget } from "@/app/components/features/FeedbackWidget";
 import { logoutClient } from "@/app/utils/authClient";
+import DeleteAccountModal from "@/app/components/DeleteAccountModal";
 
 export type SettingsSection = "account" | "usage" | "billing" | "history";
 
@@ -112,6 +113,7 @@ export default function SettingsModal({
   const [initialLastName, setInitialLastName] = useState("");
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [billingRefreshToken, setBillingRefreshToken] = useState(0);
   const [saveError, setSaveError] = useState<{ message: string; requestId?: string | null } | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -455,8 +457,29 @@ export default function SettingsModal({
                     ) : null}
                   </div>
                 ) : null}
+
+                {/* Danger Zone */}
+                <div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/5 p-4">
+                  <h3 className="text-sm font-semibold text-red-400">{t("dangerZone.title")}</h3>
+                  <p className="mt-1 text-xs text-zinc-400">{t("dangerZone.description")}</p>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteModalOpen(true)}
+                    className="mt-3 rounded-lg border border-red-500/40 bg-transparent px-3 py-2 text-sm text-red-400 hover:bg-red-500/10"
+                  >
+                    {t("dangerZone.deleteButton")}
+                  </button>
+                </div>
               </div>
             ) : null}
+
+            <DeleteAccountModal
+              open={deleteModalOpen}
+              onClose={() => setDeleteModalOpen(false)}
+              onSuccess={() => {
+                window.location.href = "/";
+              }}
+            />
 
             {activeSection === "usage" ? (
               <div className="space-y-3">
