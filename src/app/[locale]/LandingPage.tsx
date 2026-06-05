@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import LandingNavbar from "@/app/components/landing/LandingNavbar";
 import LandingFooter from "@/app/components/landing/LandingFooter";
+import LazyVideo from "@/app/components/landing/LazyVideo";
 import Packages from "@/app/components/packages/Packages";
 import VideoIntro from "@/app/components/features/VideoIntro";
 import ScrollToTop from "@/app/components/features/ScrollToTop";
@@ -787,16 +788,11 @@ export default function LandingPage() {
                                   <CheckCircle2 className="h-3.5 w-3.5 text-[var(--hg-accent)]" />
                                   <p className="text-[11px] font-semibold text-white">{t("hero.workflowPreview.resultTitle")}</p>
                                 </div>
-                                <div className="relative mb-3 mx-auto aspect-[9/16] w-36 overflow-hidden rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]">
-                                  <video
-                                    src="/Avatar_IV_Video%201%2A.mp4"
-                                    autoPlay
-                                    muted
-                                    loop
-                                    playsInline
-                                    className="absolute inset-0 h-full w-full object-cover"
-                                  />
-                                </div>
+                                <LazyVideo
+                                  src="/Avatar_IV_Video 1*.mp4"
+                                  className="mb-3 mx-auto aspect-[9/16] w-36 overflow-hidden rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)]"
+                                  placeholderClassName="bg-zinc-950"
+                                />
                                 <div className="mx-auto flex w-36 gap-2">
                                   <motion.div
                                     ref={downloadTargetRef}
@@ -982,16 +978,11 @@ export default function LandingPage() {
                       transition={{ duration: 0.3 }}
                       className={`relative h-[380px] w-full overflow-hidden rounded-2xl border border-[var(--hg-border)]/75 shadow-[0_12px_30px_rgba(0,0,0,0.3)] md:h-[460px] lg:h-[520px] ${section.featured ? "md:rounded-[1.3rem]" : ""}`}
                     >
-                      <video
-                        className={`absolute inset-0 h-full w-full object-cover ${section.objectPos}`}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        preload="metadata"
-                      >
-                        <source src={section.videoSrc} type="video/mp4" />
-                      </video>
+                      <LazyVideo
+                        src={section.videoSrc}
+                        className={`absolute inset-0 ${section.objectPos}`}
+                        placeholderClassName="bg-gradient-to-br from-zinc-900 to-zinc-950"
+                      />
                     </motion.div>
                   </div>
                 </motion.article>

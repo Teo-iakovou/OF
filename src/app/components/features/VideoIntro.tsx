@@ -30,22 +30,6 @@ export default function VideoIntro({ onComplete }: VideoIntroProps) {
     } catch {}
   }, []);
 
-  useEffect(() => {
-    let attempts = 0;
-    const retry = setInterval(() => {
-      attempts += 1;
-      const v = videoRef.current;
-      if (!v) return;
-      if (!v.paused && v.currentTime > 0.05) {
-        clearInterval(retry);
-        return;
-      }
-      startVideo();
-      if (attempts >= 8) clearInterval(retry);
-    }, 250);
-    return () => clearInterval(retry);
-  }, [startVideo]);
-
   const handleSkip = () => {
     setHasSkipped(true);
     setTimeout(onComplete, 800); // Wait for fade animation
@@ -73,7 +57,7 @@ export default function VideoIntro({ onComplete }: VideoIntroProps) {
           playsInline
           muted
           onEnded={handleVideoEnd}
-          preload="auto"
+          preload="metadata"
           onLoadedData={startVideo}
           onPlay={() => {
             setHasStarted(true);
