@@ -949,7 +949,19 @@
         "multipleFaces": "Sube una foto con exactamente un rostro.",
         "noFaceDetected": "No se detectó ningún rostro. Sube una foto clara con un solo rostro.",
         "generic": "El registro falló. Inténtalo de nuevo.",
-        "network": "Error de red."
+        "network": "Error de red.",
+        "IMAGE_BLOCKED": {
+          "title": "La imagen no puede procesarse",
+          "body": "Esta foto no puede usarse para el registro. Por favor intenta con una diferente."
+        },
+        "IMAGE_MODERATION_UNAVAILABLE": {
+          "title": "Verificación temporalmente no disponible",
+          "body": "No pudimos verificar tu foto en este momento. Por favor inténtalo de nuevo en un momento."
+        },
+        "IMAGE_TOO_LARGE": {
+          "title": "Foto demasiado grande",
+          "body": "Tu foto supera el límite de 5 MB. Por favor elige un archivo más pequeño."
+        }
       }
     },
     "mobileBottomBar": {
@@ -1242,7 +1254,9 @@
         "faceVerificationFailed": "La verificación facial falló. Esta foto no coincide con tu rostro registrado.",
         "upgradeRequired": "Actualización requerida",
         "videoGenerationFailed": "La generación del video falló.",
-        "audioDurationExceeded": "El audio es demasiado largo. La duración máxima del vídeo es 60 segundos."
+        "audioDurationExceeded": "El audio es demasiado largo. La duración máxima del vídeo es 60 segundos.",
+        "imageBlocked": "Esta imagen no puede procesarse. Por favor elige una diferente.",
+        "imageModerationUnavailable": "No pudimos verificar tu imagen en este momento. Por favor inténtalo de nuevo en un momento."
       },
       "errorCtas": {
         "enrollFace": "Registrar rostro",
@@ -1298,7 +1312,13 @@
         "alreadyBoundTitle": "Persona ya vinculado",
         "alreadyBoundMessage": "Este persona pertenece a otro paquete activo.",
         "defaultTitle": "Error al subir",
-        "defaultMessage": "No pudimos analizar esa imagen. Por favor inténtalo de nuevo."
+        "defaultMessage": "No pudimos analizar esa imagen. Por favor inténtalo de nuevo.",
+        "imageBlockedTitle": "La imagen no puede procesarse",
+        "imageBlockedMessage": "Esta imagen no puede procesarse. Por favor elige una diferente.",
+        "imageModerationUnavailableTitle": "Verificación temporalmente no disponible",
+        "imageModerationUnavailableMessage": "No pudimos verificar tu imagen en este momento. Por favor inténtalo de nuevo en un momento.",
+        "imageTooLargeTitle": "Imagen demasiado grande",
+        "imageTooLargeMessage": "La imagen supera el límite de 5 MB. Por favor elige un archivo más pequeño."
       },
       "personaMismatch": {
         "message": "Este paquete está vinculado al persona {boundPersona}. Solicitaste {requestedPersona}.",

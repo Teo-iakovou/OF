@@ -949,7 +949,19 @@
         "multipleFaces": "Carica una foto con esattamente un volto.",
         "noFaceDetected": "Nessun volto rilevato. Carica una foto chiara con un solo volto.",
         "generic": "Registrazione non riuscita. Riprova.",
-        "network": "Errore di rete."
+        "network": "Errore di rete.",
+        "IMAGE_BLOCKED": {
+          "title": "L'immagine non può essere elaborata",
+          "body": "Questa foto non può essere usata per la registrazione. Prova con un'altra."
+        },
+        "IMAGE_MODERATION_UNAVAILABLE": {
+          "title": "Verifica temporaneamente non disponibile",
+          "body": "Non siamo riusciti a verificare la tua foto al momento. Riprova tra poco."
+        },
+        "IMAGE_TOO_LARGE": {
+          "title": "Foto troppo grande",
+          "body": "La tua foto supera il limite di 5 MB. Scegli un file più piccolo."
+        }
       }
     },
     "mobileBottomBar": {
@@ -1242,7 +1254,9 @@
         "faceVerificationFailed": "Verifica del volto fallita. Questa foto non corrisponde al volto registrato.",
         "upgradeRequired": "Aggiornamento richiesto",
         "videoGenerationFailed": "Generazione video fallita.",
-        "audioDurationExceeded": "L'audio è troppo lungo. La durata massima del video è 60 secondi."
+        "audioDurationExceeded": "L'audio è troppo lungo. La durata massima del video è 60 secondi.",
+        "imageBlocked": "Questa immagine non può essere elaborata. Scegli un'altra.",
+        "imageModerationUnavailable": "Non siamo riusciti a verificare la tua immagine al momento. Riprova tra poco."
       },
       "errorCtas": {
         "enrollFace": "Registra volto",
@@ -1298,7 +1312,13 @@
         "alreadyBoundTitle": "Persona già associato",
         "alreadyBoundMessage": "Questo persona appartiene a un altro pacchetto attivo.",
         "defaultTitle": "Caricamento fallito",
-        "defaultMessage": "Non siamo riusciti ad analizzare quell'immagine. Riprova."
+        "defaultMessage": "Non siamo riusciti ad analizzare quell'immagine. Riprova.",
+        "imageBlockedTitle": "L'immagine non può essere elaborata",
+        "imageBlockedMessage": "Questa immagine non può essere elaborata. Scegli un'altra.",
+        "imageModerationUnavailableTitle": "Verifica temporaneamente non disponibile",
+        "imageModerationUnavailableMessage": "Non siamo riusciti a verificare la tua immagine al momento. Riprova tra poco.",
+        "imageTooLargeTitle": "Immagine troppo grande",
+        "imageTooLargeMessage": "L'immagine supera il limite di 5 MB. Scegli un file più piccolo."
       },
       "personaMismatch": {
         "message": "Questo pacchetto è associato alla persona {boundPersona}. Hai richiesto {requestedPersona}.",

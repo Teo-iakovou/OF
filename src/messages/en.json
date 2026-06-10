@@ -1024,7 +1024,19 @@
           "title": "Network error",
           "body": "Couldn't reach our servers. Check your connection and try again."
         },
-        "referenceId": "Reference: {id}"
+        "referenceId": "Reference: {id}",
+        "IMAGE_BLOCKED": {
+          "title": "Image can't be processed",
+          "body": "This photo can't be used for enrollment. Please try a different one."
+        },
+        "IMAGE_MODERATION_UNAVAILABLE": {
+          "title": "Verification temporarily unavailable",
+          "body": "We couldn't verify your photo right now. Please try again in a moment."
+        },
+        "IMAGE_TOO_LARGE": {
+          "title": "Photo too large",
+          "body": "Your photo exceeds the 5 MB limit. Please choose a smaller file."
+        }
       },
       "_legacy": {
         "heading": "Face enrollment required",
@@ -1337,7 +1349,9 @@
         "faceVerificationFailed": "Face verification failed. This photo does not match your enrolled face.",
         "upgradeRequired": "Upgrade required",
         "videoGenerationFailed": "Video generation failed.",
-        "audioDurationExceeded": "Audio is too long. Maximum video duration is 60 seconds."
+        "audioDurationExceeded": "Audio is too long. Maximum video duration is 60 seconds.",
+        "imageBlocked": "This image can't be processed. Please choose a different one.",
+        "imageModerationUnavailable": "We couldn't verify your image right now. Please try again in a moment."
       },
       "errorCtas": {
         "enrollFace": "Enroll face",
@@ -1411,7 +1425,13 @@
         "alreadyBoundTitle": "Persona already bound",
         "alreadyBoundMessage": "This persona belongs to another active package.",
         "defaultTitle": "Upload failed",
-        "defaultMessage": "We couldn't analyze that image. Please try again."
+        "defaultMessage": "We couldn't analyze that image. Please try again.",
+        "imageBlockedTitle": "Image can't be processed",
+        "imageBlockedMessage": "This image can't be processed. Please choose a different one.",
+        "imageModerationUnavailableTitle": "Verification temporarily unavailable",
+        "imageModerationUnavailableMessage": "We couldn't verify your image right now. Please try again in a moment.",
+        "imageTooLargeTitle": "Image too large",
+        "imageTooLargeMessage": "Image is too large. Maximum size is 5 MB."
       },
       "personaMismatch": {
         "message": "This package is bound to persona {boundPersona}. You requested {requestedPersona}.",

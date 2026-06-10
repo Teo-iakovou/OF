@@ -357,6 +357,17 @@ export default function UploadTalkingHead() {
           return;
         }
 
+        if (codeRaw === "IMAGE_BLOCKED" || codeRaw === "IMAGE_MODERATION_UNAVAILABLE") {
+          setError(
+            codeRaw === "IMAGE_BLOCKED"
+              ? t("errors.imageBlocked")
+              : t("errors.imageModerationUnavailable")
+          );
+          setErrorCode(codeRaw);
+          setErrorRequestId(typeof data?.requestId === "string" ? data.requestId : null);
+          return;
+        }
+
         setHeygenError(data?.error || t("errors.videoGenerationFailed"));
         return;
       }

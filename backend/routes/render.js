@@ -2,11 +2,14 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs/promises");
+const crypto = require("crypto");
+const sharp = require("sharp");
 const { putObject, signUrl } = require("../utils/s3");
 const axios = require("axios");
 const { analyzeImageBufferWithGoogleVision } = require("../utils/analyzeImageWithGoogleVision");
 const RenderJob = require("../models/renderJob");
 const { guardActiveInstanceAndFace } = require("../middleware/guardActiveInstanceAndFace");
+const { moderateImage } = require("../utils/moderation");
 
 const router = express.Router();
 const upload = multer({ dest: path.resolve(__dirname, "../uploads") });
@@ -37,6 +40,35 @@ router.post("/generate", upload.single("image"), async (req, res) => {
     const key = `inputs/${encodeURIComponent(email)}/${ts}.${ext}`;
     const filePath = req.file.path;
     const buffer = await fs.readFile(filePath);
+
+    // Image moderation — downscale to a moderation-only copy to stay under the
+    // OpenAI 10 MB payload limit (full-res buffer goes to R2 unchanged).
+    try {
+      const moderationBuffer = await sharp(buffer)
+        .resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 80 })
+        .toBuffer();
+      const moderationDataUrl = `data:image/jpeg;base64,${moderationBuffer.toString("base64")}`;
+      const imageRefForLog = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
+      const moderationResult = await moderateImage(moderationDataUrl, { imageRef: imageRefForLog });
+      if (!moderationResult.allowed) {
+        try { await fs.unlink(filePath); } catch {}
+        const errorCode =
+          moderationResult.failureReason === "MODERATION_UNAVAILABLE"
+            ? "IMAGE_MODERATION_UNAVAILABLE"
+            : "IMAGE_BLOCKED";
+        return res.status(400).json({
+          errorCode,
+          error: errorCode === "IMAGE_MODERATION_UNAVAILABLE"
+            ? "We couldn't verify your image right now. Please try again in a moment."
+            : "This image can't be processed. Please choose a different one.",
+        });
+      }
+    } catch (e) {
+      console.error("[render:moderation] error", e?.message || e);
+      try { await fs.unlink(filePath); } catch {}
+      return res.status(400).json({ errorCode: "IMAGE_MODERATION_UNAVAILABLE", error: "We couldn't verify your image right now. Please try again in a moment." });
+    }
 
     // Optional: preflight face/safety check (guarded by env flag)
     if (String(process.env.RENDER_PREFLIGHT_FACE_CHECK).toLowerCase() === "true") {

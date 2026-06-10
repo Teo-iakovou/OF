@@ -129,6 +129,27 @@ export default function FileUpload({ onUploadSuccess, packageInstanceId }: FileU
           requestId: meta.requestId || undefined,
         };
       }
+      if (code === "IMAGE_BLOCKED") {
+        return {
+          title: t("errors.imageBlockedTitle"),
+          message: t("errors.imageBlockedMessage"),
+          requestId: meta.requestId || undefined,
+        };
+      }
+      if (code === "IMAGE_MODERATION_UNAVAILABLE") {
+        return {
+          title: t("errors.imageModerationUnavailableTitle"),
+          message: t("errors.imageModerationUnavailableMessage"),
+          requestId: meta.requestId || undefined,
+        };
+      }
+      if (code === "IMAGE_TOO_LARGE") {
+        return {
+          title: t("errors.imageTooLargeTitle"),
+          message: t("errors.imageTooLargeMessage"),
+          requestId: meta.requestId || undefined,
+        };
+      }
       return {
         title: t("errors.defaultTitle"),
         message: t("errors.defaultMessage"),

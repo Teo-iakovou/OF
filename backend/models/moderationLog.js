@@ -8,9 +8,20 @@ const moderationLogSchema = new mongoose.Schema({
   },
   email: { type: String, lowercase: true, trim: true, index: true },
 
-  // What was flagged (or attempted; empty string for system-failure entries)
+  // "text" for chat messages, "image" for uploaded images
+  inputType: {
+    type: String,
+    enum: ["text", "image"],
+    default: "text",
+    index: true,
+  },
+
+  // Text payload (empty string for image events)
   inputText: { type: String, default: "" },
   inputLength: { type: Number },
+
+  // Short identifier for the image (e.g. first 16 chars of SHA-256) — ops correlation
+  imageRef: { type: String, default: null },
 
   // Moderation result
   flagged: { type: Boolean, required: true, index: true },
@@ -23,7 +34,7 @@ const moderationLogSchema = new mongoose.Schema({
   // Which blocking categories specifically fired
   blockedCategories: [{ type: String }],
 
-  // System-failure reason ("API_ERROR" | "MALFORMED_RESPONSE" | null)
+  // System-failure reason ("API_ERROR" | "MALFORMED_RESPONSE" | "TIMEOUT" | null)
   reason: { type: String, default: null },
   // Error message from a system failure, truncated to 500 chars
   errorMessage: { type: String, default: null },
@@ -36,9 +47,11 @@ const moderationLogSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now, index: true },
 });
 
-// Compound index for admin queries: "show me all blocked messages last 7 days"
+// Admin query: "show me all blocked messages last 7 days"
 moderationLogSchema.index({ blocked: 1, createdAt: -1 });
-// Index for ops: "show me all system failures"
+// Ops query: "show me all system failures"
 moderationLogSchema.index({ reason: 1, createdAt: -1 }, { sparse: true });
+// Cross-type query: "show me all blocked images / blocked text"
+moderationLogSchema.index({ inputType: 1, blocked: 1, createdAt: -1 });
 
 module.exports = mongoose.model("ModerationLog", moderationLogSchema);

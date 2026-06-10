@@ -38,6 +38,9 @@ const RETRYABLE = new Set([
   "MULTIPLE_FACES_NOT_ALLOWED",
   "ENROLL_FACE_FAILED",
   "CAMERA_UNAVAILABLE",
+  "IMAGE_BLOCKED",
+  "IMAGE_MODERATION_UNAVAILABLE",
+  "IMAGE_TOO_LARGE",
   "__default",
 ]);
 
@@ -86,6 +89,18 @@ export default function FaceEnrollModal({ open, onSuccess, onError }: FaceEnroll
       __default: {
         title: t("errors.__default.title"),
         body: t("errors.__default.body"),
+      },
+      IMAGE_BLOCKED: {
+        title: t("errors.IMAGE_BLOCKED.title"),
+        body: t("errors.IMAGE_BLOCKED.body"),
+      },
+      IMAGE_MODERATION_UNAVAILABLE: {
+        title: t("errors.IMAGE_MODERATION_UNAVAILABLE.title"),
+        body: t("errors.IMAGE_MODERATION_UNAVAILABLE.body"),
+      },
+      IMAGE_TOO_LARGE: {
+        title: t("errors.IMAGE_TOO_LARGE.title"),
+        body: t("errors.IMAGE_TOO_LARGE.body"),
       },
     }),
     [t]

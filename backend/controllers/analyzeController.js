@@ -16,6 +16,7 @@ const { buildPromotionBlueprint } = require("../utils/buildPromotionBlueprint");
 const { generateCaptionsWithOpenAI } = require("../utils/generateCaptionWithOpenAI");
 const { sendQuotaError } = require("../utils/quotaError");
 const { sendErr } = require("../utils/sendErr");
+const { moderateImage, logModeration } = require("../utils/moderation");
 const { verifyFaceMatches } = require("../utils/rekognition");
 const { putObject, buildPublicUrl } = require("../utils/s3");
 const { normalizePlatformName, performanceKey } = require("../utils/recommendationKeys");
@@ -433,7 +434,7 @@ const analyzeImage = async (req, res) => {
       // continue without dedup if hashing fails
     }
 
-    // 2) Vision
+    // 2) Vision + image moderation (parallel — both can independently fail-block)
     stage = "vision_start";
     console.log(
       JSON.stringify({
@@ -444,9 +445,15 @@ const analyzeImage = async (req, res) => {
       })
     );
     const tVision0 = Date.now();
+    const imageBase64DataUrl = `data:${uploadMime};base64,${inputBuffer.toString("base64")}`;
+    const imageRefForLog = imageHash ? imageHash.slice(0, 16) : null;
     let visionData;
+    let moderationResult;
     try {
-      visionData = await analyzeImageBufferWithGoogleVision(inputBuffer, { requestId });
+      [moderationResult, visionData] = await Promise.all([
+        moderateImage(imageBase64DataUrl, { imageRef: imageRefForLog }),
+        analyzeImageBufferWithGoogleVision(inputBuffer, { requestId }),
+      ]);
       if (!visionData) {
         return respondErr(502, "Vision analysis failed.", { stage: "vision_null" });
       }
@@ -472,6 +479,41 @@ const analyzeImage = async (req, res) => {
       success: true,
       latencyMs: Date.now() - tVision0,
     }).catch(() => {});
+
+    // Moderation gate — runs before any further external calls (Rekognition, R2)
+    if (!moderationResult?.allowed) {
+      logModeration({
+        userId: user._id,
+        email: user.email,
+        inputType: "image",
+        imageRef: imageRefForLog,
+        result: moderationResult,
+        requestId,
+      }).catch(() => {});
+      await releaseReservedQuota();
+      const errorCode =
+        moderationResult.failureReason === "MODERATION_UNAVAILABLE"
+          ? "IMAGE_MODERATION_UNAVAILABLE"
+          : "IMAGE_BLOCKED";
+      return sendErr(req, res, 400,
+        errorCode === "IMAGE_MODERATION_UNAVAILABLE"
+          ? "We couldn't verify your image right now. Please try again in a moment."
+          : "This image can't be processed. Please choose a different one.",
+        { code: errorCode }
+      );
+    }
+    // Log flagged-but-allowed for borderline-content audit trail
+    if (moderationResult?.flagged) {
+      logModeration({
+        userId: user._id,
+        email: user.email,
+        inputType: "image",
+        imageRef: imageRefForLog,
+        result: moderationResult,
+        requestId,
+      }).catch(() => {});
+    }
+
     const detectedFaceCount =
       typeof visionData?.faceCount === "number"
         ? visionData.faceCount

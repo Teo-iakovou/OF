@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const User = require("../models/user");
 const mongoose = require("mongoose");
 const PackageInstance = require("../models/packageInstance");
@@ -7,6 +8,7 @@ const {
   cleanupFacesForExternalImageIds,
 } = require("../utils/rekognition");
 const { sendErr } = require("../utils/sendErr");
+const { moderateImage } = require("../utils/moderation");
 
 const enrollFace = async (req, res) => {
   const requestId = req.requestId || null;
@@ -54,6 +56,21 @@ const enrollFace = async (req, res) => {
     const image = req.file;
     if (!image || !image.buffer) {
       return res.status(400).json({ error: "FACE_REQUIRED_FOR_ENROLLMENT", requestId });
+    }
+
+    // Image moderation — must pass before sending bytes to Rekognition
+    const imageRefForLog = crypto.createHash("sha256").update(image.buffer).digest("hex").slice(0, 16);
+    const moderationMime = image.mimetype && image.mimetype.startsWith("image/")
+      ? image.mimetype
+      : "image/jpeg";
+    const moderationDataUrl = `data:${moderationMime};base64,${image.buffer.toString("base64")}`;
+    const moderationResult = await moderateImage(moderationDataUrl, { imageRef: imageRefForLog });
+    if (!moderationResult.allowed) {
+      const errorCode =
+        moderationResult.failureReason === "MODERATION_UNAVAILABLE"
+          ? "IMAGE_MODERATION_UNAVAILABLE"
+          : "IMAGE_BLOCKED";
+      return res.status(400).json({ error: errorCode, requestId });
     }
 
     const externalImageId = instance._id?.toString?.() || null;
