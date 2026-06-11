@@ -122,6 +122,17 @@ export default function DashboardPage() {
   }, [modelInstancesError]);
 
   useEffect(() => {
+    if (checkoutStatus !== "promo_success") return;
+    clearCart();
+    clearApiCaches();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("ai-auth-changed"));
+    }
+    router.replace("/dashboard");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkoutStatus]);
+
+  useEffect(() => {
     if (checkoutStatus !== "success") return;
     if (checkoutKind === "addon") return;
     if (handledCheckoutRef.current) return;

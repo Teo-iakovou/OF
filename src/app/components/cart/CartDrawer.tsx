@@ -118,10 +118,8 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     setPromoError(null);
     try {
       await redeemPromoCode(trimmed);
-      // Success: navigate to dashboard — the dashboard's ?status=success useEffect
-      // handles clearCart, clearApiCaches, refresh, and URL cleanup.
       onClose();
-      router.push("/dashboard?status=success");
+      router.push("/dashboard?status=promo_success");
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
       const errorKey = code && KNOWN_PROMO_ERRORS.has(code) ? code : "errorGeneric";

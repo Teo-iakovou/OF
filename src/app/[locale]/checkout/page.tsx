@@ -90,7 +90,7 @@ const CheckoutContent = () => {
     setPromoError(null);
     try {
       await redeemPromoCode(trimmed);
-      router.push("/dashboard?status=success");
+      router.push("/dashboard?status=promo_success");
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
       const errorKey = code && KNOWN_PROMO_ERRORS.has(code) ? code : "errorGeneric";
