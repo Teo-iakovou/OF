@@ -14,8 +14,7 @@ import {
   Copy,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-
-const SUPPORT_EMAIL = "support@yourapp.com";
+import { SUPPORT_EMAIL } from "@/config/contact";
 
 type FaceEnrollModalProps = {
   open: boolean;
