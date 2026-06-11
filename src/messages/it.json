@@ -598,7 +598,9 @@
         "fabAriaLabel": "AI Coach",
         "defaultTitle": "AI Coach",
         "historyButton": "Cronologia",
-        "closeAriaLabel": "Chiudi"
+        "closeAriaLabel": "Chiudi",
+        "gatedTooltip": "Completa l'impostazione del volto per sbloccare l'AI Chat",
+        "gatedShortLabel": "Bloccato"
       },
       "historySidebar": {
         "title": "Cronologia AI Chat",
@@ -726,7 +728,8 @@
         "uploadSublabel": "Analizza una nuova foto",
         "chatSublabel": "Chiedi al coach AI",
         "videoSublabel": "Genera un video parlante",
-        "unavailable": "Non disponibile"
+        "unavailable": "Non disponibile",
+        "chatGatedSublabel": "Completa prima l'impostazione del volto"
       },
       "lastActivity": {
         "sectionLabel": "Ultima attività",
@@ -885,6 +888,39 @@
         "confirmDelete": "Elimina account definitivamente",
         "deleting": "Eliminazione…",
         "errorGeneric": "Qualcosa è andato storto. Riprova o contatta il supporto."
+      },
+      "dataExport": {
+        "title": "Esporta i miei dati",
+        "description": "Scarica una copia di tutti i tuoi dati in formato JSON. Include il profilo, i pacchetti, le conversazioni, l'elenco degli upload, i video generati, i consensi e lo storico delle attività.",
+        "downloadButton": "Scarica i miei dati",
+        "preparing": "Preparazione dei dati…",
+        "rateNote": "Puoi esportare i tuoi dati una volta all'ora.",
+        "errors": {
+          "cooldown": "Attendi ancora {minutes} minuto/i prima di richiedere un'altra esportazione.",
+          "generic": "Qualcosa è andato storto. Riprova."
+        }
+      },
+      "password": {
+        "changeTitle": "Cambia password",
+        "changeDescription": "Aggiorna la password usata per accedere con l'email.",
+        "setTitle": "Imposta una password",
+        "setDescription": "Accedi attualmente con Google. Imposta una password per poter accedere anche con email e password.",
+        "oldPasswordPlaceholder": "Password attuale",
+        "newPasswordPlaceholder": "Nuova password (min. 8 caratteri)",
+        "confirmPasswordPlaceholder": "Conferma nuova password",
+        "hintMinLength": "La password deve contenere almeno 8 caratteri.",
+        "hintMismatch": "Le password non corrispondono.",
+        "changeButton": "Cambia password",
+        "setButton": "Imposta password",
+        "submitting": "Salvataggio…",
+        "success": "Password aggiornata.",
+        "errors": {
+          "PASSWORD_TOO_SHORT": "La password deve contenere almeno 8 caratteri.",
+          "OLD_PASSWORD_REQUIRED": "La password attuale è obbligatoria.",
+          "OLD_PASSWORD_INCORRECT": "La password attuale non è corretta.",
+          "PASSWORD_UNCHANGED": "La nuova password deve essere diversa da quella attuale.",
+          "GENERIC": "Qualcosa è andato storto. Riprova."
+        }
       }
     },
     "packagesModal": {
@@ -1359,5 +1395,64 @@
     "invalidPackage": "Pacchetto non valido.",
     "loadingUser": "Caricamento…",
     "backToPlans": "Sfoglia i piani"
+  },
+  "subProcessors": {
+    "title": "Responsabili del trattamento",
+    "lastUpdated": "Ultimo aggiornamento",
+    "intro": "Echofy utilizza fornitori di servizi terzi ('responsabili del trattamento') per gestire la nostra piattaforma. Ciascun responsabile tratta i dati degli utenti solo secondo le nostre istruzioni e in base a un Accordo sul trattamento dei dati (DPA) conforme all'articolo 28 del GDPR.",
+    "activeListHeading": "Responsabili attivi",
+    "activeListDescription": "La tabella seguente elenca tutti i fornitori terzi che potrebbero trattare dati personali per vostro conto.",
+    "table": {
+      "processor": "Fornitore",
+      "purpose": "Finalità",
+      "dataCategories": "Categorie di dati",
+      "location": "Sede",
+      "transferMechanism": "Meccanismo di trasferimento",
+      "privacyPolicyLink": "Informativa sulla privacy"
+    },
+    "processors": {
+      "openai": {
+        "purpose": "Generazione di contenuti AI, didascalie, chat, outreach",
+        "dataCategories": "Metadati dell'account, dati di utilizzo, immagini caricate, input della chat"
+      },
+      "heygen": {
+        "purpose": "Generazione di video con testa parlante",
+        "dataCategories": "Foto del volto, audio vocale, testo dello script"
+      },
+      "aws_rekognition": {
+        "purpose": "Rilevamento del volto e registrazione della somiglianza",
+        "dataCategories": "Foto del volto (dato biometrico)"
+      },
+      "cloudflare_r2": {
+        "purpose": "Archiviazione oggetti (file multimediali)",
+        "dataCategories": "File multimediali caricati, dati del profilo"
+      },
+      "stripe": {
+        "purpose": "Elaborazione pagamenti e abbonamenti",
+        "dataCategories": "Dati di pagamento, email, storico fatturazione"
+      },
+      "mongodb_atlas": {
+        "purpose": "Database principale",
+        "dataCategories": "Tutti i dati dell'account e di utilizzo dell'applicazione"
+      },
+      "google_oauth": {
+        "purpose": "Autenticazione OAuth (accesso con Google)",
+        "dataCategories": "Email, profilo pubblico Google"
+      },
+      "railway": {
+        "purpose": "Hosting backend ed esecuzione dei processi",
+        "dataCategories": "Log dell'applicazione, variabili d'ambiente"
+      },
+      "netlify": {
+        "purpose": "Hosting frontend e CDN",
+        "dataCategories": "Log di accesso, asset statici"
+      }
+    },
+    "biometricHeading": "Categoria speciale: dati biometrici",
+    "biometricNotice": "Le foto del volto vengono trattate come identificatori biometrici ai sensi dell'articolo 9 del GDPR. Ci basiamo sul consenso esplicito dell'utente per questo trattamento. Puoi revocare il consenso in qualsiasi momento eliminando il tuo account. Alla cancellazione, i dati biometrici vengono rimossi dal nostro database, dall'archiviazione Cloudflare R2, dalla raccolta AWS Rekognition e dall'account HeyGen, in conformità con l'articolo 17 del GDPR.",
+    "changesHeading": "Modifiche ai responsabili del trattamento",
+    "changesNotice": "Potremmo aggiornare questo elenco man mano che integriamo o rimuoviamo servizi di terze parti. Le modifiche sostanziali saranno comunicate tramite notifica in-app o e-mail agli utenti attivi con almeno 30 giorni di anticipo.",
+    "contactHeading": "Domande",
+    "contactNotice": "Per domande sui nostri responsabili del trattamento o sull'elaborazione dei dati, contatta il nostro team privacy all'indirizzo"
   }
 }

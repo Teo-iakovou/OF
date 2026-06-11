@@ -598,7 +598,9 @@
         "fabAriaLabel": "AI Coach",
         "defaultTitle": "AI Coach",
         "historyButton": "History",
-        "closeAriaLabel": "Close"
+        "closeAriaLabel": "Close",
+        "gatedTooltip": "Complete face setup to unlock AI Chat",
+        "gatedShortLabel": "Locked"
       },
       "historySidebar": {
         "title": "AI Chat History",
@@ -741,7 +743,8 @@
         "uploadSublabel": "Analyze a new photo",
         "chatSublabel": "Ask the AI coach",
         "videoSublabel": "Generate talking video",
-        "unavailable": "Unavailable"
+        "unavailable": "Unavailable",
+        "chatGatedSublabel": "Complete face setup first"
       },
       "lastActivity": {
         "sectionLabel": "Last activity",
@@ -914,6 +917,39 @@
         "confirmDelete": "Delete account permanently",
         "deleting": "Deleting…",
         "errorGeneric": "Something went wrong. Please try again or contact support."
+      },
+      "dataExport": {
+        "title": "Export my data",
+        "description": "Download a copy of all your data in JSON format. Includes your profile, packages, conversations, uploads list, generated videos, consents, and activity history.",
+        "downloadButton": "Download my data",
+        "preparing": "Preparing your data…",
+        "rateNote": "You can export your data once per hour.",
+        "errors": {
+          "cooldown": "Please wait {minutes} more minute(s) before requesting another export.",
+          "generic": "Something went wrong. Please try again."
+        }
+      },
+      "password": {
+        "changeTitle": "Change password",
+        "changeDescription": "Update the password used to sign in with email.",
+        "setTitle": "Set a password",
+        "setDescription": "You currently sign in with Google. Set a password to also be able to sign in with email and password.",
+        "oldPasswordPlaceholder": "Current password",
+        "newPasswordPlaceholder": "New password (min. 8 characters)",
+        "confirmPasswordPlaceholder": "Confirm new password",
+        "hintMinLength": "Password must be at least 8 characters.",
+        "hintMismatch": "Passwords don't match.",
+        "changeButton": "Change password",
+        "setButton": "Set password",
+        "submitting": "Saving…",
+        "success": "Password updated.",
+        "errors": {
+          "PASSWORD_TOO_SHORT": "Password must be at least 8 characters.",
+          "OLD_PASSWORD_REQUIRED": "Current password is required.",
+          "OLD_PASSWORD_INCORRECT": "Current password is incorrect.",
+          "PASSWORD_UNCHANGED": "New password must be different from current password.",
+          "GENERIC": "Something went wrong. Please try again."
+        }
       }
     },
     "packagesModal": {
@@ -1472,5 +1508,64 @@
     "invalidPackage": "Invalid package.",
     "loadingUser": "Loading…",
     "backToPlans": "Browse plans"
+  },
+  "subProcessors": {
+    "title": "Sub-processors",
+    "lastUpdated": "Last updated",
+    "intro": "We use the third-party services listed below to operate echo-fy. Each sub-processor processes a specific category of personal data on our instructions and under a Data Processing Agreement (DPA). We use Standard Contractual Clauses (SCCs) for any transfer of personal data outside the European Economic Area, in accordance with GDPR Articles 44–49.",
+    "activeListHeading": "Current sub-processors",
+    "activeListDescription": "Active as of the last updated date above.",
+    "table": {
+      "processor": "Processor",
+      "purpose": "Purpose",
+      "dataCategories": "Data categories",
+      "location": "Location",
+      "transferMechanism": "Transfer mechanism",
+      "privacyPolicyLink": "Privacy policy"
+    },
+    "processors": {
+      "openai": {
+        "purpose": "AI content moderation, caption generation, AI chat",
+        "dataCategories": "Chat messages, uploaded image content (moderation only), AI generation inputs"
+      },
+      "heygen": {
+        "purpose": "AI talking-head video generation",
+        "dataCategories": "Face photo, voice/script input, generated video"
+      },
+      "aws_rekognition": {
+        "purpose": "Face verification (biometric matching)",
+        "dataCategories": "Face feature vectors (biometric identifier)"
+      },
+      "cloudflare_r2": {
+        "purpose": "Object storage for uploaded photos and generated content",
+        "dataCategories": "Uploaded photos, generated videos, derived assets"
+      },
+      "stripe": {
+        "purpose": "Payment processing, subscription management",
+        "dataCategories": "Name, email, billing address, payment method details"
+      },
+      "mongodb_atlas": {
+        "purpose": "Primary application database",
+        "dataCategories": "Account data, package data, chat history, usage logs"
+      },
+      "google_oauth": {
+        "purpose": "Sign-in via Google",
+        "dataCategories": "Google account email, profile name, OAuth subject ID"
+      },
+      "railway": {
+        "purpose": "Backend application hosting",
+        "dataCategories": "All API traffic, server logs"
+      },
+      "netlify": {
+        "purpose": "Frontend application hosting (CDN + edge functions)",
+        "dataCategories": "Page load logs, edge function invocations"
+      }
+    },
+    "biometricHeading": "Special category: biometric data",
+    "biometricNotice": "Face photos are processed as biometric identifiers under GDPR Article 9. We rely on your explicit consent for this processing. You can withdraw consent at any time by deleting your account. Upon deletion, biometric data is removed from our database, Cloudflare R2 storage, AWS Rekognition collection, and HeyGen account, in accordance with GDPR Article 17.",
+    "changesHeading": "Changes to sub-processors",
+    "changesNotice": "We may update this list as we onboard or remove third-party services. Material changes will be communicated via in-app notification or email to active users at least 30 days before they take effect.",
+    "contactHeading": "Questions",
+    "contactNotice": "For questions about our sub-processors or data processing, contact our privacy team at"
   }
 }

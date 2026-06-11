@@ -4,7 +4,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageCircle, X } from "lucide-react";
+import { Lock, MessageCircle, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useFloatingChat } from "@/app/components/AIchat/FloatingChatContext";
@@ -15,6 +15,7 @@ import {
   formatContentInfo,
 } from "@/app/utils/api";
 import { usePlanInfo } from "@/app/dashboard/PlanContext";
+import { useChatAvailability } from "@/app/hooks/useChatAvailability";
 
 // Lazy-load chat pieces
 const CoachChat = dynamic(() => import("@/app/components/AIchat/CoachChat"), { ssr: false });
@@ -47,6 +48,7 @@ export default function FloatingChatWidget() {
   const t = useTranslations("dashboard.aiChat.floating");
   const isClient = useIsClient();
   const isMobile = useIsMobile();
+  const availability = useChatAvailability();
   const {
     isOpen,
     open,
@@ -293,6 +295,10 @@ export default function FloatingChatWidget() {
 
   if (!isClient) return null;
 
+  if (!availability.available && availability.reason === "NO_PACKAGE") return null;
+
+  const isGated = !availability.available && availability.reason === "FACE_NOT_ENROLLED";
+
   // "+ New" from history dropdown — clear persisted id so next message creates fresh
   async function handleNewChat() {
     const newId = await createEmptyConversation(activePackageInstanceId);
@@ -307,10 +313,11 @@ export default function FloatingChatWidget() {
       {/* Floating, draggable button */}
       {!isOpen ? (
         <button
-          ref={fabRef}
-          aria-label={t("fabAriaLabel")}
-          onPointerDown={isMobile ? undefined : onFabPointerDown}
-          onClick={() => {
+          ref={isGated ? undefined : fabRef}
+          aria-label={isGated ? t("gatedTooltip") : t("fabAriaLabel")}
+          title={isGated ? t("gatedTooltip") : undefined}
+          onPointerDown={isGated ? undefined : (isMobile ? undefined : onFabPointerDown)}
+          onClick={isGated ? undefined : () => {
             // ignore click when pointer interaction was a drag/drop (desktop only)
             if (!isMobile && (dragState.current.dragging || dragState.current.suppressClick)) {
               dragState.current.suppressClick = false;
@@ -336,10 +343,15 @@ export default function FloatingChatWidget() {
             touchAction: "none",
             willChange: "transform",
           }}
-          className="relative h-12 w-12 rounded-full shadow-lg border border-gray-700 bg-gray-900 text-white flex items-center justify-center active:scale-95 md:cursor-grab md:active:cursor-grabbing"
+          className={`relative h-12 w-12 rounded-full shadow-lg border border-gray-700 bg-gray-900 text-white flex items-center justify-center ${isGated ? "opacity-50 cursor-not-allowed" : "active:scale-95 md:cursor-grab md:active:cursor-grabbing"}`}
         >
           <MessageCircle className="h-6 w-6" />
-          {showDot && (
+          {isGated && (
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gray-800 border border-gray-600">
+              <Lock className="h-2.5 w-2.5 text-gray-300" />
+            </span>
+          )}
+          {!isGated && showDot && (
             <span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500" />
           )}
         </button>

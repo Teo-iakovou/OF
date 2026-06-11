@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { UploadCloud, MessageCircle, Video } from "lucide-react";
 import { useFloatingChat } from "@/app/components/AIchat/FloatingChatContext";
+import { usePlanInfo } from "@/app/dashboard/PlanContext";
 
 type QuickActionsProps = {
   uploadsRemaining?: number | null;
@@ -82,6 +83,8 @@ export default function QuickActions({
 }: QuickActionsProps) {
   const t = useTranslations("dashboard.home.quickActions");
   const { open: openChat } = useFloatingChat();
+  const { data: planData } = usePlanInfo();
+  const isChatGated = planData?.faceEnrolled === false;
 
   return (
     <div className={`h-full flex flex-col justify-between rounded-2xl border border-[var(--hg-border)] bg-[var(--hg-surface)] p-5 shadow-sm shadow-black/20${className ? ` ${className}` : ""}`}>
@@ -98,8 +101,8 @@ export default function QuickActions({
         <ActionButton
           icon={<MessageCircle className="h-5 w-5" />}
           label={t("aiChat")}
-          sublabel={t("chatSublabel")}
-          disabled={isExhausted(chatRemaining)}
+          sublabel={isChatGated ? t("chatGatedSublabel") : t("chatSublabel")}
+          disabled={isExhausted(chatRemaining) || isChatGated}
           onClick={openChat}
         />
         <ActionButton

@@ -598,7 +598,9 @@
         "fabAriaLabel": "AI Coach",
         "defaultTitle": "AI Coach",
         "historyButton": "Historial",
-        "closeAriaLabel": "Cerrar"
+        "closeAriaLabel": "Cerrar",
+        "gatedTooltip": "Completa la configuración facial para desbloquear el AI Chat",
+        "gatedShortLabel": "Bloqueado"
       },
       "historySidebar": {
         "title": "Historial de AI Chat",
@@ -726,7 +728,8 @@
         "uploadSublabel": "Analiza una nueva foto",
         "chatSublabel": "Pregunta al coach de IA",
         "videoSublabel": "Genera un video animado",
-        "unavailable": "No disponible"
+        "unavailable": "No disponible",
+        "chatGatedSublabel": "Completa la configuración facial primero"
       },
       "lastActivity": {
         "sectionLabel": "Última actividad",
@@ -885,6 +888,39 @@
         "confirmDelete": "Eliminar cuenta permanentemente",
         "deleting": "Eliminando…",
         "errorGeneric": "Algo salió mal. Inténtalo de nuevo o contacta con soporte."
+      },
+      "dataExport": {
+        "title": "Exportar mis datos",
+        "description": "Descarga una copia de todos tus datos en formato JSON. Incluye tu perfil, paquetes, conversaciones, lista de subidas, vídeos generados, consentimientos e historial de actividad.",
+        "downloadButton": "Descargar mis datos",
+        "preparing": "Preparando tus datos…",
+        "rateNote": "Puedes exportar tus datos una vez por hora.",
+        "errors": {
+          "cooldown": "Espera {minutes} minuto(s) más antes de solicitar otra exportación.",
+          "generic": "Algo salió mal. Inténtalo de nuevo."
+        }
+      },
+      "password": {
+        "changeTitle": "Cambiar contraseña",
+        "changeDescription": "Actualiza la contraseña que usas para iniciar sesión con email.",
+        "setTitle": "Establecer contraseña",
+        "setDescription": "Actualmente inicias sesión con Google. Establece una contraseña para poder iniciar sesión también con email y contraseña.",
+        "oldPasswordPlaceholder": "Contraseña actual",
+        "newPasswordPlaceholder": "Nueva contraseña (mín. 8 caracteres)",
+        "confirmPasswordPlaceholder": "Confirmar nueva contraseña",
+        "hintMinLength": "La contraseña debe tener al menos 8 caracteres.",
+        "hintMismatch": "Las contraseñas no coinciden.",
+        "changeButton": "Cambiar contraseña",
+        "setButton": "Establecer contraseña",
+        "submitting": "Guardando…",
+        "success": "Contraseña actualizada.",
+        "errors": {
+          "PASSWORD_TOO_SHORT": "La contraseña debe tener al menos 8 caracteres.",
+          "OLD_PASSWORD_REQUIRED": "Se requiere la contraseña actual.",
+          "OLD_PASSWORD_INCORRECT": "La contraseña actual es incorrecta.",
+          "PASSWORD_UNCHANGED": "La nueva contraseña debe ser diferente a la actual.",
+          "GENERIC": "Algo salió mal. Inténtalo de nuevo."
+        }
       }
     },
     "packagesModal": {
@@ -1359,5 +1395,64 @@
     "invalidPackage": "Paquete no válido.",
     "loadingUser": "Cargando…",
     "backToPlans": "Ver planes"
+  },
+  "subProcessors": {
+    "title": "Subencargados del tratamiento",
+    "lastUpdated": "Última actualización",
+    "intro": "Echofy utiliza proveedores de servicios externos ('subencargados') para operar nuestra plataforma. Cada subencargado procesa datos de usuarios únicamente según nuestras instrucciones y bajo un Acuerdo de Tratamiento de Datos (DPA) conforme al artículo 28 del RGPD.",
+    "activeListHeading": "Subencargados activos",
+    "activeListDescription": "La siguiente tabla enumera todos los proveedores externos que pueden tratar datos personales en su nombre.",
+    "table": {
+      "processor": "Proveedor",
+      "purpose": "Finalidad",
+      "dataCategories": "Categorías de datos",
+      "location": "Ubicación",
+      "transferMechanism": "Mecanismo de transferencia",
+      "privacyPolicyLink": "Política de privacidad"
+    },
+    "processors": {
+      "openai": {
+        "purpose": "Generación de contenido con IA, subtítulos, chat, alcance",
+        "dataCategories": "Metadatos de cuenta, datos de uso, imágenes subidas, entradas de chat"
+      },
+      "heygen": {
+        "purpose": "Generación de vídeo con cabeza parlante",
+        "dataCategories": "Foto facial, audio de voz, texto del guion"
+      },
+      "aws_rekognition": {
+        "purpose": "Detección de rostros e inscripción de similitud",
+        "dataCategories": "Foto facial (dato biométrico)"
+      },
+      "cloudflare_r2": {
+        "purpose": "Almacenamiento de objetos (archivos multimedia)",
+        "dataCategories": "Archivos multimedia subidos, datos de perfil"
+      },
+      "stripe": {
+        "purpose": "Procesamiento de pagos y suscripciones",
+        "dataCategories": "Datos de pago, correo electrónico, historial de facturación"
+      },
+      "mongodb_atlas": {
+        "purpose": "Base de datos principal",
+        "dataCategories": "Todos los datos de cuenta y de uso de la aplicación"
+      },
+      "google_oauth": {
+        "purpose": "Autenticación OAuth (inicio de sesión con Google)",
+        "dataCategories": "Correo electrónico, perfil público de Google"
+      },
+      "railway": {
+        "purpose": "Alojamiento del backend y ejecución de trabajos",
+        "dataCategories": "Registros de la aplicación, variables de entorno"
+      },
+      "netlify": {
+        "purpose": "Alojamiento del frontend y CDN",
+        "dataCategories": "Registros de acceso, activos estáticos"
+      }
+    },
+    "biometricHeading": "Categoría especial: datos biométricos",
+    "biometricNotice": "Las fotos faciales se tratan como identificadores biométricos conforme al artículo 9 del RGPD. Nos basamos en su consentimiento explícito para este tratamiento. Puede retirar su consentimiento en cualquier momento eliminando su cuenta. Tras la eliminación, los datos biométricos se borran de nuestra base de datos, el almacenamiento Cloudflare R2, la colección AWS Rekognition y la cuenta HeyGen, de conformidad con el artículo 17 del RGPD.",
+    "changesHeading": "Cambios en los subencargados",
+    "changesNotice": "Podemos actualizar esta lista a medida que incorporamos o eliminamos servicios de terceros. Los cambios materiales se comunicarán mediante notificación en la aplicación o por correo electrónico a los usuarios activos con al menos 30 días de antelación.",
+    "contactHeading": "Preguntas",
+    "contactNotice": "Si tiene preguntas sobre nuestros subencargados o el tratamiento de datos, póngase en contacto con nuestro equipo de privacidad en"
   }
 }
