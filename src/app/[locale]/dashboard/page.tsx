@@ -316,9 +316,9 @@ export default function DashboardPage() {
     if (checkoutKind !== "addon") return;
     if (!checkoutStatus) return;
     if (handledAddonCheckoutRef.current) return;
-    handledAddonCheckoutRef.current = true;
 
     if (checkoutStatus === "cancel") {
+      handledAddonCheckoutRef.current = true;
       toast.info(tBillingPage("toasts.checkoutCancelled"));
       router.replace("/dashboard", { scroll: false });
       return;
@@ -326,80 +326,96 @@ export default function DashboardPage() {
 
     if (checkoutStatus !== "success" || !checkoutSessionId) return;
 
+    // Defer async work past React Strict Mode's synchronous mount→cleanup→remount
+    // cycle. The first mount's timeout is cancelled by cleanup before it fires;
+    // only the surviving second mount actually runs polling and shows toasts.
     let cancelled = false;
     let verifyingToastId: string | number | undefined;
 
-    (async () => {
-      verifyingToastId = toast.custom(
-        () => (
-          <div className="flex w-[320px] items-center gap-3 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-3 shadow-xl">
-            <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-cyan-400/30 border-t-cyan-400" />
-            <p className="text-sm text-[var(--hg-text)]">{tBillingPage("toasts.verifyingPurchase")}</p>
-          </div>
-        ),
-        { duration: Infinity }
-      );
-
-      const backoff = [2000, 3000, 5000, 5000, 5000];
-      let applied = false;
-      let verifyResult: Awaited<ReturnType<typeof verifyAddonSession>> | null = null;
-
-      for (const delay of backoff) {
-        await new Promise<void>((resolve) => setTimeout(resolve, delay));
-        if (cancelled) break;
-        try {
-          const res = await verifyAddonSession(checkoutSessionId);
-          if (res?.applied) {
-            applied = true;
-            verifyResult = res;
-            break;
-          }
-        } catch {
-          // Keep polling; webhook delivery can lag behind the redirect.
-        }
-      }
-
-      toast.dismiss(verifyingToastId);
+    const timeoutId = setTimeout(() => {
       if (cancelled) return;
+      if (handledAddonCheckoutRef.current) return;
+      handledAddonCheckoutRef.current = true;
 
-      if (applied) {
-        clearApiCaches();
-        await planInfo.refresh(true);
-        await refresh(true, true);
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("dashboard:addon-purchase-applied"));
-          window.dispatchEvent(new Event("ai-auth-changed"));
-        }
-        const delta = verifyResult?.delta;
-        let successMsg = tBillingPage("toasts.addonSuccess.generic");
-        if (delta?.addonType && delta?.addonQty) {
-          const qty =
-            delta.addonType === "chat"
-              ? `${delta.addonQty / 1_000_000}M`
-              : String(delta.addonQty);
-          if (delta.addonType === "videos") {
-            successMsg = tBillingPage("toasts.addonSuccess.videos", { qty });
-          } else if (delta.addonType === "uploads") {
-            successMsg = tBillingPage("toasts.addonSuccess.uploads", { qty });
-          } else if (delta.addonType === "chat") {
-            successMsg = tBillingPage("toasts.addonSuccess.chat", { qty });
+      (async () => {
+        verifyingToastId = toast.custom(
+          () => (
+            <div className="flex w-[320px] items-center gap-3 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-3 shadow-xl">
+              <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-cyan-400/30 border-t-cyan-400" />
+              <p className="text-sm text-[var(--hg-text)]">{tBillingPage("toasts.verifyingPurchase")}</p>
+            </div>
+          ),
+          { duration: Infinity }
+        );
+
+        const backoff = [2000, 3000, 5000, 5000, 5000];
+        let applied = false;
+        let verifyResult: Awaited<ReturnType<typeof verifyAddonSession>> | null = null;
+
+        for (const delay of backoff) {
+          await new Promise<void>((resolve) => setTimeout(resolve, delay));
+          if (cancelled) break;
+          try {
+            const res = await verifyAddonSession(checkoutSessionId);
+            if (res?.applied) {
+              applied = true;
+              verifyResult = res;
+              break;
+            }
+          } catch {
+            // Keep polling; webhook delivery can lag behind the redirect.
           }
         }
-        toast.success(successMsg);
-        router.replace("/dashboard", { scroll: false });
-        return;
-      }
 
-      toast(tBillingPage("toasts.creditsPending"), {
-        description: tBillingPage("toasts.creditsPendingDesc"),
-        duration: 10000,
-      });
-      router.replace("/dashboard", { scroll: false });
-    })();
+        if (verifyingToastId !== undefined) {
+          toast.dismiss(verifyingToastId);
+          verifyingToastId = undefined;
+        }
+        if (cancelled) return;
+
+        if (applied) {
+          clearApiCaches();
+          await planInfo.refresh(true);
+          await refresh(true, true);
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("dashboard:addon-purchase-applied"));
+            window.dispatchEvent(new Event("ai-auth-changed"));
+          }
+          const delta = verifyResult?.delta;
+          let successMsg = tBillingPage("toasts.addonSuccess.generic");
+          if (delta?.addonType && delta?.addonQty) {
+            const qty =
+              delta.addonType === "chat"
+                ? `${delta.addonQty / 1_000_000}M`
+                : String(delta.addonQty);
+            if (delta.addonType === "videos") {
+              successMsg = tBillingPage("toasts.addonSuccess.videos", { qty });
+            } else if (delta.addonType === "uploads") {
+              successMsg = tBillingPage("toasts.addonSuccess.uploads", { qty });
+            } else if (delta.addonType === "chat") {
+              successMsg = tBillingPage("toasts.addonSuccess.chat", { qty });
+            }
+          }
+          toast.success(successMsg);
+          router.replace("/dashboard", { scroll: false });
+          return;
+        }
+
+        toast(tBillingPage("toasts.creditsPending"), {
+          description: tBillingPage("toasts.creditsPendingDesc"),
+          duration: 10000,
+        });
+        router.replace("/dashboard", { scroll: false });
+      })();
+    }, 0);
 
     return () => {
       cancelled = true;
-      if (verifyingToastId !== undefined) toast.dismiss(verifyingToastId);
+      clearTimeout(timeoutId);
+      if (verifyingToastId !== undefined) {
+        toast.dismiss(verifyingToastId);
+        verifyingToastId = undefined;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkoutKind, checkoutStatus, checkoutSessionId]);
