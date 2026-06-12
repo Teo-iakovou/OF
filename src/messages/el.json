@@ -1307,7 +1307,13 @@
         "creditsPendingDesc": "Η αγορά ολοκληρώθηκε. Τα credits θα εμφανιστούν σε λίγο.",
         "checkAgain": "Δοκίμασε ξανά",
         "checkoutCancelled": "Η αγορά ακυρώθηκε.",
-        "planActivated": "Το πακέτο ενεργοποιήθηκε!"
+        "planActivated": "Το πακέτο ενεργοποιήθηκε!",
+        "addonSuccess": {
+          "videos": "{qty} video credits προστέθηκαν!",
+          "uploads": "{qty} upload credits προστέθηκαν!",
+          "chat": "{qty} chat tokens προστέθηκαν!",
+          "generic": "Credits προστέθηκαν!"
+        }
       }
     },
     "profileSwitcher": {

@@ -1307,7 +1307,13 @@
         "creditsPendingDesc": "Your purchase went through. Credits should arrive in a moment.",
         "checkAgain": "Check again",
         "checkoutCancelled": "Checkout cancelled.",
-        "planActivated": "Plan activated!"
+        "planActivated": "Plan activated!",
+        "addonSuccess": {
+          "videos": "{qty} video credits added!",
+          "uploads": "{qty} upload credits added!",
+          "chat": "{qty} chat tokens added!",
+          "generic": "Credits added!"
+        }
       }
     },
     "profileSwitcher": {

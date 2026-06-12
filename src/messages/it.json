@@ -1214,7 +1214,13 @@
         "creditsPendingDesc": "L'acquisto è andato a buon fine. I crediti arriveranno a breve.",
         "checkAgain": "Riprova",
         "checkoutCancelled": "Checkout annullato.",
-        "planActivated": "Piano attivato!"
+        "planActivated": "Piano attivato!",
+        "addonSuccess": {
+          "videos": "{qty} video credits aggiunti!",
+          "uploads": "{qty} upload credits aggiunti!",
+          "chat": "{qty} chat tokens aggiunti!",
+          "generic": "Credits aggiunti!"
+        }
       }
     },
     "profileSwitcher": {

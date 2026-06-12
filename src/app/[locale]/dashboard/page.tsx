@@ -320,16 +320,17 @@ export default function DashboardPage() {
 
     if (checkoutStatus === "cancel") {
       toast.info(tBillingPage("toasts.checkoutCancelled"));
-      router.replace("/dashboard?settings=1&tab=billing", { scroll: false });
+      router.replace("/dashboard", { scroll: false });
       return;
     }
 
     if (checkoutStatus !== "success" || !checkoutSessionId) return;
 
     let cancelled = false;
+    let verifyingToastId: string | number | undefined;
 
     (async () => {
-      const verifyingToastId = toast.custom(
+      verifyingToastId = toast.custom(
         () => (
           <div className="flex w-[320px] items-center gap-3 rounded-xl border border-[var(--hg-border)] bg-[var(--hg-surface-2)] px-4 py-3 shadow-xl">
             <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-cyan-400/30 border-t-cyan-400" />
@@ -341,6 +342,7 @@ export default function DashboardPage() {
 
       const backoff = [2000, 3000, 5000, 5000, 5000];
       let applied = false;
+      let verifyResult: Awaited<ReturnType<typeof verifyAddonSession>> | null = null;
 
       for (const delay of backoff) {
         await new Promise<void>((resolve) => setTimeout(resolve, delay));
@@ -349,6 +351,7 @@ export default function DashboardPage() {
           const res = await verifyAddonSession(checkoutSessionId);
           if (res?.applied) {
             applied = true;
+            verifyResult = res;
             break;
           }
         } catch {
@@ -367,8 +370,23 @@ export default function DashboardPage() {
           window.dispatchEvent(new Event("dashboard:addon-purchase-applied"));
           window.dispatchEvent(new Event("ai-auth-changed"));
         }
-        toast.success(tBillingPage("toasts.creditsAdded"));
-        router.replace("/dashboard?settings=1&tab=billing", { scroll: false });
+        const delta = verifyResult?.delta;
+        let successMsg = tBillingPage("toasts.addonSuccess.generic");
+        if (delta?.addonType && delta?.addonQty) {
+          const qty =
+            delta.addonType === "chat"
+              ? `${delta.addonQty / 1_000_000}M`
+              : String(delta.addonQty);
+          if (delta.addonType === "videos") {
+            successMsg = tBillingPage("toasts.addonSuccess.videos", { qty });
+          } else if (delta.addonType === "uploads") {
+            successMsg = tBillingPage("toasts.addonSuccess.uploads", { qty });
+          } else if (delta.addonType === "chat") {
+            successMsg = tBillingPage("toasts.addonSuccess.chat", { qty });
+          }
+        }
+        toast.success(successMsg);
+        router.replace("/dashboard", { scroll: false });
         return;
       }
 
@@ -376,11 +394,12 @@ export default function DashboardPage() {
         description: tBillingPage("toasts.creditsPendingDesc"),
         duration: 10000,
       });
-      router.replace("/dashboard?settings=1&tab=billing", { scroll: false });
+      router.replace("/dashboard", { scroll: false });
     })();
 
     return () => {
       cancelled = true;
+      if (verifyingToastId !== undefined) toast.dismiss(verifyingToastId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkoutKind, checkoutStatus, checkoutSessionId]);
