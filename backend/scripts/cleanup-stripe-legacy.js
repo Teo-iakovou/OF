@@ -4,7 +4,9 @@
 //
 // Usage:
 //   STRIPE_SECRET_KEY=sk_test_... node scripts/cleanup-stripe-legacy.js [--dry-run]
+//   STRIPE_SECRET_KEY=rk_test_... node scripts/cleanup-stripe-legacy.js [--dry-run]  (restricted key)
 //   STRIPE_SECRET_KEY=sk_live_... node scripts/cleanup-stripe-legacy.js --confirm
+//   STRIPE_SECRET_KEY=rk_live_... node scripts/cleanup-stripe-legacy.js --confirm     (restricted key)
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const path = require("path");
@@ -78,7 +80,7 @@ async function archivePack(pack, isDryRun, stats) {
 
 async function main() {
   const key = process.env.STRIPE_SECRET_KEY || "";
-  const isLive = key.startsWith("sk_live");
+  const isLive = key.startsWith("sk_live") || key.startsWith("rk_live");
   const mode = isLive ? "LIVE" : "TEST";
   const hasConfirmFlag = process.argv.includes("--confirm");
   const isDryRun = process.argv.includes("--dry-run");
@@ -88,12 +90,15 @@ async function main() {
     console.error("You are about to ARCHIVE products in your live Stripe account.");
     console.error("This will hide them from customers and break any active subscriptions using them.\n");
     console.error("To proceed, re-run with the --confirm flag:");
-    console.error(`  STRIPE_SECRET_KEY=sk_live_... node ${path.relative(process.cwd(), __filename)} --confirm\n`);
+    console.error(`  STRIPE_SECRET_KEY=sk_live_... node ${path.relative(process.cwd(), __filename)} --confirm`);
+    console.error(`  STRIPE_SECRET_KEY=rk_live_... node ${path.relative(process.cwd(), __filename)} --confirm  (restricted key)\n`);
     process.exit(1);
   }
 
-  if (!key || (!key.startsWith("sk_test") && !key.startsWith("sk_live"))) {
+  const validPrefixes = ["sk_test", "sk_live", "rk_test", "rk_live"];
+  if (!key || !validPrefixes.some((prefix) => key.startsWith(prefix))) {
     console.error("Error: STRIPE_SECRET_KEY is missing or invalid.");
+    console.error("Expected one of: sk_test_*, sk_live_*, rk_test_*, rk_live_*");
     process.exit(1);
   }
 

@@ -5,7 +5,9 @@
 //
 // Usage:
 //   STRIPE_SECRET_KEY=sk_test_... node scripts/seed-stripe-addons.js
+//   STRIPE_SECRET_KEY=rk_test_... node scripts/seed-stripe-addons.js          (restricted key)
 //   STRIPE_SECRET_KEY=sk_live_... node scripts/seed-stripe-addons.js --confirm
+//   STRIPE_SECRET_KEY=rk_live_... node scripts/seed-stripe-addons.js --confirm (restricted key)
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 require("dotenv").config({ path: require("path").join(__dirname, "../.env") });
@@ -66,7 +68,7 @@ async function seedPack(pack) {
 
 async function main() {
   const key = process.env.STRIPE_SECRET_KEY || "";
-  const isLive = key.startsWith("sk_live");
+  const isLive = key.startsWith("sk_live") || key.startsWith("rk_live");
   const mode = isLive ? "LIVE" : "TEST";
   const hasConfirmFlag = process.argv.includes("--confirm");
 
@@ -75,12 +77,15 @@ async function main() {
     console.error("You are about to seed REAL products in your live Stripe account.");
     console.error("This will create products visible to real customers.\n");
     console.error("To proceed, re-run with the --confirm flag:");
-    console.error(`  STRIPE_SECRET_KEY=sk_live_... node ${path.relative(process.cwd(), __filename)} --confirm\n`);
+    console.error(`  STRIPE_SECRET_KEY=sk_live_... node ${path.relative(process.cwd(), __filename)} --confirm`);
+    console.error(`  STRIPE_SECRET_KEY=rk_live_... node ${path.relative(process.cwd(), __filename)} --confirm  (restricted key)\n`);
     process.exit(1);
   }
 
-  if (!key || (!key.startsWith("sk_test") && !key.startsWith("sk_live"))) {
+  const validPrefixes = ["sk_test", "sk_live", "rk_test", "rk_live"];
+  if (!key || !validPrefixes.some((prefix) => key.startsWith(prefix))) {
     console.error("Error: STRIPE_SECRET_KEY is missing or invalid.");
+    console.error("Expected one of: sk_test_*, sk_live_*, rk_test_*, rk_live_*");
     process.exit(1);
   }
 
