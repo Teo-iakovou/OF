@@ -102,8 +102,8 @@ export default function LandingPage() {
   const [tilt, setTilt] = useState(0);
   const featureIcons = [BrainCircuit, Sparkles, MessageCircle, Video, Bot, Camera];
   const mediaSectionsMeta = [
-    { id: "preview-ai-strategy",     videoSrc: "/Avatar_IV_Video 1*.mp4",          ctaHref: "#pricing",   featured: true,  objectPos: "object-top"    },
-    { id: "preview-creator-workflow", videoSrc: "/Avatar IV Video_1080p 2*.mp4",    ctaHref: "#how",       featured: false, objectPos: "object-top"    },
+    { id: "preview-ai-strategy",     videoSrc: "/Avatar_IV_Video 1*.mp4",          ctaHref: "#pricing",   featured: true,  objectPos: "object-[50%_25%]" },
+    { id: "preview-creator-workflow", videoSrc: "/Avatar IV Video_1080p 2*.mp4",    ctaHref: "#how",       featured: false, objectPos: "object-[50%_10%]" },
     { id: "preview-avatar-content",  videoSrc: "/Avatar IV Video_1080p 3*.mp4",     ctaHref: "#features",  featured: false, objectPos: "object-center" },
   ] as const;
   const livePreviewSectionsRaw = t.raw("livePreview.sections");
