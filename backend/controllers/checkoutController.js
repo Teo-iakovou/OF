@@ -115,6 +115,7 @@ const createCheckoutSession = async (req, res) => {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      allow_promotion_codes: true,
       payment_method_types: ["card"],
       line_items: [
         {
@@ -216,6 +217,7 @@ const createAddonCheckoutSession = async (req, res) => {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      allow_promotion_codes: true,
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       metadata,
@@ -640,7 +642,12 @@ const verifyCheckoutSession = async (req, res) => {
       });
     } catch {}
 
-    if (!applied && session.payment_status === "paid" && email && packageId) {
+    if (
+      !applied &&
+      (session.payment_status === "paid" || session.payment_status === "no_payment_required") &&
+      email &&
+      packageId
+    ) {
       const fallbackEventId = `verify:${session.id}`;
       try {
         console.log("[verify-session:apply-guard]", {
@@ -877,7 +884,10 @@ const verifyAddonSession = async (req, res) => {
     const instance = await PackageInstance.findById(packageInstanceId);
     let applied = Boolean(instance && instance.lastAddonSessionId === session.id);
 
-    if (!applied && session.payment_status === "paid") {
+    if (
+      !applied &&
+      (session.payment_status === "paid" || session.payment_status === "no_payment_required")
+    ) {
       const pack = addonType && addonPack ? getAddonPack(addonType, addonPack) : null;
       const hasUserId = typeof meta.userId === "string" && meta.userId.length > 0;
       if (pack && (!hasUserId || mongoose.Types.ObjectId.isValid(meta.userId))) {
