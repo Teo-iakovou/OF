@@ -62,8 +62,10 @@ export default function LazyVideo({
     }
   }, [inView, mounted, pauseWhenOffscreen]);
 
+  const hasPosition = /\b(absolute|fixed|sticky|relative|static)\b/.test(className ?? "");
+
   return (
-    <div ref={wrapRef} className={`relative ${className ?? ""}`}>
+    <div ref={wrapRef} className={`${hasPosition ? "" : "relative "}${className ?? ""}`}>
       {mounted ? (
         <video
           ref={videoRef}
