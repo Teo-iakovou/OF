@@ -5,5 +5,5 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  return proxyToBackend(req, { path: "/api/consent", method: "POST", includeBody: true });
+  return proxyToBackend(req, { path: "/api/user/change-password", method: "POST", includeBody: true });
 }

@@ -4,6 +4,6 @@ import { proxyToBackend } from "@/app/api/_lib/proxy";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
-  return proxyToBackend(req, { path: "/api/consent", method: "POST", includeBody: true });
+export async function DELETE(req: NextRequest) {
+  return proxyToBackend(req, { path: "/api/user/account", method: "DELETE" });
 }

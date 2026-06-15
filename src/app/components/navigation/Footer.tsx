@@ -48,6 +48,7 @@ function FooterLinks() {
       <Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link>
       <Link href="/terms" className="hover:text-white transition">Terms of Service</Link>
       <Link href="/cookies" className="hover:text-white transition">Cookie Policy</Link>
+      <Link href="/sub-processors" className="hover:text-white transition">Sub-processors</Link>
     </div>
   );
 }

@@ -15,6 +15,8 @@ import { updateUserProfile } from "@/app/utils/api";
 import { FeedbackWidget } from "@/app/components/features/FeedbackWidget";
 import { logoutClient } from "@/app/utils/authClient";
 import DeleteAccountModal from "@/app/components/DeleteAccountModal";
+import ChangePasswordSection from "@/app/components/account/ChangePasswordSection";
+import DataExportSection from "@/app/components/account/DataExportSection";
 
 export type SettingsSection = "account" | "usage" | "billing" | "history";
 
@@ -457,6 +459,10 @@ export default function SettingsModal({
                     ) : null}
                   </div>
                 ) : null}
+
+                <DataExportSection />
+
+                <ChangePasswordSection />
 
                 {/* Danger Zone */}
                 <div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/5 p-4">

@@ -9,7 +9,9 @@ const { sendQuotaError } = require("../utils/quotaError");
 const { getQuotasForPlan } = require("../config/planQuotas");
 const { sendErr } = require("../utils/sendErr");
 const { signUrl, objectExists } = require("../utils/s3");
+const { hashPassword, verifyPassword } = require("../utils/password");
 const TOKENS_PER_LEGACY_CHAT_UNIT = 500;
+const PASSWORD_MIN = 8;
 
 const makeRequestId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -1207,6 +1209,59 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+async function passwordStatus(req, res) {
+  try {
+    const user = await User.findById(req.user.id).select("+passwordHash");
+    if (!user) return res.status(401).json({ error: "USER_NOT_FOUND" });
+    return res.status(200).json({ hasPassword: !!user.passwordHash });
+  } catch (err) {
+    console.error("[passwordStatus]", err);
+    return res.status(500).json({ error: "INTERNAL_ERROR" });
+  }
+}
+
+async function changePassword(req, res) {
+  try {
+    const { oldPassword, newPassword } = req.body || {};
+
+    if (typeof newPassword !== "string" || newPassword.length < PASSWORD_MIN) {
+      return res.status(400).json({ error: "PASSWORD_TOO_SHORT", minLength: PASSWORD_MIN });
+    }
+
+    const user = await User.findById(req.user.id).select("+passwordHash");
+    if (!user) return res.status(401).json({ error: "USER_NOT_FOUND" });
+
+    // Case B: Google-OAuth-only user setting a password for the first time
+    if (!user.passwordHash) {
+      user.passwordHash = await hashPassword(newPassword);
+      await user.save();
+      return res.status(200).json({ ok: true, action: "set" });
+    }
+
+    // Case A: standard change — old password required and must verify
+    if (typeof oldPassword !== "string" || !oldPassword) {
+      return res.status(400).json({ error: "OLD_PASSWORD_REQUIRED" });
+    }
+    const oldOk = await verifyPassword(oldPassword, user.passwordHash);
+    if (!oldOk) {
+      return res.status(401).json({ error: "OLD_PASSWORD_INCORRECT" });
+    }
+
+    // Prevent setting the same password
+    const sameAsOld = await verifyPassword(newPassword, user.passwordHash);
+    if (sameAsOld) {
+      return res.status(400).json({ error: "PASSWORD_UNCHANGED" });
+    }
+
+    user.passwordHash = await hashPassword(newPassword);
+    await user.save();
+    return res.status(200).json({ ok: true, action: "changed" });
+  } catch (err) {
+    console.error("[changePassword]", err);
+    return res.status(500).json({ error: "INTERNAL_ERROR" });
+  }
+}
+
 module.exports = {
   purchasePackage,
   checkUserPackage,
@@ -1220,4 +1275,6 @@ module.exports = {
   consumeSadtalkerCredit,
   consumeHeygenCredit,
   deleteAccount,
+  passwordStatus,
+  changePassword,
 };

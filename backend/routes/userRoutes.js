@@ -14,12 +14,15 @@ const {
   consumeSadtalkerCredit,
   consumeHeygenCredit,
   deleteAccount,
+  passwordStatus,
+  changePassword,
 } = require("../controllers/userController");
 const { verifyPersonaFace } = require("../middleware/verifyPersonaFace");
 const { guardActiveInstanceAndFace } = require("../middleware/guardActiveInstanceAndFace");
 const { requireAuth } = require("../middleware/requireAuth");
 const { requireAdmin } = require("../middleware/requireAdmin");
-const { videoGenerationLimiter } = require("../middleware/rateLimiters");
+const { videoGenerationLimiter, dataExportLimiter } = require("../middleware/rateLimiters");
+const userExportController = require("../controllers/userExportController");
 const multer = require("multer");
 
 const router = express.Router();
@@ -39,6 +42,9 @@ router.get(
 router.post("/addons", requireAuth, requireAdmin, grantAddons);
 router.post("/select-package-instance", selectPackageInstance);
 router.delete("/account", requireAuth, deleteAccount);
+router.get("/password-status", passwordStatus);
+router.post("/change-password", changePassword);
+router.get("/data-export", dataExportLimiter, userExportController.requestDataExport);
 router.post(
   "/sadtalker/consume",
   guardActiveInstanceAndFace({ requireFaceEnrolled: true }),

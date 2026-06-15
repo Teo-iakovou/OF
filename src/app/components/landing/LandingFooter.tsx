@@ -39,6 +39,7 @@ export default function LandingFooter() {
             <Link href="/privacy" className="hover:text-[var(--hg-accent)]">Privacy</Link>
             <Link href="/terms" className="hover:text-[var(--hg-accent)]">Terms</Link>
             <Link href="/cookies" className="hover:text-[var(--hg-accent)]">Cookie Policy</Link>
+            <Link href="/sub-processors" className="hover:text-[var(--hg-accent)]">Sub-processors</Link>
           </div>
         </div>
       </div>

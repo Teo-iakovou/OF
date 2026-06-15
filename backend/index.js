@@ -58,6 +58,7 @@ const recommendationRoutes = require("./routes/recommendations");
 const heygenRoutes = require("./routes/heygenRoutes");
 const promoRoutes = require("./routes/promo");
 const adminPromoRoutes = require("./routes/adminPromo");
+const consentRoutes = require("./routes/consent");
 const webhookController = require("./controllers/checkoutController");
 const PackageInstance = require("./models/packageInstance");
 const { requestIdMiddleware } = require("./middleware/requestId");
@@ -66,6 +67,10 @@ const { requireAuth } = require("./middleware/requireAuth");
 const { requireAdmin } = require("./middleware/requireAdmin");
 const { ensureRekognitionCollection } = require("./utils/rekognition");
 const { requestLogger } = require("./middleware/requestLogger");
+
+if (!process.env.CONSENT_IP_SALT) {
+  console.warn("[consent] CONSENT_IP_SALT is not set — using insecure fallback salt. Set this env var in production.");
+}
 
 
 const app = express();
@@ -128,6 +133,9 @@ if (process.env.NODE_ENV !== "production") {
 
 // ✅ Auth routes (public)
 app.use("/api/auth", authRoutes);
+
+// ✅ Consent route (public — anonymous visitors give consent before signup)
+app.use("/api/consent", consentRoutes);
 
 // ✅ Main API routes (protected)
 app.use("/api/analyze", requireAuth, analyzeRoutes);

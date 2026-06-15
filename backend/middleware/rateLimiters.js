@@ -106,6 +106,28 @@ const promoRedeemLimiter = makeIpLimiter({
   message: "Too many attempts, please try again in 15 minutes",
 });
 
+// 1 successful data export per hour per authenticated user — prevents abuse of expensive multi-query export
+// skipFailedRequests: true ensures only 200 responses consume the quota (errors don't burn the cooldown)
+const dataExportLimiter = (() => {
+  if (process.env.NODE_ENV === "test") return (_req, _res, next) => next();
+  return rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 1,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipFailedRequests: true,
+    keyGenerator: (req) => {
+      if (req.user?.id) return `uid:${req.user.id}`;
+      return req.ip || req.socket?.remoteAddress || "unknown";
+    },
+    handler: (req, res) => {
+      const key = req.user?.id ? `user:${req.user.id}` : (req.ip || req.socket?.remoteAddress || "unknown");
+      console.log(`[RATE LIMIT] data-export: ${key} blocked`);
+      res.status(429).json({ error: "EXPORT_COOLDOWN" });
+    },
+  });
+})();
+
 module.exports = {
   authLimiter,
   passwordResetLimiter,
@@ -114,4 +136,5 @@ module.exports = {
   uploadLimiter,
   verifySessionLimiter,
   promoRedeemLimiter,
+  dataExportLimiter,
 };

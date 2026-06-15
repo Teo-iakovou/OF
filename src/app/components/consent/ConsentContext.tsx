@@ -86,6 +86,9 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
 
   const save = useCallback(async (cats: Omit<ConsentCategories, "necessary">) => {
     const gpc = typeof navigator !== "undefined" && (navigator as any).globalPrivacyControl === true;
+    // "granted" on first acceptance, "updated" when changing existing preferences
+    let action: "granted" | "updated" = "granted";
+    try { if (localStorage.getItem(CONSENT_KEY)) action = "updated"; } catch {}
     const rec: ConsentRecord = {
       categories: { necessary: true, ...cats },
       timestamp: Date.now(),
@@ -98,7 +101,11 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
 
     // fire-and-forget log
     try {
-      fetch("/api/consent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rec) });
+      fetch("/api/consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...rec, action }),
+      });
     } catch {}
 
     setRawIsOpen(false);
