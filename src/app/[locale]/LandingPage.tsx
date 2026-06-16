@@ -102,8 +102,8 @@ export default function LandingPage() {
   const [tilt, setTilt] = useState(0);
   const featureIcons = [BrainCircuit, Sparkles, MessageCircle, Video, Bot, Camera];
   const mediaSectionsMeta = [
-    { id: "preview-ai-strategy",     videoSrc: "/Avatar_IV_Video 1*.mp4",          ctaHref: "#pricing",   featured: true,  objectPos: "object-[50%_25%]" },
-    { id: "preview-creator-workflow", videoSrc: "/Avatar IV Video_1080p 2*.mp4",    ctaHref: "#how",       featured: false, objectPos: "object-[50%_10%]" },
+    { id: "preview-ai-strategy",     videoSrc: "/Avatar_IV_Video 1*.mp4",          ctaHref: "#pricing",   featured: true,  objectPos: "object-top"       },
+    { id: "preview-creator-workflow", videoSrc: "/Avatar IV Video_1080p 2*.mp4",    ctaHref: "#how",       featured: false, objectPos: "object-[50%_20%]" },
     { id: "preview-avatar-content",  videoSrc: "/Avatar IV Video_1080p 3*.mp4",     ctaHref: "#features",  featured: false, objectPos: "object-center" },
   ] as const;
   const livePreviewSectionsRaw = t.raw("livePreview.sections");
@@ -1017,7 +1017,7 @@ export default function LandingPage() {
                     <motion.div
                       whileHover={{ scale: 1.015 }}
                       transition={{ duration: 0.3 }}
-                      className={`relative h-[380px] w-full overflow-hidden rounded-2xl border border-[var(--hg-border)]/75 shadow-[0_12px_30px_rgba(0,0,0,0.3)] md:h-[460px] lg:h-[520px] ${section.featured ? "md:rounded-[1.3rem]" : ""}`}
+                      className={`relative h-[380px] w-full overflow-hidden rounded-2xl border border-[var(--hg-border)]/75 shadow-[0_12px_30px_rgba(0,0,0,0.3)] md:h-[460px] lg:h-[520px] xl:h-[640px] ${section.featured ? "md:rounded-[1.3rem]" : ""}`}
                     >
                       <LazyVideo
                         src={section.videoSrc}
